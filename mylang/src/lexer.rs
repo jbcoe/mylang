@@ -1,6 +1,78 @@
-use super::token::{Token, TokenKind};
+use std::fmt;
 use std::str;
-pub(crate) struct Lexer<'a> {
+use std::vec::Vec;
+
+#[derive(Debug, Eq, PartialEq, Copy, Clone)]
+pub enum TokenKind {
+    Colon,
+    Comma,
+    DoubleEquals,
+    EOF,
+    Plus,
+    Minus,
+    Divide,
+    Star,
+    EqualSign,
+    Identifier,
+    Integer,
+    LeftBrace,
+    LeftParen,
+    LeftSqBracket,
+    Let,
+    Mut,
+    Period,
+    Return,
+    RightBrace,
+    RightParen,
+    RightSqBracket,
+    SemiColon,
+    String,
+    Unknown,
+    Whitespace,
+}
+
+pub struct Token<'a> {
+    text: &'a [u8],
+    offset: usize,
+    kind: TokenKind,
+}
+
+impl<'a> Token<'a> {
+    pub(crate) fn new(text: &'a [u8], offset: usize, kind: TokenKind) -> Token {
+        Token { text, offset, kind }
+    }
+
+    pub fn kind(&self) -> TokenKind {
+        self.kind
+    }
+
+    pub fn text(&self) -> String {
+        String::from_utf8(self.text.to_vec()).unwrap()
+    }
+
+    pub fn offset(&self) -> usize {
+        self.offset
+    }
+
+    pub fn len(&self) -> usize {
+        self.text.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.text.len() == 0
+    }
+}
+
+impl<'a> fmt::Debug for Token<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("Token")
+            .field("text", &String::from_utf8_lossy(&self.text))
+            .field("kind", &self.kind)
+            .finish()
+    }
+}
+
+pub struct Lexer<'a> {
     input: &'a [u8],
     position: usize,
     read_position: usize,
@@ -8,7 +80,7 @@ pub(crate) struct Lexer<'a> {
 }
 
 impl<'a> Lexer<'a> {
-    pub(crate) fn new(input: &'a str) -> Lexer {
+    pub fn new(input: &'a str) -> Lexer {
         let mut lexer = Lexer {
             input: input.as_bytes(),
             position: 0,
@@ -27,7 +99,7 @@ impl<'a> Lexer<'a> {
             self.byte = self.input[self.read_position];
         }
         self.position = self.read_position;
-        self.read_position = self.read_position + 1;
+        self.read_position += 1;
     }
 
     fn reset(&mut self, position: usize) {
@@ -35,7 +107,6 @@ impl<'a> Lexer<'a> {
         self.read_position = position + 1;
         if self.position >= self.input.len() {
             self.byte = 0;
-            return;
         } else {
             self.byte = self.input[self.position];
         }
@@ -45,124 +116,118 @@ impl<'a> Lexer<'a> {
         if self.read_position >= self.input.len() {
             return '\0';
         }
-        return char::from(self.input[self.read_position]);
+        char::from(self.input[self.read_position])
     }
 
     fn text_range(&self, start: usize) -> &'a [u8] {
-        return &self.input[start..self.read_position];
+        &self.input[start..self.read_position]
+    }
+
+    // Consumes the Lexer
+    pub fn tokens(mut self) -> Vec<Token<'a>> {
+        let mut tokens = vec![];
+        loop {
+            let t = self.next_token();
+            tokens.push(t);
+            if tokens.last().unwrap().kind() == TokenKind::EOF {
+                return tokens;
+            }
+        }
     }
 
     pub(crate) fn next_token(&mut self) -> Token<'a> {
         let token: Token;
-        loop {
-            let c = char::from(self.byte);
-            match c {
-                '\0' => {
-                    token = self.char_token(TokenKind::EOF);
-                    break;
-                }
-                '+' => {
-                    token = self.char_token(TokenKind::Plus);
-                    break;
-                }
-                '-' => {
-                    token = self.char_token(TokenKind::Minus);
-                    break;
-                }
-                '*' => {
-                    token = self.char_token(TokenKind::Star);
-                    break;
-                }
-                '/' => {
-                    token = self.char_token(TokenKind::Divide);
-                    break;
-                }
-                '.' => {
-                    token = self.char_token(TokenKind::Period);
-                    break;
-                }
-                '=' => match self.peek_char() {
-                    '=' => {
-                        let start = self.position;
-                        self.read_char();
-                        token = self.text_token(start, TokenKind::DoubleEquals);
-                        break;
-                    }
-                    _ => {
-                        token = self.char_token(TokenKind::EqualSign);
-                        break;
-                    }
-                },
-                ',' => {
-                    token = self.char_token(TokenKind::Comma);
-                    break;
-                }
-                ';' => {
-                    token = self.char_token(TokenKind::SemiColon);
-                    break;
-                }
-                ':' => {
-                    token = self.char_token(TokenKind::Colon);
-                    break;
-                }
-                '(' => {
-                    token = self.char_token(TokenKind::LeftParen);
-                    break;
-                }
-                ')' => {
-                    token = self.char_token(TokenKind::RightParen);
-                    break;
-                }
-                '{' => {
-                    token = self.char_token(TokenKind::LeftBrace);
-                    break;
-                }
-                '}' => {
-                    token = self.char_token(TokenKind::RightBrace);
-                    break;
-                }
-                '[' => {
-                    token = self.char_token(TokenKind::LeftSqBracket);
-                    break;
-                }
-                ']' => {
-                    token = self.char_token(TokenKind::RightSqBracket);
-                    break;
-                }
-                '"' => {
-                    token = self.read_string();
-                    break;
+
+        let c = char::from(self.byte);
+        match c {
+            '\0' => {
+                token = self.char_token(TokenKind::EOF);
+            }
+            '+' => {
+                token = self.char_token(TokenKind::Plus);
+            }
+            '-' => {
+                token = self.char_token(TokenKind::Minus);
+            }
+            '*' => {
+                token = self.char_token(TokenKind::Star);
+            }
+            '/' => {
+                token = self.char_token(TokenKind::Divide);
+            }
+            '.' => {
+                token = self.char_token(TokenKind::Period);
+            }
+            '=' => match self.peek_char() {
+                '=' => {
+                    let start = self.position;
+                    self.read_char();
+                    token = self.text_token(start, TokenKind::DoubleEquals);
                 }
                 _ => {
-                    // read whitespace
-                    if c.is_whitespace() {
-                        token = self.read_whitespace();
-                        break;
+                    token = self.char_token(TokenKind::EqualSign);
+                }
+            },
+            ',' => {
+                token = self.char_token(TokenKind::Comma);
+            }
+            ';' => {
+                token = self.char_token(TokenKind::SemiColon);
+            }
+            ':' => {
+                token = self.char_token(TokenKind::Colon);
+            }
+            '(' => {
+                token = self.char_token(TokenKind::LeftParen);
+            }
+            ')' => {
+                token = self.char_token(TokenKind::RightParen);
+            }
+            '{' => {
+                token = self.char_token(TokenKind::LeftBrace);
+            }
+            '}' => {
+                token = self.char_token(TokenKind::RightBrace);
+            }
+            '[' => {
+                token = self.char_token(TokenKind::LeftSqBracket);
+            }
+            ']' => {
+                token = self.char_token(TokenKind::RightSqBracket);
+            }
+            '"' => {
+                token = self.read_string();
+            }
+            _ => {
+                // read whitespace
+                if c.is_whitespace() {
+                    token = self.read_whitespace();
+                }
+                // read keyword or identifier
+                else if c.is_alphabetic() {
+                    if let Some(t) = self.read_keyword() {
+                        token = t;
+                    } else if let Some(t) = self.read_identifier() {
+                        token = t;
+                    } else {
+                        token = self.read_junk();
                     }
-                    // read keyword or identifier
-                    if c.is_alphabetic() {
-                        if let Some(t) = self.read_keyword() {
-                            token = t;
-                            break;
-                        }
-                        if let Some(t) = self.read_identifier() {
-                            token = t;
-                            break;
-                        }
+                }
+                // read integer
+                else if c.is_numeric() {
+                    if let Some(t) = self.read_integer() {
+                        token = t;
+                    } else {
+                        token = self.read_junk();
                     }
-                    // read integer
-                    if c.is_numeric() {
-                        if let Some(t) = self.read_integer() {
-                            token = t;
-                            break;
-                        }
-                    }
-                    // read junk
+                }
+                // read junk
+                else {
                     token = self.read_junk();
-                    break;
                 }
             }
         }
+
         self.read_char();
         token
     }
@@ -172,7 +237,7 @@ impl<'a> Lexer<'a> {
     }
 
     fn text_token(&self, start: usize, kind: TokenKind) -> Token<'a> {
-        return Token::new(&self.text_range(start), kind);
+        return Token::new(&self.text_range(start), start, kind);
     }
 
     fn read_junk(&mut self) -> Token<'a> {
@@ -181,7 +246,7 @@ impl<'a> Lexer<'a> {
             self.read_char();
         }
 
-        return self.text_token(start, TokenKind::Unknown);
+        self.text_token(start, TokenKind::Unknown)
     }
 
     fn read_whitespace(&mut self) -> Token<'a> {
@@ -190,7 +255,7 @@ impl<'a> Lexer<'a> {
             self.read_char();
         }
 
-        return self.text_token(start, TokenKind::Whitespace);
+        self.text_token(start, TokenKind::Whitespace)
     }
 
     fn read_identifier(&mut self) -> Option<Token<'a>> {
@@ -199,7 +264,7 @@ impl<'a> Lexer<'a> {
             self.read_char();
         }
 
-        return Some(self.text_token(start, TokenKind::Identifier));
+        Some(self.text_token(start, TokenKind::Identifier))
     }
 
     fn read_keyword(&mut self) -> Option<Token<'a>> {
@@ -210,18 +275,12 @@ impl<'a> Lexer<'a> {
 
         let token_text = str::from_utf8(self.text_range(start));
         match token_text {
-            Ok("let") => {
-                return Some(self.text_token(start, TokenKind::Let));
-            }
-            Ok("mut") => {
-                return Some(self.text_token(start, TokenKind::Mut));
-            }
-            Ok("return") => {
-                return Some(self.text_token(start, TokenKind::Return));
-            }
+            Ok("let") => Some(self.text_token(start, TokenKind::Let)),
+            Ok("mut") => Some(self.text_token(start, TokenKind::Mut)),
+            Ok("return") => Some(self.text_token(start, TokenKind::Return)),
             _ => {
                 self.reset(start);
-                return None;
+                None
             }
         }
     }
@@ -243,7 +302,7 @@ impl<'a> Lexer<'a> {
             }
         }
         self.read_char(); // Consume closing '"'.
-        return self.text_token(start, TokenKind::String);
+        self.text_token(start, TokenKind::String)
     }
 
     fn read_integer(&mut self) -> Option<Token<'a>> {
@@ -258,7 +317,7 @@ impl<'a> Lexer<'a> {
             return None;
         }
 
-        return Some(self.text_token(start, TokenKind::Integer));
+        Some(self.text_token(start, TokenKind::Integer))
     }
 }
 
