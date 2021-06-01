@@ -38,10 +38,6 @@ pub struct Token<'a> {
 }
 
 impl<'a> Token<'a> {
-    pub(crate) fn new(text: &'a [u8], offset: usize, kind: TokenKind) -> Token {
-        Token { text, offset, kind }
-    }
-
     pub fn kind(&self) -> TokenKind {
         self.kind
     }
@@ -204,7 +200,7 @@ impl<'a> Lexer<'a> {
                     token = self.read_whitespace();
                 }
                 // read keyword or identifier
-                else if c.is_alphabetic() {
+                else if c.is_ascii_alphabetic() {
                     if let Some(t) = self.read_keyword() {
                         token = t;
                     } else if let Some(t) = self.read_identifier() {
@@ -214,7 +210,7 @@ impl<'a> Lexer<'a> {
                     }
                 }
                 // read integer
-                else if c.is_numeric() {
+                else if c.is_ascii_digit() {
                     if let Some(t) = self.read_integer() {
                         token = t;
                     } else {
@@ -237,12 +233,16 @@ impl<'a> Lexer<'a> {
     }
 
     fn text_token(&self, start: usize, kind: TokenKind) -> Token<'a> {
-        return Token::new(&self.text_range(start), start, kind);
+        return Token {
+            text: &self.text_range(start),
+            offset: start,
+            kind,
+        };
     }
 
     fn read_junk(&mut self) -> Token<'a> {
         let start = self.position;
-        while self.peek_char().is_alphanumeric() {
+        while self.peek_char().is_ascii_alphanumeric() {
             self.read_char();
         }
 
@@ -260,7 +260,7 @@ impl<'a> Lexer<'a> {
 
     fn read_identifier(&mut self) -> Option<Token<'a>> {
         let start = self.position;
-        while self.peek_char().is_alphanumeric() {
+        while self.peek_char().is_ascii_alphanumeric() || self.peek_char() == '_' {
             self.read_char();
         }
 
@@ -269,7 +269,7 @@ impl<'a> Lexer<'a> {
 
     fn read_keyword(&mut self) -> Option<Token<'a>> {
         let start = self.position;
-        while self.peek_char().is_alphanumeric() {
+        while self.peek_char().is_ascii_alphanumeric() {
             self.read_char();
         }
 
@@ -307,12 +307,12 @@ impl<'a> Lexer<'a> {
 
     fn read_integer(&mut self) -> Option<Token<'a>> {
         let start = self.position;
-        while self.peek_char().is_numeric() {
+        while self.peek_char().is_ascii_digit() {
             self.read_char();
         }
 
         let p = self.peek_char();
-        if p.is_alphabetic() {
+        if p.is_ascii_alphabetic() {
             self.reset(start);
             return None;
         }
@@ -420,6 +420,17 @@ mod lexer_test {
                     ("=", TokenKind::EqualSign),
                     (" ", TokenKind::Whitespace),
                     ("value0", TokenKind::Identifier),
+                    (";", TokenKind::SemiColon),
+                ],
+            },
+            TestCase {
+                input: "let my_value = 10;",
+                skip_whitespace: true,
+                expected_tokens: vec![
+                    ("let", TokenKind::Let),
+                    ("my_value", TokenKind::Identifier),
+                    ("=", TokenKind::EqualSign),
+                    ("10", TokenKind::Integer),
                     (";", TokenKind::SemiColon),
                 ],
             },
