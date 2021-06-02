@@ -20,6 +20,14 @@ pub enum TokenKind {
     LeftSqBracket,
     Let,
     Mut,
+
+    Less,
+    Greater,
+    LessOrEqual,
+    GreaterOrEqual,
+    NotEquals,
+    Not,
+
     Period,
     Return,
     RightBrace,
@@ -162,6 +170,36 @@ impl<'a> Lexer<'a> {
                 }
                 _ => {
                     token = self.char_token(TokenKind::EqualSign);
+                }
+            },
+            '>' => match self.peek_char() {
+                '=' => {
+                    let start = self.position;
+                    self.read_char();
+                    token = self.text_token(start, TokenKind::GreaterOrEqual);
+                }
+                _ => {
+                    token = self.char_token(TokenKind::Greater);
+                }
+            },
+            '<' => match self.peek_char() {
+                '=' => {
+                    let start = self.position;
+                    self.read_char();
+                    token = self.text_token(start, TokenKind::LessOrEqual);
+                }
+                _ => {
+                    token = self.char_token(TokenKind::Less);
+                }
+            },
+            '!' => match self.peek_char() {
+                '=' => {
+                    let start = self.position;
+                    self.read_char();
+                    token = self.text_token(start, TokenKind::NotEquals);
+                }
+                _ => {
+                    token = self.char_token(TokenKind::Not);
                 }
             },
             ',' => {
@@ -461,6 +499,66 @@ mod lexer_test {
                     ("rhs", TokenKind::Identifier),
                     (";", TokenKind::SemiColon),
                     ("}", TokenKind::RightBrace),
+                    (";", TokenKind::SemiColon),
+                ],
+            },
+            TestCase {
+                input: "a > b;",
+                skip_whitespace: true,
+                expected_tokens: vec![
+                    ("a", TokenKind::Identifier),
+                    (">", TokenKind::Greater),
+                    ("b", TokenKind::Identifier),
+                    (";", TokenKind::SemiColon),
+                ],
+            },
+            TestCase {
+                input: "a < b;",
+                skip_whitespace: true,
+                expected_tokens: vec![
+                    ("a", TokenKind::Identifier),
+                    ("<", TokenKind::Less),
+                    ("b", TokenKind::Identifier),
+                    (";", TokenKind::SemiColon),
+                ],
+            },
+            TestCase {
+                input: "a >= b;",
+                skip_whitespace: true,
+                expected_tokens: vec![
+                    ("a", TokenKind::Identifier),
+                    (">=", TokenKind::GreaterOrEqual),
+                    ("b", TokenKind::Identifier),
+                    (";", TokenKind::SemiColon),
+                ],
+            },
+            TestCase {
+                input: "a <= b;",
+                skip_whitespace: true,
+                expected_tokens: vec![
+                    ("a", TokenKind::Identifier),
+                    ("<=", TokenKind::LessOrEqual),
+                    ("b", TokenKind::Identifier),
+                    (";", TokenKind::SemiColon),
+                ],
+            },
+            TestCase {
+                input: "a == b;",
+                skip_whitespace: true,
+                expected_tokens: vec![
+                    ("a", TokenKind::Identifier),
+                    ("==", TokenKind::DoubleEquals),
+                    ("b", TokenKind::Identifier),
+                    (";", TokenKind::SemiColon),
+                ],
+            },
+            TestCase {
+                input: "a != b;",
+                skip_whitespace: true,
+                expected_tokens: vec![
+                    ("a", TokenKind::Identifier),
+                    ("!=", TokenKind::NotEquals),
+                    ("b", TokenKind::Identifier),
                     (";", TokenKind::SemiColon),
                 ],
             },
