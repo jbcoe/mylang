@@ -22,10 +22,17 @@ fn main() -> Result<(), LexerError> {
             if token.kind() == TokenKind::Whitespace {
                 continue;
             }
+            let line = 1 + text[0..token.offset()].matches('\n').count();
+            let column = if line > 1 {
+                token.offset() - text[0..token.offset()].rfind('\n').unwrap()
+            } else {
+                token.offset() + 1
+            };
+
             println!(
-                "{start}:{end} {kind:?} '{text}',",
-                start = token.offset(),
-                end = token.offset() + token.len(),
+                "{line}:{column} {kind:?} '{text}',",
+                line = line,
+                column = column,
                 kind = token.kind(),
                 text = token.text(),
             );
