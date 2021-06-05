@@ -39,6 +39,7 @@ pub enum TokenKind {
     Whitespace,
 }
 
+#[derive(Clone, Copy)]
 pub struct Token<'a> {
     text: &'a [u8],
     offset: usize,
@@ -46,6 +47,14 @@ pub struct Token<'a> {
 }
 
 impl<'a> Token<'a> {
+    pub fn eof(offset: usize) -> Token<'static> {
+        Token {
+            text: &[],
+            offset,
+            kind: TokenKind::EOF,
+        }
+    }
+
     pub fn kind(&self) -> TokenKind {
         self.kind
     }
