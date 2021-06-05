@@ -9,6 +9,10 @@ pub struct IntegerExpression {
     pub value: String,
 }
 #[derive(Debug)]
+pub struct FloatingPointExpression {
+    pub value: String,
+}
+#[derive(Debug)]
 pub struct IdentifierExpression {
     pub name: String,
 }
@@ -17,6 +21,7 @@ pub struct IdentifierExpression {
 pub enum ExpressionStatement {
     StringLiteralExpression(StringLiteralExpression),
     IntegerExpression(IntegerExpression),
+    FloatingPointExpression(FloatingPointExpression),
     IdentifierExpression(IdentifierExpression),
 }
 #[derive(Debug)]
@@ -160,6 +165,12 @@ impl<'a> Parser<'a> {
                 }
                 None
             }
+            TokenKind::FloatingPoint => {
+                if let Some(floating_point) = self.parse_floating_point_expression() {
+                    return Some(ExpressionStatement::FloatingPointExpression(floating_point));
+                }
+                None
+            }
             TokenKind::String => {
                 if let Some(string) = self.parse_string_literal_expression() {
                     return Some(ExpressionStatement::StringLiteralExpression(string));
@@ -204,6 +215,22 @@ impl<'a> Parser<'a> {
                 self.read_token(); // consume `value`
                 self.read_token(); // consume `;`
                 Some(IntegerExpression { value })
+            }
+            _ => None,
+        }
+    }
+
+    fn parse_floating_point_expression(&mut self) -> Option<FloatingPointExpression> {
+        assert!(self.token.kind() == TokenKind::FloatingPoint);
+        match self.token.kind() {
+            TokenKind::FloatingPoint => {
+                if self.peek_token().kind() != TokenKind::SemiColon {
+                    return None;
+                }
+                let value = self.token.text();
+                self.read_token(); // consume `value`
+                self.read_token(); // consume `;`
+                Some(FloatingPointExpression { value })
             }
             _ => None,
         }
@@ -268,6 +295,9 @@ mod parser_test {
             },
             TestCase {
                 input: "let x = 5;",
+            },
+            TestCase {
+                input: "let x = 3.14159;",
             },
             TestCase {
                 input: r#"let x = "Hello";"#,
