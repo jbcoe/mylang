@@ -39,6 +39,7 @@ pub enum TokenKind {
     Whitespace,
 }
 
+#[derive(Clone, Copy)]
 pub struct Token<'a> {
     text: &'a [u8],
     offset: usize,
@@ -46,6 +47,14 @@ pub struct Token<'a> {
 }
 
 impl<'a> Token<'a> {
+    pub fn eof(offset: usize) -> Token<'static> {
+        Token {
+            text: &[],
+            offset,
+            kind: TokenKind::EOF,
+        }
+    }
+
     pub fn kind(&self) -> TokenKind {
         self.kind
     }
@@ -145,7 +154,7 @@ impl<'a> Lexer<'a> {
         let c = char::from(self.byte);
         match c {
             '\0' => {
-                token = self.eof_token();
+                token = Token::eof(self.read_position);
             }
             '+' => {
                 token = self.char_token(TokenKind::Plus);
@@ -268,14 +277,6 @@ impl<'a> Lexer<'a> {
 
     fn char_token(&self, kind: TokenKind) -> Token<'a> {
         self.text_token(self.position, kind)
-    }
-
-    fn eof_token(&self) -> Token<'a> {
-        return Token {
-            text: &[],
-            offset: self.position,
-            kind: TokenKind::EOF,
-        };
     }
 
     fn text_token(&self, start: usize, kind: TokenKind) -> Token<'a> {
