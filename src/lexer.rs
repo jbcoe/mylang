@@ -161,8 +161,7 @@ impl<'a> Lexer<'a> {
                 token = self.char_token(TokenKind::Divide);
             }
             '.' => {
-                let p = self.peek_char();
-                if p.is_ascii_digit() {
+                if self.peek_char().is_ascii_digit() {
                     if let Some(t) = self.read_decimal_part(self.position) {
                         token = t;
                     }
@@ -373,8 +372,7 @@ impl<'a> Lexer<'a> {
         let p = self.peek_char();
         match p {
             '.' => self.read_decimal_part(start),
-            'e' => self.read_exponent(start),
-            'E' => self.read_exponent(start),
+            'e' | 'E' => self.read_exponent(start),
             _ => self.read_number_final_integer(start),
         }
     }
@@ -398,8 +396,7 @@ impl<'a> Lexer<'a> {
 
         let p = self.peek_char();
         match p {
-            'e' => self.read_exponent(start),
-            'E' => self.read_exponent(start),
+            'e' | 'E' => self.read_exponent(start),
             _ => self.read_number_final_floating_point(start),
         }
     }
@@ -425,7 +422,11 @@ impl<'a> Lexer<'a> {
         }
 
         let p = self.peek_char();
-        if p.is_ascii_alphabetic() {
+        if p.is_ascii_alphabetic() || p == '.' {
+            // We no longer expect any decimal points, so encountering an
+            // alphabetic char or a period indicates we have a junk token.
+            // Other symbols, including '+' and '-', are not considered here
+            // as they form the beginning of the next token.
             return self.read_number_cleanup_junk(start);
         }
         
@@ -436,14 +437,31 @@ impl<'a> Lexer<'a> {
         // What we have read is not compatible with a number.  We cannot
         // rely on the general junk reader to tidy up because we may have
         // decimal points, exponent symbols and sign symbols in the mix.
+        //
+        // While trying to clean up after a malformed numeric token, we
+        // want to consume any characters that could potentially be part
+        // of a numeric token. This may consume characters that would
+        // otherwise form a valid subsequent token, but if we do not do
+        // this, we can end up with `Unknown` tokens that look like they
+        // should be valid tokens. We therefore opt to greedily consume
+        // characters to make the unknown token visually distinct from
+        // a valid token.
+        fn in_numeric_charset(ch: char) -> bool {
+            if ch.is_ascii_alphanumeric() {
+                return true;
+            }
+            match ch {
+                'e' | 'E' | '.' | '+' | '-' => true,
+                _ => false,
+            }
+        }
 
-        while self.peek_char().is_ascii_alphanumeric() {
+        while in_numeric_charset(self.peek_char()) {
             self.read_char();
         }
 
         Some(self.text_token(start, TokenKind::Unknown))
     }
-
 }
 
 #[cfg(test)]
@@ -730,6 +748,38 @@ mod lexer_test {
                 skip_whitespace: false,
                 expected_tokens: vec![
                     ("2.4e3a", TokenKind::Unknown),
+                ],
+            },
+            TestCase {
+                input: "123f+4.2e-3",
+                skip_whitespace: false,
+                expected_tokens: vec![
+                    ("123f", TokenKind::Unknown),
+                    ("+", TokenKind::Plus),
+                    ("4.2e-3", TokenKind::FloatingPoint),
+                ],
+            },
+            TestCase {
+                input: "1.23e-4.56",
+                skip_whitespace: false,
+                expected_tokens: vec![
+                    ("1.23e-4.56", TokenKind::Unknown),
+                ],
+            },
+            TestCase {
+                input: "1.23e-4+3.2e-5",
+                skip_whitespace: false,
+                expected_tokens: vec![
+                    ("1.23e-4", TokenKind::FloatingPoint),
+                    ("+", TokenKind::Plus),
+                    ("3.2e-5", TokenKind::FloatingPoint),
+                ],
+            },
+            TestCase {
+                input: "1.23e-4e-3.2",
+                skip_whitespace: false,
+                expected_tokens: vec![
+                    ("1.23e-4e-3.2", TokenKind::Unknown),
                 ],
             },
         ];
