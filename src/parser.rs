@@ -69,7 +69,7 @@ impl<'a> Parser<'a> {
             statements.push(stmt);
         }
         AbstractSyntaxTree {
-            statements: statements,
+            statements,
             errors: self.errors,
         }
     }
@@ -136,7 +136,7 @@ impl<'a> Parser<'a> {
                 self.errors
                     .push(format!("expected expression, got {:?}", self.token));
                 self.reset(start);
-                return None;
+                None
             }
             Some(expression) => Some(LetStatement {
                 mutable,
@@ -152,19 +152,19 @@ impl<'a> Parser<'a> {
                 if let Some(identifier) = self.parse_identifier_expression() {
                     return Some(ExpressionStatement::IdentifierExpression(identifier));
                 }
-                return None;
+                None
             }
             TokenKind::Integer => {
                 if let Some(integer) = self.parse_integer_expression() {
                     return Some(ExpressionStatement::IntegerExpression(integer));
                 }
-                return None;
+                None
             }
             TokenKind::String => {
                 if let Some(string) = self.parse_string_literal_expression() {
                     return Some(ExpressionStatement::StringLiteralExpression(string));
                 }
-                return None;
+                None
             }
             _ => {
                 self.errors.push(format!(
@@ -187,9 +187,9 @@ impl<'a> Parser<'a> {
                 let name = self.token.text();
                 self.read_token(); // consume `name`
                 self.read_token(); // consume `;`
-                return Some(IdentifierExpression { name });
+                Some(IdentifierExpression { name })
             }
-            _ => return None,
+            _ => None,
         }
     }
 
@@ -203,9 +203,9 @@ impl<'a> Parser<'a> {
                 let value = self.token.text();
                 self.read_token(); // consume `value`
                 self.read_token(); // consume `;`
-                return Some(IntegerExpression { value });
+                Some(IntegerExpression { value })
             }
-            _ => return None,
+            _ => None,
         }
     }
 
@@ -219,9 +219,9 @@ impl<'a> Parser<'a> {
                 let value = self.token.text();
                 self.read_token(); // consume `value`
                 self.read_token(); // consume `;`
-                return Some(StringLiteralExpression { value });
+                Some(StringLiteralExpression { value })
             }
-            _ => return None,
+            _ => None,
         }
     }
 
