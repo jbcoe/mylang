@@ -1,32 +1,40 @@
-use crate::lexer::*;
+use crate::lexer::{Lexer, Token, TokenKind};
 
+#[derive(Debug)]
 pub struct StringLiteralExpression {
     pub value: String,
 }
+#[derive(Debug)]
 pub struct IntegerExpression {
     pub value: String,
 }
+#[derive(Debug)]
 pub struct IdentifierExpression {
     pub name: String,
 }
 
+#[derive(Debug)]
 pub enum ExpressionStatement {
     StringLiteralExpression(StringLiteralExpression),
     IntegerExpression(IntegerExpression),
     IdentifierExpression(IdentifierExpression),
 }
+#[derive(Debug)]
 pub struct LetStatement {
     pub mutable: bool,
     pub identifier: String,
     pub expression: Box<ExpressionStatement>,
 }
+#[derive(Debug)]
 pub enum Statement {
     ExpressionStatement(ExpressionStatement),
     LetStatement(LetStatement),
 }
 
+#[derive(Debug)]
 pub struct AbstractSyntaxTree {
     pub statements: Vec<Statement>,
+    errors: Vec<String>,
 }
 
 pub struct Parser<'a> {
@@ -39,7 +47,12 @@ pub struct Parser<'a> {
 
 impl<'a> Parser<'a> {
     pub fn new(input: &str) -> Parser {
-        let tokens = Lexer::new(input).tokens();
+        let mut tokens = vec![];
+        for token in Lexer::new(input).tokens() {
+            if token.kind() != TokenKind::Whitespace {
+                tokens.push(token);
+            }
+        }
         Parser {
             tokens,
             position: 0,
@@ -57,6 +70,7 @@ impl<'a> Parser<'a> {
         }
         AbstractSyntaxTree {
             statements: statements,
+            errors: self.errors,
         }
     }
 
@@ -87,32 +101,40 @@ impl<'a> Parser<'a> {
         self.tokens[self.read_position]
     }
 
+    // Matches:
+    //   "let identifier = expression;"
+    //   "let mut identifier = expression;"
     fn parse_let_statement(&mut self) -> Option<LetStatement> {
         let start = self.position;
         self.read_token(); // consume let
 
-        let mut mutable = true;
+        let mut mutable = false;
         if self.peek_token().kind() == TokenKind::Mut {
             mutable = true;
             self.read_token(); // consume mut
         }
 
-        if self.peek_token().kind() != TokenKind::Identifier {
+        if self.token.kind() != TokenKind::Identifier {
+            self.errors
+                .push(format!("expected identifier, got {:?}", self.token));
             self.reset(start);
             return None;
         }
         let identifier = self.token.text();
         self.read_token(); // consume identifier
 
-        if self.peek_token().kind() != TokenKind::EqualSign {
+        if self.token.kind() != TokenKind::EqualSign {
+            self.errors
+                .push(format!("expected equal sign, got {:?}", self.token));
             self.reset(start);
             return None;
         }
         self.read_token(); // consume equals sign
 
-        let maybe_expression = self.parse_expression();
-        match maybe_expression {
+        match self.parse_expression() {
             None => {
+                self.errors
+                    .push(format!("expected expression, got {:?}", self.token));
                 self.reset(start);
                 return None;
             }
@@ -144,20 +166,63 @@ impl<'a> Parser<'a> {
                 }
                 return None;
             }
-            _ => None,
+            _ => {
+                self.errors.push(format!(
+                    "Parse error when parsing expression {:?}",
+                    self.token
+                ));
+                None
+            }
         }
     }
 
+    // Matches: "name;"
     fn parse_identifier_expression(&mut self) -> Option<IdentifierExpression> {
-        None
+        assert!(self.token.kind() == TokenKind::Identifier);
+        match self.token.kind() {
+            TokenKind::Identifier => {
+                if self.peek_token().kind() != TokenKind::SemiColon {
+                    return None;
+                }
+                let name = self.token.text();
+                self.read_token(); // consume `name`
+                self.read_token(); // consume `;`
+                return Some(IdentifierExpression { name });
+            }
+            _ => return None,
+        }
     }
 
     fn parse_integer_expression(&mut self) -> Option<IntegerExpression> {
-        None
+        assert!(self.token.kind() == TokenKind::Integer);
+        match self.token.kind() {
+            TokenKind::Integer => {
+                if self.peek_token().kind() != TokenKind::SemiColon {
+                    return None;
+                }
+                let value = self.token.text();
+                self.read_token(); // consume `value`
+                self.read_token(); // consume `;`
+                return Some(IntegerExpression { value });
+            }
+            _ => return None,
+        }
     }
 
     fn parse_string_literal_expression(&mut self) -> Option<StringLiteralExpression> {
-        None
+        assert!(self.token.kind() == TokenKind::String);
+        match self.token.kind() {
+            TokenKind::String => {
+                if self.peek_token().kind() != TokenKind::SemiColon {
+                    return None;
+                }
+                let value = self.token.text();
+                self.read_token(); // consume `value`
+                self.read_token(); // consume `;`
+                return Some(StringLiteralExpression { value });
+            }
+            _ => return None,
+        }
     }
 
     fn parse_next(&mut self) -> Option<Statement> {
@@ -168,12 +233,13 @@ impl<'a> Parser<'a> {
                     return Some(Statement::LetStatement(stmt));
                 } else {
                     self.errors.push(format!(
-                        "Parse error: when parsing let-statement {:?}",
+                        "Parse error when parsing let-statement {:?}",
                         self.token
                     ))
                 }
                 None
             }
+            TokenKind::EOF => None,
             _ => {
                 self.errors.push(format!(
                     "Parse error: unexpected TokenKind when parsing statement {:?}",
@@ -181,6 +247,37 @@ impl<'a> Parser<'a> {
                 ));
                 None
             }
+        }
+    }
+}
+
+#[cfg(test)]
+mod parser_test {
+    use super::*;
+
+    #[derive(Debug)]
+    struct TestCase {
+        input: &'static str,
+    }
+
+    #[test]
+    fn parser_tests() {
+        let test_cases = vec![
+            TestCase {
+                input: "let x = a;",
+            },
+            TestCase {
+                input: "let x = 5;",
+            },
+            TestCase {
+                input: r#"let x = "Hello";"#,
+            },
+        ];
+
+        for test_case in test_cases.iter() {
+            let parser = Parser::new(test_case.input);
+            let ast = parser.ast();
+            assert!(ast.errors.is_empty());
         }
     }
 }
