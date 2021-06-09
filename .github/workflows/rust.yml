@@ -44,9 +44,11 @@ jobs:
         toolchain: stable
         override: true
     - name: cargo test build
-      run: cargo build --tests --release --verbose
-    - name: cargo test
-      run: cargo test --release --verbose
+      run: cargo build --tests --release
+      run: cargo test --release
+      # Run the tests we usually don't want to run when
+      # testing locally
+      run: cargo test --release -- --ignored
 
   cargo-deny:
     runs-on: ubuntu-latest
