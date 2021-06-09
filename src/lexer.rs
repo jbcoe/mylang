@@ -7,7 +7,7 @@ pub enum TokenKind {
     Colon,
     Comma,
     DoubleEquals,
-    EOF,
+    Eof,
     Plus,
     Minus,
     Divide,
@@ -52,7 +52,7 @@ impl<'a> Token<'a> {
         Token {
             text: &[],
             offset,
-            kind: TokenKind::EOF,
+            kind: TokenKind::Eof,
         }
     }
 
@@ -143,7 +143,7 @@ impl<'a> Lexer<'a> {
         loop {
             let t = self.next_token();
             tokens.push(t);
-            if tokens.last().unwrap().kind() == TokenKind::EOF {
+            if tokens.last().unwrap().kind() == TokenKind::Eof {
                 return tokens;
             }
         }
@@ -447,10 +447,7 @@ impl<'a> Lexer<'a> {
             if ch.is_ascii_alphanumeric() {
                 return true;
             }
-            match ch {
-                'e' | 'E' | '.' | '+' | '-' => true,
-                _ => false,
-            }
+            matches!(ch, 'e' | 'E' | '.' | '+' | '-')
         }
 
         while in_numeric_charset(self.peek_char()) {
@@ -761,7 +758,7 @@ mod lexer_test {
                 assert_eq!(t.text(), expected_token.0);
                 assert_eq!(t.kind(), expected_token.1);
             }
-            assert_eq!(lexer.next_token().kind(), TokenKind::EOF);
+            assert_eq!(lexer.next_token().kind(), TokenKind::Eof);
         }
     }
 }
