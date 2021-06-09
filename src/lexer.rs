@@ -173,12 +173,10 @@ impl<'a> Lexer<'a> {
                 if self.peek_char().is_ascii_digit() {
                     if let Some(t) = self.read_decimal_part(self.position) {
                         token = t;
-                    }
-                    else {
+                    } else {
                         token = self.char_token(TokenKind::Period);
                     }
-                }
-                else {
+                } else {
                     token = self.char_token(TokenKind::Period);
                 }
             }
@@ -408,9 +406,7 @@ impl<'a> Lexer<'a> {
         let p = self.peek_char();
         if p == '+' || p == '-' {
             self.read_char();
-        }
-        else if !p.is_ascii_digit()
-        {
+        } else if !p.is_ascii_digit() {
             return self.read_number_cleanup_junk(start);
         }
 
@@ -430,7 +426,7 @@ impl<'a> Lexer<'a> {
             // as they form the beginning of the next token.
             return self.read_number_cleanup_junk(start);
         }
-        
+
         Some(self.text_token(start, TokenKind::FloatingPoint))
     }
 
@@ -663,93 +659,67 @@ mod lexer_test {
             TestCase {
                 input: "3",
                 skip_whitespace: false,
-                expected_tokens: vec![
-                    ("3", TokenKind::Integer),
-                ],
+                expected_tokens: vec![("3", TokenKind::Integer)],
             },
             TestCase {
                 input: "314",
                 skip_whitespace: false,
-                expected_tokens: vec![
-                    ("314", TokenKind::Integer),
-                ],
+                expected_tokens: vec![("314", TokenKind::Integer)],
             },
             TestCase {
                 input: "3.14",
                 skip_whitespace: false,
-                expected_tokens: vec![
-                    ("3.14", TokenKind::FloatingPoint),
-                ],
+                expected_tokens: vec![("3.14", TokenKind::FloatingPoint)],
             },
             TestCase {
                 input: "3.",
                 skip_whitespace: false,
-                expected_tokens: vec![
-                    ("3.", TokenKind::FloatingPoint),
-                ],
+                expected_tokens: vec![("3.", TokenKind::FloatingPoint)],
             },
             TestCase {
                 input: ".14",
                 skip_whitespace: false,
-                expected_tokens: vec![
-                    (".14", TokenKind::FloatingPoint),
-                ],
+                expected_tokens: vec![(".14", TokenKind::FloatingPoint)],
             },
             TestCase {
                 input: "3e8",
                 skip_whitespace: false,
-                expected_tokens: vec![
-                    ("3e8", TokenKind::FloatingPoint),
-                ],
+                expected_tokens: vec![("3e8", TokenKind::FloatingPoint)],
             },
             TestCase {
                 input: "0.314e1",
                 skip_whitespace: false,
-                expected_tokens: vec![
-                    ("0.314e1", TokenKind::FloatingPoint),
-                ],
+                expected_tokens: vec![("0.314e1", TokenKind::FloatingPoint)],
             },
             TestCase {
                 input: "9.1e-31",
                 skip_whitespace: false,
-                expected_tokens: vec![
-                    ("9.1e-31", TokenKind::FloatingPoint),
-                ],
+                expected_tokens: vec![("9.1e-31", TokenKind::FloatingPoint)],
             },
             TestCase {
                 input: "6.02e+23",
                 skip_whitespace: false,
-                expected_tokens: vec![
-                    ("6.02e+23", TokenKind::FloatingPoint),
-                ],
+                expected_tokens: vec![("6.02e+23", TokenKind::FloatingPoint)],
             },
             TestCase {
                 input: "2e",
                 skip_whitespace: false,
-                expected_tokens: vec![
-                    ("2e", TokenKind::Unknown),
-                ],
+                expected_tokens: vec![("2e", TokenKind::Unknown)],
             },
             TestCase {
                 input: "2.e",
                 skip_whitespace: false,
-                expected_tokens: vec![
-                    ("2.e", TokenKind::Unknown),
-                ],
+                expected_tokens: vec![("2.e", TokenKind::Unknown)],
             },
             TestCase {
                 input: "2.4f",
                 skip_whitespace: false,
-                expected_tokens: vec![
-                    ("2.4f", TokenKind::Unknown),
-                ],
+                expected_tokens: vec![("2.4f", TokenKind::Unknown)],
             },
             TestCase {
                 input: "2.4e3a",
                 skip_whitespace: false,
-                expected_tokens: vec![
-                    ("2.4e3a", TokenKind::Unknown),
-                ],
+                expected_tokens: vec![("2.4e3a", TokenKind::Unknown)],
             },
             TestCase {
                 input: "123f+4.2e-3",
@@ -763,9 +733,7 @@ mod lexer_test {
             TestCase {
                 input: "1.23e-4.56",
                 skip_whitespace: false,
-                expected_tokens: vec![
-                    ("1.23e-4.56", TokenKind::Unknown),
-                ],
+                expected_tokens: vec![("1.23e-4.56", TokenKind::Unknown)],
             },
             TestCase {
                 input: "1.23e-4+3.2e-5",
@@ -779,9 +747,7 @@ mod lexer_test {
             TestCase {
                 input: "1.23e-4e-3.2",
                 skip_whitespace: false,
-                expected_tokens: vec![
-                    ("1.23e-4e-3.2", TokenKind::Unknown),
-                ],
+                expected_tokens: vec![("1.23e-4e-3.2", TokenKind::Unknown)],
             },
         ];
 
