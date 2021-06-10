@@ -266,7 +266,7 @@ impl<'a> Parser<'a> {
                 }
                 None
             }
-            TokenKind::EOF => None,
+            TokenKind::Eof => None,
             _ => {
                 self.errors.push(format!(
                     "Parse error: unexpected TokenKind when parsing statement {:?}",
