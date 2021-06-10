@@ -1,4 +1,4 @@
-name: mylang
+name: CI
 
 on:
   push:
