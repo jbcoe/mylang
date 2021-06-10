@@ -1,7 +1,5 @@
-use mylang::lexer::Lexer;
-use mylang::lexer::TokenKind;
-use std::env;
-use std::fs;
+use mylang::lexer::{Lexer, TokenKind};
+use std::{env, fs};
 
 #[derive(Debug)]
 struct LexerError(String);

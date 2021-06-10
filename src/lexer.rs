@@ -1,6 +1,4 @@
-use std::fmt;
-use std::str;
-use std::vec::Vec;
+use std::{fmt, str, vec::Vec};
 
 #[derive(Debug, Eq, PartialEq, Copy, Clone)]
 pub enum TokenKind {
