@@ -35,16 +35,17 @@ jobs:
     name: Test
     strategy:
       matrix:
-        os: [ubuntu-20.04, macOS-latest, windows-latest]
+        os: [ubuntu-20.04, windows-latest, macOS-latest]
     runs-on: ${{ matrix.os }}
     steps:
-    - uses: actions/checkout@v2
-    - uses: actions-rs/toolchain@v1
-      with:
-        toolchain: stable
-        override: true
-    - name: cargo test build
-      run: cargo build --tests --release
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+      - run: cargo fetch
+      - name: cargo test build
+        run: cargo build --tests --release
       - run: cargo test --release
       # Run the tests we usually don't want to run when
       # testing locally
