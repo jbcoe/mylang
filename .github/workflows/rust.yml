@@ -45,10 +45,10 @@ jobs:
         override: true
     - name: cargo test build
       run: cargo build --tests --release
-      run: cargo test --release
+      - run: cargo test --release
       # Run the tests we usually don't want to run when
       # testing locally
-      run: cargo test --release -- --ignored
+      - run: cargo test --release -- --ignored
 
   cargo-deny:
     runs-on: ubuntu-latest
