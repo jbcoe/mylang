@@ -191,15 +191,13 @@ impl<'a> Parser<'a> {
                 None
             }
             TokenKind::Plus => {
-                if let Some(expr) = self.parse_unary_plus_expression()
-                {
+                if let Some(expr) = self.parse_unary_plus_expression() {
                     return Some(ExpressionStatement::UnaryPlusExpression(expr));
                 }
                 None
             }
             TokenKind::Minus => {
-                if let Some(expr) = self.parse_unary_minus_expression()
-                {
+                if let Some(expr) = self.parse_unary_minus_expression() {
                     return Some(ExpressionStatement::UnaryMinusExpression(expr));
                 }
                 None
@@ -234,8 +232,7 @@ impl<'a> Parser<'a> {
     fn parse_unary_plus_expression(&mut self) -> Option<UnaryPlusExpression> {
         assert!(self.token.kind() == TokenKind::Plus);
         self.read_token(); // consume `+`
-        match self.token.kind()
-        {
+        match self.token.kind() {
             TokenKind::Integer => {
                 if let Some(integer) = self.parse_integer_expression() {
                     return Some(UnaryPlusExpression::IntegerExpression(integer));
@@ -250,9 +247,9 @@ impl<'a> Parser<'a> {
             }
             _ => {
                 self.errors.push(format!(
-                        "Parse error when parsing unary plus expression {:?}",
-                        self.token
-                        ));
+                    "Parse error when parsing unary plus expression {:?}",
+                    self.token
+                ));
                 None
             }
         }
@@ -261,8 +258,7 @@ impl<'a> Parser<'a> {
     fn parse_unary_minus_expression(&mut self) -> Option<UnaryMinusExpression> {
         assert!(self.token.kind() == TokenKind::Minus);
         self.read_token(); // consume `-`
-        match self.token.kind()
-        {
+        match self.token.kind() {
             TokenKind::Integer => {
                 if let Some(integer) = self.parse_integer_expression() {
                     return Some(UnaryMinusExpression::IntegerExpression(integer));
@@ -271,15 +267,17 @@ impl<'a> Parser<'a> {
             }
             TokenKind::FloatingPoint => {
                 if let Some(floating_point) = self.parse_floating_point_expression() {
-                    return Some(UnaryMinusExpression::FloatingPointExpression(floating_point));
+                    return Some(UnaryMinusExpression::FloatingPointExpression(
+                        floating_point,
+                    ));
                 }
                 None
             }
             _ => {
                 self.errors.push(format!(
-                        "Parse error when parsing unary minus expression {:?}",
-                        self.token
-                        ));
+                    "Parse error when parsing unary minus expression {:?}",
+                    self.token
+                ));
                 None
             }
         }
