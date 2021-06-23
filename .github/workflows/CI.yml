@@ -68,13 +68,11 @@ jobs:
         uses: actions-rs/tarpaulin@v0.1
         with:
           version: '0.16.0'
-#          args: '-- --test-threads 1'
 
       - name: Upload to codecov.io
         uses: codecov/codecov-action@v1
         with:
-        #   token: ${{secrets.CODECOV_TOKEN}} # not needed for public repos
-          verbose: true
+          verbose: false
 
       - name: Archive code coverage results
         uses: actions/upload-artifact@v1
