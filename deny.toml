@@ -1,0 +1,6 @@
+# cargo-deny configuration file
+# https://embarkstudios.github.io/cargo-deny/checks/licenses/cfg.html
+
+[licenses]
+allow-osi-fsf-free = "either"
+copyleft = "deny"
