@@ -9,6 +9,7 @@ pub enum TokenKind {
     EndOfFile,
     EqualSign,
     FloatingPoint,
+    Function,
     Greater,
     GreaterOrEqual,
     Identifier,

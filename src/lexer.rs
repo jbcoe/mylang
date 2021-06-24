@@ -242,6 +242,7 @@ impl<'a> Lexer<'a> {
 
         let token_text = str::from_utf8(self.text_range(start));
         match token_text {
+            Ok("func") => Some(self.text_token(start, TokenKind::Function)),
             Ok("let") => Some(self.text_token(start, TokenKind::Let)),
             Ok("mut") => Some(self.text_token(start, TokenKind::Mut)),
             Ok("return") => Some(self.text_token(start, TokenKind::Return)),
