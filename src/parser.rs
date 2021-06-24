@@ -18,11 +18,24 @@ pub struct IdentifierExpression {
 }
 
 #[derive(Debug)]
+pub enum UnaryPlusExpression {
+    IntegerExpression(IntegerExpression),
+    FloatingPointExpression(FloatingPointExpression),
+}
+#[derive(Debug)]
+pub enum UnaryMinusExpression {
+    IntegerExpression(IntegerExpression),
+    FloatingPointExpression(FloatingPointExpression),
+}
+
+#[derive(Debug)]
 pub enum ExpressionStatement {
     StringLiteralExpression(StringLiteralExpression),
     IntegerExpression(IntegerExpression),
     FloatingPointExpression(FloatingPointExpression),
     IdentifierExpression(IdentifierExpression),
+    UnaryPlusExpression(UnaryPlusExpression),
+    UnaryMinusExpression(UnaryMinusExpression),
 }
 #[derive(Debug)]
 pub struct LetStatement {
@@ -177,6 +190,18 @@ impl<'a> Parser<'a> {
                 }
                 None
             }
+            TokenKind::Plus => {
+                if let Some(expr) = self.parse_unary_plus_expression() {
+                    return Some(ExpressionStatement::UnaryPlusExpression(expr));
+                }
+                None
+            }
+            TokenKind::Minus => {
+                if let Some(expr) = self.parse_unary_minus_expression() {
+                    return Some(ExpressionStatement::UnaryMinusExpression(expr));
+                }
+                None
+            }
             _ => {
                 self.errors.push(format!(
                     "Parse error when parsing expression {:?}",
@@ -201,6 +226,60 @@ impl<'a> Parser<'a> {
                 Some(IdentifierExpression { name })
             }
             _ => None,
+        }
+    }
+
+    fn parse_unary_plus_expression(&mut self) -> Option<UnaryPlusExpression> {
+        assert!(self.token.kind() == TokenKind::Plus);
+        self.read_token(); // consume `+`
+        match self.token.kind() {
+            TokenKind::Integer => {
+                if let Some(integer) = self.parse_integer_expression() {
+                    return Some(UnaryPlusExpression::IntegerExpression(integer));
+                }
+                None
+            }
+            TokenKind::FloatingPoint => {
+                if let Some(floating_point) = self.parse_floating_point_expression() {
+                    return Some(UnaryPlusExpression::FloatingPointExpression(floating_point));
+                }
+                None
+            }
+            _ => {
+                self.errors.push(format!(
+                    "Parse error when parsing unary plus expression {:?}",
+                    self.token
+                ));
+                None
+            }
+        }
+    }
+
+    fn parse_unary_minus_expression(&mut self) -> Option<UnaryMinusExpression> {
+        assert!(self.token.kind() == TokenKind::Minus);
+        self.read_token(); // consume `-`
+        match self.token.kind() {
+            TokenKind::Integer => {
+                if let Some(integer) = self.parse_integer_expression() {
+                    return Some(UnaryMinusExpression::IntegerExpression(integer));
+                }
+                None
+            }
+            TokenKind::FloatingPoint => {
+                if let Some(floating_point) = self.parse_floating_point_expression() {
+                    return Some(UnaryMinusExpression::FloatingPointExpression(
+                        floating_point,
+                    ));
+                }
+                None
+            }
+            _ => {
+                self.errors.push(format!(
+                    "Parse error when parsing unary minus expression {:?}",
+                    self.token
+                ));
+                None
+            }
         }
     }
 
@@ -301,6 +380,18 @@ mod parser_test {
             },
             TestCase {
                 input: r#"let x = "Hello";"#,
+            },
+            TestCase {
+                input: "let x = +1;",
+            },
+            TestCase {
+                input: "let x = -1;",
+            },
+            TestCase {
+                input: "let x = +3.14159;",
+            },
+            TestCase {
+                input: "let x = -3.14159;",
             },
         ];
 
