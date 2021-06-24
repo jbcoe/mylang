@@ -204,7 +204,7 @@ impl<'a> Lexer<'a> {
     }
 
     fn text_token(&self, start: usize, kind: TokenKind) -> Token<'a> {
-        return Token::new(&self.text_range(start), start, kind);
+        return Token::new(self.text_range(start), start, kind);
     }
 
     fn read_junk(&mut self) -> Token<'a> {
