@@ -58,7 +58,7 @@ impl<'a> Lexer<'a> {
         loop {
             let t = self.next_token();
             tokens.push(t);
-            if tokens.last().unwrap().kind() == TokenKind::Eof {
+            if tokens.last().unwrap().kind() == TokenKind::EndOfFile {
                 return tokens;
             }
         }

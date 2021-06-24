@@ -351,7 +351,7 @@ impl<'a> Parser<'a> {
                 }
                 None
             }
-            TokenKind::Eof => None,
+            TokenKind::EndOfFile => None,
             _ => {
                 self.errors.push(format!(
                     "Parse error: unexpected TokenKind when parsing statement {:?}",
