@@ -78,3 +78,14 @@ impl<'a> fmt::Debug for Token<'a> {
             .finish()
     }
 }
+
+impl<'a> fmt::Display for Token<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "{:?} '{}'",
+            self.kind,
+            self.text()
+        )
+    }
+}
