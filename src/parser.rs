@@ -70,6 +70,7 @@ pub struct Parser<'a> {
 }
 
 impl<'a> Parser<'a> {
+    #[must_use]
     pub fn new(input: &str) -> Parser {
         let mut tokens = vec![];
         for token in Lexer::new(input).tokens() {
@@ -87,6 +88,7 @@ impl<'a> Parser<'a> {
     }
 
     // Consumes the parser.
+    #[must_use]
     pub fn ast(mut self) -> AbstractSyntaxTree {
         let mut statements = vec![];
         while let Some(stmt) = self.parse_next() {

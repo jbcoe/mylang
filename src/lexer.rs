@@ -9,6 +9,7 @@ pub struct Lexer<'a> {
 }
 
 impl<'a> Lexer<'a> {
+    #[must_use]
     pub fn new(input: &'a str) -> Lexer {
         let mut lexer = Lexer {
             input: input.as_bytes(),
@@ -21,22 +22,22 @@ impl<'a> Lexer<'a> {
     }
 
     fn read_char(&mut self) {
-        if self.read_position >= self.input.len() {
-            self.byte = 0;
-            return;
+        self.byte = match self.input.get(self.read_position) {
+            None => 0,
+            Some(b) => {
+                self.position = self.read_position;
+                self.read_position += 1;
+                *b
+            }
         }
-        self.byte = self.input[self.read_position];
-        self.position = self.read_position;
-        self.read_position += 1;
     }
 
     fn reset(&mut self, position: usize) {
         self.position = position;
         self.read_position = position + 1;
-        if self.position >= self.input.len() {
-            self.byte = 0;
-        } else {
-            self.byte = self.input[self.position];
+        self.byte = match self.input.get(self.position) {
+            None => 0,
+            Some(b) => *b,
         }
     }
 
@@ -51,13 +52,15 @@ impl<'a> Lexer<'a> {
         &self.input[start..self.read_position]
     }
 
-    // Consumes the Lexer
+    #[must_use]
+    /// Consumes the lexer, producing a Vec of lexed Tokens
+
     pub fn tokens(mut self) -> Vec<Token<'a>> {
         let mut tokens = vec![];
         loop {
             let t = self.next_token();
             tokens.push(t);
-            if tokens.last().unwrap().kind() == Kind::EndOfFile {
+            if t.kind() == Kind::EndOfFile {
                 return tokens;
             }
         }
