@@ -111,12 +111,13 @@ mod lexer_test {
                 ],
             },
             TestCase {
-                input: "let add = (lhs, rhs) { return lhs + rhs; };",
+                input: "let add = func (lhs, rhs) { return lhs + rhs; };",
                 skip_whitespace: true,
                 expected_tokens: vec![
                     ("let", TokenKind::Let),
                     ("add", TokenKind::Identifier),
                     ("=", TokenKind::EqualSign),
+                    ("func", TokenKind::Function),
                     ("(", TokenKind::LeftParen),
                     ("lhs", TokenKind::Identifier),
                     (",", TokenKind::Comma),
@@ -297,7 +298,7 @@ mod lexer_test {
                 assert_eq!(t.text(), expected_token.0);
                 assert_eq!(t.kind(), expected_token.1);
             }
-            assert_eq!(lexer.next_token().kind(), TokenKind::Eof);
+            assert_eq!(lexer.next_token().kind(), TokenKind::EndOfFile);
         }
     }
 }

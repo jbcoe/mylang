@@ -20,23 +20,23 @@ pub struct IdentifierExpression {
 
 #[derive(Debug)]
 pub enum UnaryPlusExpression {
-    IntegerExpression(IntegerExpression),
-    FloatingPointExpression(FloatingPointExpression),
+    Integer(IntegerExpression),
+    FloatingPoint(FloatingPointExpression),
 }
 #[derive(Debug)]
 pub enum UnaryMinusExpression {
-    IntegerExpression(IntegerExpression),
-    FloatingPointExpression(FloatingPointExpression),
+    Integer(IntegerExpression),
+    FloatingPoint(FloatingPointExpression),
 }
 
 #[derive(Debug)]
 pub enum ExpressionStatement {
-    StringLiteralExpression(StringLiteralExpression),
-    IntegerExpression(IntegerExpression),
-    FloatingPointExpression(FloatingPointExpression),
-    IdentifierExpression(IdentifierExpression),
-    UnaryPlusExpression(UnaryPlusExpression),
-    UnaryMinusExpression(UnaryMinusExpression),
+    StringLiteral(StringLiteralExpression),
+    Integer(IntegerExpression),
+    FloatingPoint(FloatingPointExpression),
+    Identifier(IdentifierExpression),
+    UnaryPlus(UnaryPlusExpression),
+    UnaryMinus(UnaryMinusExpression),
 }
 #[derive(Debug)]
 pub struct LetStatement {
@@ -46,8 +46,8 @@ pub struct LetStatement {
 }
 #[derive(Debug)]
 pub enum Statement {
-    ExpressionStatement(ExpressionStatement),
-    LetStatement(LetStatement),
+    Expression(ExpressionStatement),
+    Let(LetStatement),
 }
 
 #[derive(Debug)]
@@ -174,37 +174,37 @@ impl<'a> Parser<'a> {
         match self.token.kind() {
             TokenKind::Identifier => {
                 if let Some(identifier) = self.parse_identifier_expression() {
-                    return Some(ExpressionStatement::IdentifierExpression(identifier));
+                    return Some(ExpressionStatement::Identifier(identifier));
                 }
                 None
             }
             TokenKind::Integer => {
                 if let Some(integer) = self.parse_integer_expression() {
-                    return Some(ExpressionStatement::IntegerExpression(integer));
+                    return Some(ExpressionStatement::Integer(integer));
                 }
                 None
             }
             TokenKind::FloatingPoint => {
                 if let Some(floating_point) = self.parse_floating_point_expression() {
-                    return Some(ExpressionStatement::FloatingPointExpression(floating_point));
+                    return Some(ExpressionStatement::FloatingPoint(floating_point));
                 }
                 None
             }
             TokenKind::String => {
                 if let Some(string) = self.parse_string_literal_expression() {
-                    return Some(ExpressionStatement::StringLiteralExpression(string));
+                    return Some(ExpressionStatement::StringLiteral(string));
                 }
                 None
             }
             TokenKind::Plus => {
                 if let Some(expr) = self.parse_unary_plus_expression() {
-                    return Some(ExpressionStatement::UnaryPlusExpression(expr));
+                    return Some(ExpressionStatement::UnaryPlus(expr));
                 }
                 None
             }
             TokenKind::Minus => {
                 if let Some(expr) = self.parse_unary_minus_expression() {
-                    return Some(ExpressionStatement::UnaryMinusExpression(expr));
+                    return Some(ExpressionStatement::UnaryMinus(expr));
                 }
                 None
             }
@@ -241,13 +241,13 @@ impl<'a> Parser<'a> {
         match self.token.kind() {
             TokenKind::Integer => {
                 if let Some(integer) = self.parse_integer_expression() {
-                    return Some(UnaryPlusExpression::IntegerExpression(integer));
+                    return Some(UnaryPlusExpression::Integer(integer));
                 }
                 None
             }
             TokenKind::FloatingPoint => {
                 if let Some(floating_point) = self.parse_floating_point_expression() {
-                    return Some(UnaryPlusExpression::FloatingPointExpression(floating_point));
+                    return Some(UnaryPlusExpression::FloatingPoint(floating_point));
                 }
                 None
             }
@@ -267,15 +267,13 @@ impl<'a> Parser<'a> {
         match self.token.kind() {
             TokenKind::Integer => {
                 if let Some(integer) = self.parse_integer_expression() {
-                    return Some(UnaryMinusExpression::IntegerExpression(integer));
+                    return Some(UnaryMinusExpression::Integer(integer));
                 }
                 None
             }
             TokenKind::FloatingPoint => {
                 if let Some(floating_point) = self.parse_floating_point_expression() {
-                    return Some(UnaryMinusExpression::FloatingPointExpression(
-                        floating_point,
-                    ));
+                    return Some(UnaryMinusExpression::FloatingPoint(floating_point));
                 }
                 None
             }
@@ -342,7 +340,7 @@ impl<'a> Parser<'a> {
         match self.token.kind() {
             TokenKind::Let => {
                 if let Some(stmt) = self.parse_let_statement() {
-                    return Some(Statement::LetStatement(stmt));
+                    return Some(Statement::Let(stmt));
                 } else {
                     self.errors.push(format!(
                         "Parse error when parsing let-statement {:?}",
@@ -351,7 +349,7 @@ impl<'a> Parser<'a> {
                 }
                 None
             }
-            TokenKind::Eof => None,
+            TokenKind::EndOfFile => None,
             _ => {
                 self.errors.push(format!(
                     "Parse error: unexpected TokenKind when parsing statement {:?}",

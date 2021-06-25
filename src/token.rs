@@ -4,35 +4,34 @@ use std::fmt;
 pub enum TokenKind {
     Colon,
     Comma,
-    DoubleEquals,
-    Eof,
-    Plus,
-    Minus,
     Divide,
-    Star,
+    DoubleEquals,
+    EndOfFile,
     EqualSign,
+    FloatingPoint,
+    Function,
+    Greater,
+    GreaterOrEqual,
     Identifier,
     Integer,
-    FloatingPoint,
     LeftBrace,
     LeftParen,
     LeftSqBracket,
-    Let,
-    Mut,
-
     Less,
-    Greater,
     LessOrEqual,
-    GreaterOrEqual,
-    NotEquals,
+    Let,
+    Minus,
+    Mut,
     Not,
-
+    NotEquals,
     Period,
+    Plus,
     Return,
     RightBrace,
     RightParen,
     RightSqBracket,
     SemiColon,
+    Star,
     String,
     Unknown,
     Whitespace,
@@ -54,7 +53,7 @@ impl<'a> Token<'a> {
         Token {
             text: &[],
             offset,
-            kind: TokenKind::Eof,
+            kind: TokenKind::EndOfFile,
         }
     }
 
@@ -74,7 +73,7 @@ impl<'a> Token<'a> {
 impl<'a> fmt::Debug for Token<'a> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("Token")
-            .field("text", &String::from_utf8_lossy(&self.text))
+            .field("text", &String::from_utf8_lossy(self.text))
             .field("kind", &self.kind)
             .finish()
     }
