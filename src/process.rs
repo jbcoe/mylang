@@ -9,7 +9,7 @@ pub fn files(filepaths: Vec<String>) -> Result<()> {
     if filepaths.is_empty() {
         bail!("At least one filepath must be specified as a command line argument.");
     }
-    
+
     for filepath in filepaths {
         let text = fs::read_to_string(&filepath)
             .with_context(|| format!("Failed to read from the file at {}", filepath))?;
