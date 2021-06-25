@@ -1,5 +1,5 @@
 use crate::lexer::Lexer;
-use crate::token::{Token, TokenKind};
+use crate::token::{Token, Kind};
 
 #[derive(Debug)]
 pub struct StringLiteralExpression {
@@ -73,7 +73,7 @@ impl<'a> Parser<'a> {
     pub fn new(input: &str) -> Parser {
         let mut tokens = vec![];
         for token in Lexer::new(input).tokens() {
-            if token.kind() != TokenKind::Whitespace {
+            if token.kind() != Kind::Whitespace {
                 tokens.push(token);
             }
         }
@@ -133,12 +133,12 @@ impl<'a> Parser<'a> {
         self.read_token(); // consume let
 
         let mut mutable = false;
-        if self.peek_token().kind() == TokenKind::Mut {
+        if self.peek_token().kind() == Kind::Mut {
             mutable = true;
             self.read_token(); // consume mut
         }
 
-        if self.token.kind() != TokenKind::Identifier {
+        if self.token.kind() != Kind::Identifier {
             self.errors
                 .push(format!("expected identifier, got {:?}", self.token));
             self.reset(start);
@@ -147,7 +147,7 @@ impl<'a> Parser<'a> {
         let identifier = self.token.text();
         self.read_token(); // consume identifier
 
-        if self.token.kind() != TokenKind::EqualSign {
+        if self.token.kind() != Kind::EqualSign {
             self.errors
                 .push(format!("expected equal sign, got {:?}", self.token));
             self.reset(start);
@@ -172,37 +172,37 @@ impl<'a> Parser<'a> {
 
     fn parse_expression(&mut self) -> Option<ExpressionStatement> {
         match self.token.kind() {
-            TokenKind::Identifier => {
+            Kind::Identifier => {
                 if let Some(identifier) = self.parse_identifier_expression() {
                     return Some(ExpressionStatement::Identifier(identifier));
                 }
                 None
             }
-            TokenKind::Integer => {
+            Kind::Integer => {
                 if let Some(integer) = self.parse_integer_expression() {
                     return Some(ExpressionStatement::Integer(integer));
                 }
                 None
             }
-            TokenKind::FloatingPoint => {
+            Kind::FloatingPoint => {
                 if let Some(floating_point) = self.parse_floating_point_expression() {
                     return Some(ExpressionStatement::FloatingPoint(floating_point));
                 }
                 None
             }
-            TokenKind::String => {
+            Kind::String => {
                 if let Some(string) = self.parse_string_literal_expression() {
                     return Some(ExpressionStatement::StringLiteral(string));
                 }
                 None
             }
-            TokenKind::Plus => {
+            Kind::Plus => {
                 if let Some(expr) = self.parse_unary_plus_expression() {
                     return Some(ExpressionStatement::UnaryPlus(expr));
                 }
                 None
             }
-            TokenKind::Minus => {
+            Kind::Minus => {
                 if let Some(expr) = self.parse_unary_minus_expression() {
                     return Some(ExpressionStatement::UnaryMinus(expr));
                 }
@@ -220,10 +220,10 @@ impl<'a> Parser<'a> {
 
     // Matches: "name;"
     fn parse_identifier_expression(&mut self) -> Option<IdentifierExpression> {
-        assert!(self.token.kind() == TokenKind::Identifier);
+        assert!(self.token.kind() == Kind::Identifier);
         match self.token.kind() {
-            TokenKind::Identifier => {
-                if self.peek_token().kind() != TokenKind::SemiColon {
+            Kind::Identifier => {
+                if self.peek_token().kind() != Kind::SemiColon {
                     return None;
                 }
                 let name = self.token.text();
@@ -236,16 +236,16 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_unary_plus_expression(&mut self) -> Option<UnaryPlusExpression> {
-        assert!(self.token.kind() == TokenKind::Plus);
+        assert!(self.token.kind() == Kind::Plus);
         self.read_token(); // consume `+`
         match self.token.kind() {
-            TokenKind::Integer => {
+            Kind::Integer => {
                 if let Some(integer) = self.parse_integer_expression() {
                     return Some(UnaryPlusExpression::Integer(integer));
                 }
                 None
             }
-            TokenKind::FloatingPoint => {
+            Kind::FloatingPoint => {
                 if let Some(floating_point) = self.parse_floating_point_expression() {
                     return Some(UnaryPlusExpression::FloatingPoint(floating_point));
                 }
@@ -262,16 +262,16 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_unary_minus_expression(&mut self) -> Option<UnaryMinusExpression> {
-        assert!(self.token.kind() == TokenKind::Minus);
+        assert!(self.token.kind() == Kind::Minus);
         self.read_token(); // consume `-`
         match self.token.kind() {
-            TokenKind::Integer => {
+            Kind::Integer => {
                 if let Some(integer) = self.parse_integer_expression() {
                     return Some(UnaryMinusExpression::Integer(integer));
                 }
                 None
             }
-            TokenKind::FloatingPoint => {
+            Kind::FloatingPoint => {
                 if let Some(floating_point) = self.parse_floating_point_expression() {
                     return Some(UnaryMinusExpression::FloatingPoint(floating_point));
                 }
@@ -288,10 +288,10 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_integer_expression(&mut self) -> Option<IntegerExpression> {
-        assert!(self.token.kind() == TokenKind::Integer);
+        assert!(self.token.kind() == Kind::Integer);
         match self.token.kind() {
-            TokenKind::Integer => {
-                if self.peek_token().kind() != TokenKind::SemiColon {
+            Kind::Integer => {
+                if self.peek_token().kind() != Kind::SemiColon {
                     return None;
                 }
                 let value = self.token.text();
@@ -304,10 +304,10 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_floating_point_expression(&mut self) -> Option<FloatingPointExpression> {
-        assert!(self.token.kind() == TokenKind::FloatingPoint);
+        assert!(self.token.kind() == Kind::FloatingPoint);
         match self.token.kind() {
-            TokenKind::FloatingPoint => {
-                if self.peek_token().kind() != TokenKind::SemiColon {
+            Kind::FloatingPoint => {
+                if self.peek_token().kind() != Kind::SemiColon {
                     return None;
                 }
                 let value = self.token.text();
@@ -320,10 +320,10 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_string_literal_expression(&mut self) -> Option<StringLiteralExpression> {
-        assert!(self.token.kind() == TokenKind::String);
+        assert!(self.token.kind() == Kind::String);
         match self.token.kind() {
-            TokenKind::String => {
-                if self.peek_token().kind() != TokenKind::SemiColon {
+            Kind::String => {
+                if self.peek_token().kind() != Kind::SemiColon {
                     return None;
                 }
                 let value = self.token.text();
@@ -338,7 +338,7 @@ impl<'a> Parser<'a> {
     fn parse_next(&mut self) -> Option<Statement> {
         self.read_token();
         match self.token.kind() {
-            TokenKind::Let => {
+            Kind::Let => {
                 if let Some(stmt) = self.parse_let_statement() {
                     return Some(Statement::Let(stmt));
                 } else {
@@ -349,7 +349,7 @@ impl<'a> Parser<'a> {
                 }
                 None
             }
-            TokenKind::EndOfFile => None,
+            Kind::EndOfFile => None,
             _ => {
                 self.errors.push(format!(
                     "Parse error: unexpected TokenKind when parsing statement {:?}",

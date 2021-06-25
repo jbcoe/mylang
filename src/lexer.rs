@@ -1,4 +1,4 @@
-use crate::token::{Token, TokenKind};
+use crate::token::{Token, Kind};
 use std::{str, vec::Vec};
 
 pub struct Lexer<'a> {
@@ -24,9 +24,8 @@ impl<'a> Lexer<'a> {
         if self.read_position >= self.input.len() {
             self.byte = 0;
             return;
-        } else {
-            self.byte = self.input[self.read_position];
         }
+        self.byte = self.input[self.read_position];
         self.position = self.read_position;
         self.read_position += 1;
     }
@@ -58,7 +57,7 @@ impl<'a> Lexer<'a> {
         loop {
             let t = self.next_token();
             tokens.push(t);
-            if tokens.last().unwrap().kind() == TokenKind::EndOfFile {
+            if tokens.last().unwrap().kind() == Kind::EndOfFile {
                 return tokens;
             }
         }
@@ -73,94 +72,94 @@ impl<'a> Lexer<'a> {
                 token = Token::eof(self.read_position);
             }
             '+' => {
-                token = self.char_token(TokenKind::Plus);
+                token = self.char_token(Kind::Plus);
             }
             '-' => {
-                token = self.char_token(TokenKind::Minus);
+                token = self.char_token(Kind::Minus);
             }
             '*' => {
-                token = self.char_token(TokenKind::Star);
+                token = self.char_token(Kind::Star);
             }
             '/' => {
-                token = self.char_token(TokenKind::Divide);
+                token = self.char_token(Kind::Divide);
             }
             '.' => {
                 if self.peek_char().is_ascii_digit() {
                     if let Some(t) = self.read_decimal_part(self.position) {
                         token = t;
                     } else {
-                        token = self.char_token(TokenKind::Period);
+                        token = self.char_token(Kind::Period);
                     }
                 } else {
-                    token = self.char_token(TokenKind::Period);
+                    token = self.char_token(Kind::Period);
                 }
             }
             '=' => match self.peek_char() {
                 '=' => {
                     let start = self.position;
                     self.read_char();
-                    token = self.text_token(start, TokenKind::DoubleEquals);
+                    token = self.text_token(start, Kind::DoubleEquals);
                 }
                 _ => {
-                    token = self.char_token(TokenKind::EqualSign);
+                    token = self.char_token(Kind::EqualSign);
                 }
             },
             '>' => match self.peek_char() {
                 '=' => {
                     let start = self.position;
                     self.read_char();
-                    token = self.text_token(start, TokenKind::GreaterOrEqual);
+                    token = self.text_token(start, Kind::GreaterOrEqual);
                 }
                 _ => {
-                    token = self.char_token(TokenKind::Greater);
+                    token = self.char_token(Kind::Greater);
                 }
             },
             '<' => match self.peek_char() {
                 '=' => {
                     let start = self.position;
                     self.read_char();
-                    token = self.text_token(start, TokenKind::LessOrEqual);
+                    token = self.text_token(start, Kind::LessOrEqual);
                 }
                 _ => {
-                    token = self.char_token(TokenKind::Less);
+                    token = self.char_token(Kind::Less);
                 }
             },
             '!' => match self.peek_char() {
                 '=' => {
                     let start = self.position;
                     self.read_char();
-                    token = self.text_token(start, TokenKind::NotEquals);
+                    token = self.text_token(start, Kind::NotEquals);
                 }
                 _ => {
-                    token = self.char_token(TokenKind::Not);
+                    token = self.char_token(Kind::Not);
                 }
             },
             ',' => {
-                token = self.char_token(TokenKind::Comma);
+                token = self.char_token(Kind::Comma);
             }
             ';' => {
-                token = self.char_token(TokenKind::SemiColon);
+                token = self.char_token(Kind::SemiColon);
             }
             ':' => {
-                token = self.char_token(TokenKind::Colon);
+                token = self.char_token(Kind::Colon);
             }
             '(' => {
-                token = self.char_token(TokenKind::LeftParen);
+                token = self.char_token(Kind::LeftParen);
             }
             ')' => {
-                token = self.char_token(TokenKind::RightParen);
+                token = self.char_token(Kind::RightParen);
             }
             '{' => {
-                token = self.char_token(TokenKind::LeftBrace);
+                token = self.char_token(Kind::LeftBrace);
             }
             '}' => {
-                token = self.char_token(TokenKind::RightBrace);
+                token = self.char_token(Kind::RightBrace);
             }
             '[' => {
-                token = self.char_token(TokenKind::LeftSqBracket);
+                token = self.char_token(Kind::LeftSqBracket);
             }
             ']' => {
-                token = self.char_token(TokenKind::RightSqBracket);
+                token = self.char_token(Kind::RightSqBracket);
             }
             '"' => {
                 token = self.read_string();
@@ -199,11 +198,11 @@ impl<'a> Lexer<'a> {
         token
     }
 
-    fn char_token(&self, kind: TokenKind) -> Token<'a> {
+    fn char_token(&self, kind: Kind) -> Token<'a> {
         self.text_token(self.position, kind)
     }
 
-    fn text_token(&self, start: usize, kind: TokenKind) -> Token<'a> {
+    fn text_token(&self, start: usize, kind: Kind) -> Token<'a> {
         return Token::new(self.text_range(start), start, kind);
     }
 
@@ -213,7 +212,7 @@ impl<'a> Lexer<'a> {
             self.read_char();
         }
 
-        self.text_token(start, TokenKind::Unknown)
+        self.text_token(start, Kind::Unknown)
     }
 
     fn read_whitespace(&mut self) -> Token<'a> {
@@ -222,7 +221,7 @@ impl<'a> Lexer<'a> {
             self.read_char();
         }
 
-        self.text_token(start, TokenKind::Whitespace)
+        self.text_token(start, Kind::Whitespace)
     }
 
     fn read_identifier(&mut self) -> Option<Token<'a>> {
@@ -231,7 +230,7 @@ impl<'a> Lexer<'a> {
             self.read_char();
         }
 
-        Some(self.text_token(start, TokenKind::Identifier))
+        Some(self.text_token(start, Kind::Identifier))
     }
 
     fn read_keyword(&mut self) -> Option<Token<'a>> {
@@ -242,10 +241,10 @@ impl<'a> Lexer<'a> {
 
         let token_text = str::from_utf8(self.text_range(start));
         match token_text {
-            Ok("func") => Some(self.text_token(start, TokenKind::Function)),
-            Ok("let") => Some(self.text_token(start, TokenKind::Let)),
-            Ok("mut") => Some(self.text_token(start, TokenKind::Mut)),
-            Ok("return") => Some(self.text_token(start, TokenKind::Return)),
+            Ok("func") => Some(self.text_token(start, Kind::Function)),
+            Ok("let") => Some(self.text_token(start, Kind::Let)),
+            Ok("mut") => Some(self.text_token(start, Kind::Mut)),
+            Ok("return") => Some(self.text_token(start, Kind::Return)),
             _ => {
                 self.reset(start);
                 None
@@ -259,7 +258,7 @@ impl<'a> Lexer<'a> {
         loop {
             match self.peek_char() {
                 '\0' => {
-                    return self.text_token(start, TokenKind::Unknown);
+                    return self.text_token(start, Kind::Unknown);
                 }
                 '"' => {
                     break;
@@ -270,7 +269,7 @@ impl<'a> Lexer<'a> {
             }
         }
         self.read_char(); // Consume closing '"'.
-        self.text_token(start, TokenKind::String)
+        self.text_token(start, Kind::String)
     }
 
     fn read_number(&mut self) -> Option<Token<'a>> {
@@ -295,7 +294,7 @@ impl<'a> Lexer<'a> {
             return None;
         }
 
-        Some(self.text_token(start, TokenKind::Integer))
+        Some(self.text_token(start, Kind::Integer))
     }
 
     fn read_decimal_part(&mut self, start: usize) -> Option<Token<'a>> {
@@ -339,7 +338,7 @@ impl<'a> Lexer<'a> {
             return self.read_number_cleanup_junk(start);
         }
 
-        Some(self.text_token(start, TokenKind::FloatingPoint))
+        Some(self.text_token(start, Kind::FloatingPoint))
     }
 
     fn read_number_cleanup_junk(&mut self, start: usize) -> Option<Token<'a>> {
@@ -366,6 +365,6 @@ impl<'a> Lexer<'a> {
             self.read_char();
         }
 
-        Some(self.text_token(start, TokenKind::Unknown))
+        Some(self.text_token(start, Kind::Unknown))
     }
 }
