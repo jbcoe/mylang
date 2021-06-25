@@ -1,6 +1,6 @@
 mod lexer_test {
-    use mylang::Lexer;
     use mylang::Kind;
+    use mylang::Lexer;
 
     #[derive(Debug)]
     struct TestCase {
