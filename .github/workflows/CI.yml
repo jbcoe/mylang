@@ -68,6 +68,7 @@ jobs:
         uses: actions-rs/tarpaulin@v0.1
         with:
           version: '0.16.0'
+          args: '--ignore-tests'
 
       - name: Upload to codecov.io
         uses: codecov/codecov-action@v1

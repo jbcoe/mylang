@@ -9,6 +9,7 @@ pub enum TokenKind {
     EndOfFile,
     EqualSign,
     FloatingPoint,
+    Function,
     Greater,
     GreaterOrEqual,
     Identifier,
@@ -72,7 +73,7 @@ impl<'a> Token<'a> {
 impl<'a> fmt::Debug for Token<'a> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("Token")
-            .field("text", &String::from_utf8_lossy(&self.text))
+            .field("text", &String::from_utf8_lossy(self.text))
             .field("kind", &self.kind)
             .finish()
     }
