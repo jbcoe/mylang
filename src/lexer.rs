@@ -64,135 +64,93 @@ impl<'a> Lexer<'a> {
     }
 
     pub fn next_token(&mut self) -> Token<'a> {
-        let token: Token;
-
         let c = char::from(self.byte);
-        match c {
-            '\0' => {
-                token = Token::eof(self.read_position);
-            }
-            '+' => {
-                token = self.char_token(Kind::Plus);
-            }
-            '-' => {
-                token = self.char_token(Kind::Minus);
-            }
-            '*' => {
-                token = self.char_token(Kind::Star);
-            }
-            '/' => {
-                token = self.char_token(Kind::Divide);
-            }
+        let token = match c {
+            '\0' => Token::eof(self.read_position),
+            '+' => self.char_token(Kind::Plus),
+            '-' => self.char_token(Kind::Minus),
+            '*' => self.char_token(Kind::Star),
+            '/' => self.char_token(Kind::Divide),
             '.' => {
                 if self.peek_char().is_ascii_digit() {
                     if let Some(t) = self.read_decimal_part(self.position) {
-                        token = t;
+                        t
                     } else {
-                        token = self.char_token(Kind::Period);
+                        self.char_token(Kind::Period)
                     }
                 } else {
-                    token = self.char_token(Kind::Period);
+                    self.char_token(Kind::Period)
                 }
             }
             '=' => match self.peek_char() {
                 '=' => {
                     let start = self.position;
                     self.read_char();
-                    token = self.text_token(start, Kind::DoubleEquals);
+                    self.text_token(start, Kind::DoubleEquals)
                 }
-                _ => {
-                    token = self.char_token(Kind::EqualSign);
-                }
+                _ => self.char_token(Kind::EqualSign),
             },
             '>' => match self.peek_char() {
                 '=' => {
                     let start = self.position;
                     self.read_char();
-                    token = self.text_token(start, Kind::GreaterOrEqual);
+                    self.text_token(start, Kind::GreaterOrEqual)
                 }
-                _ => {
-                    token = self.char_token(Kind::Greater);
-                }
+                _ => self.char_token(Kind::Greater),
             },
             '<' => match self.peek_char() {
                 '=' => {
                     let start = self.position;
                     self.read_char();
-                    token = self.text_token(start, Kind::LessOrEqual);
+                    self.text_token(start, Kind::LessOrEqual)
                 }
-                _ => {
-                    token = self.char_token(Kind::Less);
-                }
+                _ => self.char_token(Kind::Less),
             },
             '!' => match self.peek_char() {
                 '=' => {
                     let start = self.position;
                     self.read_char();
-                    token = self.text_token(start, Kind::NotEquals);
+                    self.text_token(start, Kind::NotEquals)
                 }
-                _ => {
-                    token = self.char_token(Kind::Not);
-                }
+                _ => self.char_token(Kind::Not),
             },
-            ',' => {
-                token = self.char_token(Kind::Comma);
-            }
-            ';' => {
-                token = self.char_token(Kind::SemiColon);
-            }
-            ':' => {
-                token = self.char_token(Kind::Colon);
-            }
-            '(' => {
-                token = self.char_token(Kind::LeftParen);
-            }
-            ')' => {
-                token = self.char_token(Kind::RightParen);
-            }
-            '{' => {
-                token = self.char_token(Kind::LeftBrace);
-            }
-            '}' => {
-                token = self.char_token(Kind::RightBrace);
-            }
-            '[' => {
-                token = self.char_token(Kind::LeftSqBracket);
-            }
-            ']' => {
-                token = self.char_token(Kind::RightSqBracket);
-            }
-            '"' => {
-                token = self.read_string();
-            }
+            ',' => self.char_token(Kind::Comma),
+            ';' => self.char_token(Kind::SemiColon),
+            ':' => self.char_token(Kind::Colon),
+            '(' => self.char_token(Kind::LeftParen),
+            ')' => self.char_token(Kind::RightParen),
+            '{' => self.char_token(Kind::LeftBrace),
+            '}' => self.char_token(Kind::RightBrace),
+            '[' => self.char_token(Kind::LeftSqBracket),
+            ']' => self.char_token(Kind::RightSqBracket),
+            '"' => self.read_string(),
             _ => {
                 // read whitespace
                 if c.is_whitespace() {
-                    token = self.read_whitespace();
+                    self.read_whitespace()
                 }
                 // read keyword or identifier
                 else if c.is_ascii_alphabetic() {
                     if let Some(t) = self.read_keyword() {
-                        token = t;
-                    } else if let Some(t) = self.read_identifier() {
-                        token = t;
+                        t
                     } else {
-                        token = self.read_junk();
+                        self.read_identifier()
                     }
                 }
                 // read number
                 else if c.is_ascii_digit() {
                     if let Some(t) = self.read_number() {
-                        token = t;
+                        t
                     } else {
-                        token = self.read_junk();
+                        self.read_junk()
                     }
                 }
                 // read junk
                 else {
-                    token = self.read_junk();
+                    self.read_junk()
                 }
             }
-        }
+        };
 
         self.read_char();
         token
@@ -224,13 +182,13 @@ impl<'a> Lexer<'a> {
         self.text_token(start, Kind::Whitespace)
     }
 
-    fn read_identifier(&mut self) -> Option<Token<'a>> {
+    fn read_identifier(&mut self) -> Token<'a> {
         let start = self.position;
         while self.peek_char().is_ascii_alphanumeric() || self.peek_char() == '_' {
             self.read_char();
         }
 
-        Some(self.text_token(start, Kind::Identifier))
+        self.text_token(start, Kind::Identifier)
     }
 
     fn read_keyword(&mut self) -> Option<Token<'a>> {
