@@ -1,5 +1,5 @@
 use crate::lexer::Lexer;
-use crate::token::{Token, Kind};
+use crate::token::{Kind, Token};
 
 #[derive(Debug)]
 pub struct StringLiteralExpression {
@@ -341,12 +341,11 @@ impl<'a> Parser<'a> {
             Kind::Let => {
                 if let Some(stmt) = self.parse_let_statement() {
                     return Some(Statement::Let(stmt));
-                } else {
-                    self.errors.push(format!(
-                        "Parse error when parsing let-statement {:?}",
-                        self.token
-                    ))
                 }
+                self.errors.push(format!(
+                    "Parse error when parsing let-statement {:?}",
+                    self.token
+                ));
                 None
             }
             Kind::EndOfFile => None,

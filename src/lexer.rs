@@ -1,4 +1,4 @@
-use crate::token::{Token, Kind};
+use crate::token::{Kind, Token};
 use std::{str, vec::Vec};
 
 pub struct Lexer<'a> {
@@ -317,11 +317,12 @@ impl<'a> Lexer<'a> {
         let p = self.peek_char();
         if p == '+' || p == '-' {
             self.read_char();
-        } else if !p.is_ascii_digit() {
-            return self.read_number_cleanup_junk(start);
+            self.read_number_final_floating_point(start)
+        } else if p.is_ascii_digit() {
+            self.read_number_final_floating_point(start)
+        } else {
+            self.read_number_cleanup_junk(start)
         }
-
-        self.read_number_final_floating_point(start)
     }
 
     fn read_number_final_floating_point(&mut self, start: usize) -> Option<Token<'a>> {
