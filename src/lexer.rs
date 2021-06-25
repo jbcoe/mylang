@@ -42,10 +42,10 @@ impl<'a> Lexer<'a> {
     }
 
     fn peek_char(&self) -> char {
-        if self.read_position >= self.input.len() {
-            return '\0';
+        match self.input.get(self.read_position) {
+            None => '\0',
+            Some(c) => char::from(*c),
         }
-        char::from(self.input[self.read_position])
     }
 
     fn text_range(&self, start: usize) -> &'a [u8] {
