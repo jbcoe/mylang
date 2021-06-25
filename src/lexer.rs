@@ -73,11 +73,7 @@ impl<'a> Lexer<'a> {
             '/' => self.char_token(Kind::Divide),
             '.' => {
                 if self.peek_char().is_ascii_digit() {
-                    if let Some(t) = self.read_decimal_part(self.position) {
-                        t
-                    } else {
-                        self.char_token(Kind::Period)
-                    }
+                    self.read_decimal_part(self.position)
                 } else {
                     self.char_token(Kind::Period)
                 }
@@ -131,19 +127,12 @@ impl<'a> Lexer<'a> {
                 }
                 // read keyword or identifier
                 else if c.is_ascii_alphabetic() {
-                    if let Some(t) = self.read_keyword() {
-                        t
-                    } else {
-                        self.read_identifier()
-                    }
+                    self.read_keyword()
+                        .map_or_else(|| self.read_identifier(), |t| t)
                 }
                 // read number
                 else if c.is_ascii_digit() {
-                    if let Some(t) = self.read_number() {
-                        t
-                    } else {
-                        self.read_junk()
-                    }
+                    self.read_number().map_or_else(|| self.read_junk(), |t| t)
                 }
                 // read junk
                 else {
@@ -239,8 +228,8 @@ impl<'a> Lexer<'a> {
 
         let p = self.peek_char();
         match p {
-            '.' => self.read_decimal_part(start),
-            'e' | 'E' => self.read_exponent(start),
+            '.' => Some(self.read_decimal_part(start)),
+            'e' | 'E' => Some(self.read_exponent(start)),
             _ => self.read_number_final_integer(start),
         }
     }
@@ -255,7 +244,7 @@ impl<'a> Lexer<'a> {
         Some(self.text_token(start, Kind::Integer))
     }
 
-    fn read_decimal_part(&mut self, start: usize) -> Option<Token<'a>> {
+    fn read_decimal_part(&mut self, start: usize) -> Token<'a> {
         self.read_char(); // consume the '.'
 
         while self.peek_char().is_ascii_digit() {
@@ -269,7 +258,7 @@ impl<'a> Lexer<'a> {
         }
     }
 
-    fn read_exponent(&mut self, start: usize) -> Option<Token<'a>> {
+    fn read_exponent(&mut self, start: usize) -> Token<'a> {
         self.read_char(); // consume the 'e' or 'E'
 
         let p = self.peek_char();
@@ -283,7 +272,7 @@ impl<'a> Lexer<'a> {
         }
     }
 
-    fn read_number_final_floating_point(&mut self, start: usize) -> Option<Token<'a>> {
+    fn read_number_final_floating_point(&mut self, start: usize) -> Token<'a> {
         while self.peek_char().is_ascii_digit() {
             self.read_char()
         }
@@ -297,10 +286,10 @@ impl<'a> Lexer<'a> {
             return self.read_number_cleanup_junk(start);
         }
 
-        Some(self.text_token(start, Kind::FloatingPoint))
+        self.text_token(start, Kind::FloatingPoint)
     }
 
-    fn read_number_cleanup_junk(&mut self, start: usize) -> Option<Token<'a>> {
+    fn read_number_cleanup_junk(&mut self, start: usize) -> Token<'a> {
         // What we have read is not compatible with a number.  We cannot
         // rely on the general junk reader to tidy up because we may have
         // decimal points, exponent symbols and sign symbols in the mix.
@@ -313,7 +302,7 @@ impl<'a> Lexer<'a> {
         // should be valid tokens. We therefore opt to greedily consume
         // characters to make the unknown token visually distinct from
         // a valid token.
-        fn in_numeric_charset(ch: char) -> bool {
+        const fn in_numeric_charset(ch: char) -> bool {
             if ch.is_ascii_alphanumeric() {
                 return true;
             }
@@ -324,6 +313,6 @@ impl<'a> Lexer<'a> {
             self.read_char();
         }
 
-        Some(self.text_token(start, Kind::Unknown))
+        self.text_token(start, Kind::Unknown)
     }
 }

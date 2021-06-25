@@ -57,7 +57,7 @@ pub struct AbstractSyntaxTree {
 }
 
 impl AbstractSyntaxTree {
-    pub fn errors(&self) -> &Vec<String> {
+    pub const fn errors(&self) -> &Vec<String> {
         &self.errors
     }
 }
