@@ -1,7 +1,7 @@
 use std::fmt;
 
 #[derive(Debug, Eq, PartialEq, Copy, Clone)]
-pub enum TokenKind {
+pub enum Kind {
     Colon,
     Comma,
     Divide,
@@ -41,23 +41,23 @@ pub enum TokenKind {
 pub struct Token<'a> {
     text: &'a [u8],
     offset: usize,
-    kind: TokenKind,
+    kind: Kind,
 }
 
 impl<'a> Token<'a> {
-    pub fn new(text: &'a [u8], offset: usize, kind: TokenKind) -> Token<'a> {
+    pub const fn new(text: &'a [u8], offset: usize, kind: Kind) -> Token<'a> {
         Token { text, offset, kind }
     }
 
-    pub fn eof(offset: usize) -> Token<'static> {
+    pub const fn eof(offset: usize) -> Token<'static> {
         Token {
             text: &[],
             offset,
-            kind: TokenKind::EndOfFile,
+            kind: Kind::EndOfFile,
         }
     }
 
-    pub fn kind(&self) -> TokenKind {
+    pub const fn kind(&self) -> Kind {
         self.kind
     }
 
@@ -65,7 +65,7 @@ impl<'a> Token<'a> {
         String::from_utf8(self.text.to_vec()).unwrap()
     }
 
-    pub fn offset(&self) -> usize {
+    pub const fn offset(&self) -> usize {
         self.offset
     }
 }

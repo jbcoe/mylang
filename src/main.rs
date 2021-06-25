@@ -4,7 +4,7 @@ mod token;
 use lexer::Lexer;
 use std::env;
 use std::fs;
-use token::TokenKind;
+use token::Kind;
 
 #[derive(Debug)]
 struct LexerError(String);
@@ -22,7 +22,7 @@ fn main() -> Result<(), LexerError> {
         let lexer = Lexer::new(&text);
         let tokens = lexer.tokens();
         for token in tokens {
-            if token.kind() == TokenKind::Whitespace {
+            if token.kind() == Kind::Whitespace {
                 continue;
             }
             let line = 1 + text[0..token.offset()].matches('\n').count();

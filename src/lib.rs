@@ -4,4 +4,4 @@ mod token;
 
 pub use lexer::Lexer;
 pub use parser::Parser;
-pub use token::TokenKind;
+pub use token::Kind;
