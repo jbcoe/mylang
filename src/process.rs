@@ -1,4 +1,5 @@
 use crate::lexer::Lexer;
+use crate::parser::Parser;
 use crate::token::Kind;
 
 use anyhow::{bail, Context, Result};
@@ -23,7 +24,7 @@ pub fn files(filepaths: Vec<String>) -> Result<()> {
 fn process_text<W: Write>(text: &str, mut out: W) -> Result<()> {
     let lexer = Lexer::new(text);
     let tokens = lexer.tokens();
-    for token in tokens {
+    for token in &tokens {
         if token.kind() == Kind::Whitespace {
             continue;
         }
@@ -41,6 +42,10 @@ fn process_text<W: Write>(text: &str, mut out: W) -> Result<()> {
             column = column,
             token = token,
         )?;
+    }
+    let parser = Parser::new(tokens);
+    for err in parser.ast().errors() {
+        writeln!(out, "{}", err)?;
     }
     Ok(())
 }

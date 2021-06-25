@@ -277,7 +277,7 @@ impl<'a> Lexer<'a> {
 
     fn read_number_final_floating_point(&mut self, start: usize) -> Token<'a> {
         while self.peek_char().is_ascii_digit() {
-            self.read_char()
+            self.read_char();
         }
 
         let p = self.peek_char();

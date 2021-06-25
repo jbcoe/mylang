@@ -1,4 +1,3 @@
-use crate::lexer::Lexer;
 use crate::token::{Kind, Token};
 
 #[derive(Debug)]
@@ -46,7 +45,7 @@ pub struct LetStatement {
 }
 #[derive(Debug)]
 pub enum Statement {
-    Expression(ExpressionStatement),
+    //    Expression(ExpressionStatement),
     Let(LetStatement),
 }
 
@@ -70,10 +69,11 @@ pub struct Parser<'a> {
 }
 
 impl<'a> Parser<'a> {
+    /// Create a new Parser from a Vec<Token>, probably from a Lexer
     #[must_use]
-    pub fn new(input: &str) -> Parser {
+    pub fn new(input: Vec<Token>) -> Parser {
         let mut tokens = vec![];
-        for token in Lexer::new(input).tokens() {
+        for token in input {
             if token.kind() != Kind::Whitespace {
                 tokens.push(token);
             }
@@ -366,6 +366,7 @@ impl<'a> Parser<'a> {
 mod tests {
 
     use super::*;
+    use crate::lexer::Lexer;
 
     #[derive(Debug)]
     struct TestCase {
@@ -402,7 +403,8 @@ mod tests {
         ];
 
         for test_case in test_cases.iter() {
-            let parser = Parser::new(test_case.input);
+            let tokens = Lexer::new(test_case.input).tokens();
+            let parser = Parser::new(tokens);
             let ast = parser.ast();
             assert!(ast.errors().is_empty());
         }
