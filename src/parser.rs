@@ -1,4 +1,5 @@
-use crate::lexer::{Lexer, Token, TokenKind};
+use crate::lexer::Lexer;
+use crate::token::{Token, TokenKind};
 
 #[derive(Debug)]
 pub struct StringLiteralExpression {
@@ -55,6 +56,11 @@ pub struct AbstractSyntaxTree {
     errors: Vec<String>,
 }
 
+impl AbstractSyntaxTree {
+    pub fn errors(&self) -> &Vec<String> {
+        &self.errors
+    }
+}
 pub struct Parser<'a> {
     tokens: Vec<Token<'a>>,
     position: usize,
@@ -353,52 +359,6 @@ impl<'a> Parser<'a> {
                 ));
                 None
             }
-        }
-    }
-}
-
-#[cfg(test)]
-mod parser_test {
-    use super::*;
-
-    #[derive(Debug)]
-    struct TestCase {
-        input: &'static str,
-    }
-
-    #[test]
-    fn parser_tests() {
-        let test_cases = vec![
-            TestCase {
-                input: "let x = a;",
-            },
-            TestCase {
-                input: "let x = 5;",
-            },
-            TestCase {
-                input: "let x = 3.14159;",
-            },
-            TestCase {
-                input: r#"let x = "Hello";"#,
-            },
-            TestCase {
-                input: "let x = +1;",
-            },
-            TestCase {
-                input: "let x = -1;",
-            },
-            TestCase {
-                input: "let x = +3.14159;",
-            },
-            TestCase {
-                input: "let x = -3.14159;",
-            },
-        ];
-
-        for test_case in test_cases.iter() {
-            let parser = Parser::new(test_case.input);
-            let ast = parser.ast();
-            assert!(ast.errors.is_empty());
         }
     }
 }
