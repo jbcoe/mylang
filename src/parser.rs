@@ -436,21 +436,25 @@ mod tests {
 
             use std::cmp::Ordering;
             match test_case.expected_errors.len().cmp(&errors.len()) {
-                Ordering::Greater => for expected in &test_case.expected_errors[errors.len()..] {
+                Ordering::Greater => {
+                    for expected in &test_case.expected_errors[errors.len()..] {
                         assert_eq!(
                             *expected, "",
                             "Expected parse error not encountered while parsing {}",
                             test_case.input
                         );
-                    },
-                Ordering::Less => for error in &errors[test_case.expected_errors.len()..] {
+                    }
+                }
+                Ordering::Less => {
+                    for error in &errors[test_case.expected_errors.len()..] {
                         assert_eq!(
                             error, "",
                             "Unexpected parse error encountered while parsing {}",
                             test_case.input
                         );
-                    },
-                Ordering::Equal => {},
+                    }
+                }
+                Ordering::Equal => {}
             }
         }
     }
