@@ -687,9 +687,7 @@ mod tests {
             TestCase {
                 input: "@123",
                 skip_whitespace: true,
-                expected_tokens: vec![
-                    ("@123", Kind::Unknown),
-                ],
+                expected_tokens: vec![("@123", Kind::Unknown)],
             },
         ];
 
