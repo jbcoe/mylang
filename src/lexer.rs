@@ -254,8 +254,7 @@ impl<'a> Lexer<'a> {
             self.read_char();
         }
 
-        let p = self.peek_char();
-        match p {
+        match self.peek_char() {
             'e' | 'E' => self.read_exponent(start),
             _ => self.read_number_final_floating_point(start),
         }
@@ -516,6 +515,44 @@ mod tests {
                 ],
             },
             TestCase {
+                input: "let a = !b;",
+                skip_whitespace: true,
+                expected_tokens: vec![
+                    ("let", Kind::Let),
+                    ("a", Kind::Identifier),
+                    ("=", Kind::EqualSign),
+                    ("!", Kind::Not),
+                    ("b", Kind::Identifier),
+                    (";", Kind::SemiColon),
+                ],
+            },
+            TestCase {
+                input: "let x = 3 * 4;",
+                skip_whitespace: true,
+                expected_tokens: vec![
+                    ("let", Kind::Let),
+                    ("x", Kind::Identifier),
+                    ("=", Kind::EqualSign),
+                    ("3", Kind::Integer),
+                    ("*", Kind::Star),
+                    ("4", Kind::Integer),
+                    (";", Kind::SemiColon),
+                ],
+            },
+            TestCase {
+                input: "let x = 4 / 2;",
+                skip_whitespace: true,
+                expected_tokens: vec![
+                    ("let", Kind::Let),
+                    ("x", Kind::Identifier),
+                    ("=", Kind::EqualSign),
+                    ("4", Kind::Integer),
+                    ("/", Kind::Divide),
+                    ("2", Kind::Integer),
+                    (";", Kind::SemiColon),
+                ],
+            },
+            TestCase {
                 input: "3",
                 skip_whitespace: false,
                 expected_tokens: vec![("3", Kind::Integer)],
@@ -607,6 +644,52 @@ mod tests {
                 input: "1.23e-4e-3.2",
                 skip_whitespace: false,
                 expected_tokens: vec![("1.23e-4e-3.2", Kind::Unknown)],
+            },
+            TestCase {
+                input: "let x = self.x();",
+                skip_whitespace: true,
+                expected_tokens: vec![
+                    ("let", Kind::Let),
+                    ("x", Kind::Identifier),
+                    ("=", Kind::EqualSign),
+                    ("self", Kind::Identifier),
+                    (".", Kind::Period),
+                    ("x", Kind::Identifier),
+                    ("(", Kind::LeftParen),
+                    (")", Kind::RightParen),
+                    (";", Kind::SemiColon),
+                ],
+            },
+            TestCase {
+                input: "{a: 3}",
+                skip_whitespace: true,
+                expected_tokens: vec![
+                    ("{", Kind::LeftBrace),
+                    ("a", Kind::Identifier),
+                    (":", Kind::Colon),
+                    ("3", Kind::Integer),
+                    ("}", Kind::RightBrace),
+                ],
+            },
+            TestCase {
+                input: "[1, 2, 3]",
+                skip_whitespace: true,
+                expected_tokens: vec![
+                    ("[", Kind::LeftSqBracket),
+                    ("1", Kind::Integer),
+                    (",", Kind::Comma),
+                    ("2", Kind::Integer),
+                    (",", Kind::Comma),
+                    ("3", Kind::Integer),
+                    ("]", Kind::RightSqBracket),
+                ],
+            },
+            TestCase {
+                input: "@123",
+                skip_whitespace: true,
+                expected_tokens: vec![
+                    ("@123", Kind::Unknown),
+                ],
             },
         ];
 
