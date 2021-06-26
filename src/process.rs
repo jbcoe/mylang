@@ -78,20 +78,20 @@ mod tests {
 
     #[test]
     #[should_panic(expected = "stream did not contain valid UTF-8")]
-    fn bad_unicode_input_causes_a_panic() {
-        let bad_unicode: &[u8] = &[0x44, 0xEF];
-        process_stream(bad_unicode, io::sink()).unwrap();
+    fn bad_utf8_input_causes_a_panic() {
+        let bad_utf8: &[u8] = &[0x44, 0xEF];
+        process_stream(bad_utf8, io::sink()).unwrap();
     }
 
     #[test]
-    #[should_panic(expected = "Failed to open file at")]
+    #[should_panic(expected = "Failed to open file at /made/up/file/location")]
     fn missing_file_causes_a_panic() {
-        files(vec!["madeupfilename".to_string()]).unwrap();
+        files(vec!["/made/up/file/location".to_string()]).unwrap();
     }
 
     #[test]
     fn valid_utf8_input_doesnt_panic() {
-        let good_input = "meow".as_bytes();
-        process_stream(good_input, io::sink()).unwrap();
+        let good_utf8 = "meow".as_bytes();
+        process_stream(good_utf8, io::sink()).unwrap();
     }
 }
