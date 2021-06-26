@@ -91,7 +91,7 @@ mod tests {
 
     #[test]
     fn valid_utf8_input_doesnt_panic() {
-        let good_input = "meow";
-        process_text(good_input, io::sink()).unwrap();
+        let good_input = "meow".as_bytes();
+        process_stream(good_input, io::sink()).unwrap();
     }
 }
