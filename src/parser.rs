@@ -371,34 +371,52 @@ mod tests {
     #[derive(Debug)]
     struct TestCase {
         input: &'static str,
+        expected_errors: Vec<&'static str>,
     }
 
     #[test]
     fn parser() {
         let test_cases = vec![
+            // Success cases
             TestCase {
                 input: "let x = a;",
+                expected_errors: vec![],
             },
             TestCase {
                 input: "let x = 5;",
+                expected_errors: vec![],
             },
             TestCase {
                 input: "let x = 3.14159;",
+                expected_errors: vec![],
             },
             TestCase {
                 input: r#"let x = "Hello";"#,
+                expected_errors: vec![],
             },
             TestCase {
                 input: "let x = +1;",
+                expected_errors: vec![],
             },
             TestCase {
                 input: "let x = -1;",
+                expected_errors: vec![],
             },
             TestCase {
                 input: "let x = +3.14159;",
+                expected_errors: vec![],
             },
             TestCase {
                 input: "let x = -3.14159;",
+                expected_errors: vec![],
+            },
+            // Error cases
+            TestCase {
+                input: "let 123 = x;",
+                expected_errors: vec![
+                    r#"expected identifier, got Token { text: "123", kind: Integer }"#,
+                    r#"Parse error when parsing let-statement Token { text: "let", kind: Let }"#,
+                ],
             },
         ];
 
@@ -406,7 +424,33 @@ mod tests {
             let tokens = Lexer::new(test_case.input).tokens();
             let parser = Parser::new(tokens);
             let ast = parser.ast();
-            assert!(ast.errors().is_empty());
+            let errors = ast.errors();
+
+            for (expected, actual) in test_case.expected_errors.iter().zip(errors.iter()) {
+                assert_eq!(
+                    expected, actual,
+                    "Parse error mismatch while parsing {}",
+                    test_case.input
+                );
+            }
+
+            if test_case.expected_errors.len() > errors.len() {
+                for expected in &test_case.expected_errors[errors.len()..] {
+                    assert_eq!(
+                        *expected, "",
+                        "Expected parse error not encountered while parsing {}",
+                        test_case.input
+                    );
+                }
+            } else if errors.len() > test_case.expected_errors.len() {
+                for error in &errors[test_case.expected_errors.len()..] {
+                    assert_eq!(
+                        error, "",
+                        "Unexpected parse error encountered while parsing {}",
+                        test_case.input
+                    );
+                }
+            }
         }
     }
 }
