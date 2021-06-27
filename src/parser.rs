@@ -400,7 +400,7 @@ mod tests {
             },
         ];
 
-        for test_case in test_cases.iter() {
+        for test_case in &test_cases {
             let tokens = Lexer::new(test_case.input).tokens();
             let parser = Parser::new(tokens);
             let ast = parser.ast();

@@ -1,6 +1,6 @@
+mod io;
 mod lexer;
 mod parser;
-mod io;
 mod token;
 
 use anyhow::Result;
