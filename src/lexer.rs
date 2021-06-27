@@ -70,7 +70,7 @@ impl<'a> Lexer<'a> {
     pub fn next_token(&mut self) -> Token<'a> {
         let c = char::from(self.byte);
         let token = match c {
-            '\0' => Token::eof(self.read_position),
+            '\0' => Token::end_of_file(self.read_position),
             '+' => self.char_token(Kind::Plus),
             '-' => self.char_token(Kind::Minus),
             '*' => self.char_token(Kind::Star),
@@ -691,9 +691,9 @@ mod tests {
             },
         ];
 
-        for test_case in test_cases.iter() {
+        for test_case in &test_cases {
             let mut lexer = Lexer::new(test_case.input);
-            for expected_token in test_case.expected_tokens.iter() {
+            for expected_token in &test_case.expected_tokens {
                 let mut t = lexer.next_token();
                 while t.kind() == Kind::Whitespace && test_case.skip_whitespace {
                     t = lexer.next_token();
