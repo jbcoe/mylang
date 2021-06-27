@@ -6,11 +6,11 @@ pub struct StringLiteralExpression {
 }
 #[derive(Debug)]
 pub struct IntegerExpression {
-    pub value: String,
+    pub value: i64,
 }
 #[derive(Debug)]
 pub struct FloatingPointExpression {
-    pub value: String,
+    pub value: f64,
 }
 #[derive(Debug)]
 pub struct IdentifierExpression {
@@ -29,6 +29,12 @@ pub enum UnaryMinusExpression {
 }
 
 #[derive(Debug)]
+pub struct FunctionExpression {
+    identifiers: Vec<String>,
+    body: Vec<Statement>,
+}
+
+#[derive(Debug)]
 pub enum Expression {
     StringLiteral(StringLiteralExpression),
     Integer(IntegerExpression),
@@ -36,6 +42,7 @@ pub enum Expression {
     Identifier(IdentifierExpression),
     UnaryPlus(UnaryPlusExpression),
     UnaryMinus(UnaryMinusExpression),
+    Function(FunctionExpression),
 }
 #[derive(Debug)]
 pub struct LetStatement {
@@ -51,20 +58,23 @@ pub struct ReturnStatement {
 
 #[derive(Debug)]
 pub enum Statement {
-    //    Expression(Expression),
+    // Expression(Expression),
     Let(LetStatement),
     Return(ReturnStatement),
 }
 
 #[derive(Debug)]
 pub struct AbstractSyntaxTree {
-    pub statements: Vec<Statement>,
+    statements: Vec<Statement>,
     errors: Vec<String>,
 }
 
 impl AbstractSyntaxTree {
     pub const fn errors(&self) -> &Vec<String> {
         &self.errors
+    }
+    pub fn statements(&self) -> &Vec<Statement> {
+        &self.statements
     }
 }
 pub struct Parser<'a> {
@@ -127,14 +137,6 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn peek_token(&self) -> Token<'a> {
-        if self.read_position >= self.tokens.len() {
-            Token::end_of_file(self.read_position)
-        } else {
-            self.tokens[self.read_position]
-        }
-    }
-
     fn parse_return_statement(&mut self) -> Option<ReturnStatement> {
         assert!(self.token.kind() == Kind::Return);
         let start = self.position;
@@ -146,9 +148,18 @@ impl<'a> Parser<'a> {
                 self.reset(start);
                 None
             }
-            Some(expression) => Some(ReturnStatement {
-                expression: Box::new(expression),
-            }),
+            Some(expression) => {
+                if self.token.kind() != Kind::SemiColon {
+                    self.errors
+                        .push(format!("expected ';', got {:?}", self.token));
+                    self.reset(start);
+                    return None;
+                }
+                self.read_token(); // consume ';'.
+                Some(ReturnStatement {
+                    expression: Box::new(expression),
+                })
+            }
         }
     }
 
@@ -180,11 +191,20 @@ impl<'a> Parser<'a> {
                         self.reset(start);
                         None
                     }
-                    Some(expression) => Some(LetStatement {
-                        mutable,
-                        identifier,
-                        expression: Box::new(expression),
-                    }),
+                    Some(expression) => {
+                        if self.token.kind() != Kind::SemiColon {
+                            self.errors
+                                .push(format!("expected ';', got {:?}", self.token));
+                            self.reset(start);
+                            return None;
+                        }
+                        self.read_token(); // consume ';'
+                        Some(LetStatement {
+                            mutable,
+                            identifier,
+                            expression: Box::new(expression),
+                        })
+                    }
                 }
             } else {
                 self.errors
@@ -212,6 +232,7 @@ impl<'a> Parser<'a> {
             Kind::String => self
                 .parse_string_literal_expression()
                 .map(Expression::StringLiteral),
+            Kind::Function => self.parse_function_expression().map(Expression::Function),
             Kind::Plus => self
                 .parse_unary_plus_expression()
                 .map(Expression::UnaryPlus),
@@ -233,14 +254,9 @@ impl<'a> Parser<'a> {
         assert!(self.token.kind() == Kind::Identifier);
         match self.token.kind() {
             Kind::Identifier => {
-                if self.peek_token().kind() == Kind::SemiColon {
-                    let name = self.token.text();
-                    self.read_token(); // consume `name`
-                    self.read_token(); // consume `;`
-                    Some(IdentifierExpression { name })
-                } else {
-                    None
-                }
+                let name = self.token.text();
+                self.read_token(); // consume `name`
+                Some(IdentifierExpression { name })
             }
             _ => None,
         }
@@ -288,12 +304,11 @@ impl<'a> Parser<'a> {
 
     fn parse_integer_expression(&mut self) -> Option<IntegerExpression> {
         assert!(self.token.kind() == Kind::Integer);
+
         match self.token.kind() {
             Kind::Integer => {
-                if self.peek_token().kind() == Kind::SemiColon {
-                    let value = self.token.text();
+                if let Ok(value) = self.token.text().parse::<i64>() {
                     self.read_token(); // consume `value`
-                    self.read_token(); // consume `;`
                     Some(IntegerExpression { value })
                 } else {
                     None
@@ -307,10 +322,8 @@ impl<'a> Parser<'a> {
         assert!(self.token.kind() == Kind::FloatingPoint);
         match self.token.kind() {
             Kind::FloatingPoint => {
-                if self.peek_token().kind() == Kind::SemiColon {
-                    let value = self.token.text();
+                if let Ok(value) = self.token.text().parse::<f64>() {
                     self.read_token(); // consume `value`
-                    self.read_token(); // consume `;`
                     Some(FloatingPointExpression { value })
                 } else {
                     None
@@ -324,21 +337,91 @@ impl<'a> Parser<'a> {
         assert!(self.token.kind() == Kind::String);
         match self.token.kind() {
             Kind::String => {
-                if self.peek_token().kind() == Kind::SemiColon {
-                    let value = self.token.text();
-                    self.read_token(); // consume `value`
-                    self.read_token(); // consume `;`
-                    Some(StringLiteralExpression { value })
-                } else {
-                    None
-                }
+                let value = self.token.text();
+                self.read_token(); // consume `value`
+                Some(StringLiteralExpression { value })
             }
             _ => None,
         }
     }
 
-    fn parse_next(&mut self) -> Option<Statement> {
-        self.read_token();
+    // Matches:
+    //   "func ( identifier* ) {
+    //     statement*
+    //   };"
+    // Indenting is not checked.
+    fn parse_function_expression(&mut self) -> Option<FunctionExpression> {
+        assert!(self.token.kind() == Kind::Function);
+        let start = self.position;
+        self.read_token(); // consume "fn"
+
+        if self.token.kind() != Kind::LeftParen {
+            self.errors
+                .push(format!("expected '(', got {:?}", self.token));
+            self.reset(start);
+            return None;
+        }
+        self.read_token(); // consume "("
+
+        let mut identifiers = vec![];
+        loop {
+            match self.token.kind() {
+                Kind::Identifier => {
+                    identifiers.push(self.token.text());
+                    self.read_token();
+                }
+                Kind::Comma => self.read_token(),
+                Kind::RightParen => {
+                    break;
+                }
+                _ => {
+                    self.errors
+                        .push(format!("expected ',' or identifier, got {:?}", self.token));
+                    self.reset(start);
+                    return None;
+                }
+            }
+        }
+
+        assert!(self.token.kind() == Kind::RightParen);
+        self.read_token(); // consume ')'
+
+        if self.token.kind() != Kind::LeftBrace {
+            self.errors
+                .push(format!("expected '{{', got {:?}", self.token));
+            self.reset(start);
+            return None;
+        }
+        self.read_token(); // consume "{"
+
+        let mut statements = vec![];
+        loop {
+            match self.token.kind() {
+                Kind::RightBrace => break,
+                _ => {
+                    if let Some(s) = self.parse_statement() {
+                        statements.push(s);
+                    } else {
+                        self.errors.push(format!(
+                            "expected function-body statement, got {:?}",
+                            self.token
+                        ));
+                        self.reset(start);
+                        return None;
+                    }
+                }
+            }
+        }
+        assert_eq!(self.token.kind(), Kind::RightBrace);
+        self.read_token(); // consume "}"
+
+        Some(FunctionExpression {
+            identifiers,
+            body: statements,
+        })
+    }
+
+    fn parse_statement(&mut self) -> Option<Statement> {
         match self.token.kind() {
             Kind::Let => {
                 if let Some(stmt) = self.parse_let_statement() {
@@ -361,7 +444,6 @@ impl<'a> Parser<'a> {
                 ));
                 None
             }
-            Kind::EndOfFile => None,
             _ => {
                 self.errors.push(format!(
                     "Parse error: unexpected TokenKind when parsing statement {:?}",
@@ -369,6 +451,14 @@ impl<'a> Parser<'a> {
                 ));
                 None
             }
+        }
+    }
+
+    fn parse_next(&mut self) -> Option<Statement> {
+        self.read_token();
+        match self.token.kind() {
+            Kind::EndOfFile => None,
+            _ => self.parse_statement(),
         }
     }
 }
@@ -470,12 +560,62 @@ mod tests {
             }
         }
     }
+
+    #[derive(Debug)]
+    struct ParseLetStatementTest {
+        input: &'static str,
+        identifier: &'static str,
+        mutable: bool,
+    }
+
+    #[test]
+    fn test_parse_let_statement() {
+        let test_cases = vec![
+            ParseLetStatementTest {
+                input: "let x = a;",
+                identifier: "x",
+                mutable: false,
+            },
+            ParseLetStatementTest {
+                input: "let mut minus_pi = -3.14159;",
+                identifier: "minus_pi",
+                mutable: true,
+            },
+            ParseLetStatementTest {
+                input: r#"let x = "Hello";"#,
+                identifier: "x",
+                mutable: false,
+            },
+            ParseLetStatementTest {
+                input: "let first = func (a, b) { return a; };",
+                identifier: "first",
+                mutable: false,
+            },
+        ];
+        for test_case in test_cases.iter() {
+            let tokens = Lexer::new(test_case.input).tokens();
+            let parser = Parser::new(tokens);
+            let ast = parser.ast();
+
+            assert!(ast.errors().is_empty());
+            assert!(ast.statements.len() == 1);
+            match &ast.statements[0] {
+                Statement::Let(let_statement) => {
+                    assert_eq!(let_statement.identifier, test_case.identifier);
+                    assert_eq!(let_statement.mutable, test_case.mutable);
+                    // TODO: Check some property of the expression.
+                }
+                _ => panic!("Expected a let statement"),
+            }
+        }
+    }
+
     struct ParseReturnStatementTest {
         input: &'static str,
     }
 
     #[test]
-    fn parse_return_statement() {
+    fn parse_return_statement_test() {
         let test_cases = vec![
             ParseReturnStatementTest {
                 input: "return 42;",
@@ -498,52 +638,6 @@ mod tests {
                     // TODO: Check some property of the expression.
                 }
                 _ => panic!("Expected a return statement."),
-            }
-        }
-    }
-
-    #[derive(Debug)]
-    struct ParseLetStatementTest {
-        input: &'static str,
-        identifier: &'static str,
-        mutable: bool,
-    }
-
-    #[test]
-    fn parse_let_statement() {
-        let test_cases = vec![
-            ParseLetStatementTest {
-                input: "let x = a;",
-                identifier: "x",
-                mutable: false,
-            },
-            ParseLetStatementTest {
-                input: "let mut minus_pi = -3.14159;",
-                identifier: "minus_pi",
-                mutable: true,
-            },
-            ParseLetStatementTest {
-                input: r#"let x = "Hello";"#,
-                identifier: "x",
-                mutable: false,
-            },
-        ];
-
-        for test_case in test_cases.iter() {
-            let tokens = Lexer::new(test_case.input).tokens();
-            let parser = Parser::new(tokens);
-            let ast = parser.ast();
-
-            print!("{:?}", ast.errors());
-            assert!(ast.errors().is_empty());
-            assert!(ast.statements.len() == 1);
-            match &ast.statements[0] {
-                Statement::Let(let_statement) => {
-                    assert_eq!(let_statement.identifier, test_case.identifier);
-                    assert_eq!(let_statement.mutable, test_case.mutable);
-                    // TODO: Check some property of the expression.
-                }
-                _ => panic!("Expected a let statement"),
             }
         }
     }
