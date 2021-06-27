@@ -82,7 +82,7 @@ impl<'a> Parser<'a> {
             tokens,
             position: 0,
             read_position: 0,
-            token: Token::eof(0),
+            token: Token::end_of_file(0),
             errors: vec![],
         }
     }
@@ -104,7 +104,7 @@ impl<'a> Parser<'a> {
         self.position = position;
         self.read_position = position + 1;
         if self.position >= self.tokens.len() {
-            self.token = Token::eof(self.position);
+            self.token = Token::end_of_file(self.position);
         } else {
             self.token = self.tokens[self.position];
         }
@@ -112,7 +112,7 @@ impl<'a> Parser<'a> {
 
     fn read_token(&mut self) {
         if self.read_position >= self.tokens.len() {
-            self.token = Token::eof(self.read_position);
+            self.token = Token::end_of_file(self.read_position);
         } else {
             self.token = self.tokens[self.read_position];
             self.position = self.read_position;
@@ -122,7 +122,7 @@ impl<'a> Parser<'a> {
 
     fn peek_token(&self) -> Token<'a> {
         if self.read_position >= self.tokens.len() {
-            Token::eof(self.read_position)
+            Token::end_of_file(self.read_position)
         } else {
             self.tokens[self.read_position]
         }

@@ -70,7 +70,7 @@ impl<'a> Lexer<'a> {
     pub fn next_token(&mut self) -> Token<'a> {
         let c = char::from(self.byte);
         let token = match c {
-            '\0' => Token::eof(self.read_position),
+            '\0' => Token::end_of_file(self.read_position),
             '+' => self.char_token(Kind::Plus),
             '-' => self.char_token(Kind::Minus),
             '*' => self.char_token(Kind::Star),
