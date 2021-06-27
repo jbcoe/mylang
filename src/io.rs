@@ -10,7 +10,7 @@ use std::{
 };
 
 /// process first filepath in the input Vec, or stdin if empty
-pub fn process_files(filepaths: Vec<String>) -> Result<i64> {
+pub fn process_files(filepaths: Vec<String>) -> Result<i32> {
     let stdout = io::stdout();
     let mut outio = stdout.lock();
 
@@ -26,7 +26,7 @@ pub fn process_files(filepaths: Vec<String>) -> Result<i64> {
 
 /// process an input stream from inio, reading its text and writing the
 /// processed results to outio
-fn process_stream<R, W>(mut inio: R, outio: W) -> Result<i64>
+fn process_stream<R, W>(mut inio: R, outio: W) -> Result<i32>
 where
     R: Read,
     W: Write,
@@ -40,7 +40,7 @@ where
 /// process an input text, writing a printable form of all tokens except
 /// whitespace, one token per line onto out. Line numbers and columns are
 /// written. Any AST errors are written
-fn process_text<W: Write>(text: &str, mut out: W) -> Result<i64> {
+fn process_text<W: Write>(text: &str, mut out: W) -> Result<i32> {
     let lexer = Lexer::new(text);
     let tokens = lexer.tokens();
     for token in &tokens {
