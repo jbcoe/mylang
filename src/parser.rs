@@ -587,7 +587,6 @@ mod tests {
             let parser = Parser::new(tokens);
             let ast = parser.ast();
 
-            dbg!(ast.errors());
             assert!(ast.errors().is_empty());
             assert!(ast.statements.len() == 1);
             match &ast.statements[0] {
