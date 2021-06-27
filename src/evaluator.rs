@@ -131,6 +131,10 @@ mod tests {
                 input: "let a = 42;",
                 return_value: 0,
             },
+            EvaluatorTestCase {
+                input: r#"let a = 42; let b = "Hello"; let c = 3.14159; return 7;"#,
+                return_value: 7,
+            },
         ];
 
         for test_case in test_cases {

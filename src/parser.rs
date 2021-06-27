@@ -108,6 +108,7 @@ impl<'a> Parser<'a> {
     #[must_use]
     pub fn ast(mut self) -> AbstractSyntaxTree {
         let mut statements = vec![];
+        self.read_token();
         while let Some(stmt) = self.parse_next() {
             statements.push(stmt);
         }
@@ -155,7 +156,6 @@ impl<'a> Parser<'a> {
                     self.reset(start);
                     return None;
                 }
-                self.read_token(); // consume ';'.
                 Some(ReturnStatement {
                     expression: Box::new(expression),
                 })
@@ -198,7 +198,6 @@ impl<'a> Parser<'a> {
                             self.reset(start);
                             return None;
                         }
-                        self.read_token(); // consume ';'
                         Some(LetStatement {
                             mutable,
                             identifier,
@@ -422,40 +421,44 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_statement(&mut self) -> Option<Statement> {
+        let statement;
+
         match self.token.kind() {
             Kind::Let => {
                 if let Some(stmt) = self.parse_let_statement() {
-                    Some(Statement::Let(stmt))
+                    statement = Statement::Let(stmt);
                 } else {
                     self.errors.push(format!(
                         "Parse error when parsing let-statement {:?}",
                         self.token
                     ));
-                    None
+                    return None;
                 }
             }
             Kind::Return => {
                 if let Some(stmt) = self.parse_return_statement() {
-                    return Some(Statement::Return(stmt));
+                    statement = Statement::Return(stmt);
+                } else {
+                    self.errors.push(format!(
+                        "Parse error when parsing return-statement {:?}",
+                        self.token
+                    ));
+                    return None;
                 }
-                self.errors.push(format!(
-                    "Parse error when parsing return-statement {:?}",
-                    self.token
-                ));
-                None
             }
             _ => {
                 self.errors.push(format!(
-                    "Parse error: unexpected TokenKind when parsing statement {:?}",
+                    "Parse error: unexpected token kind when parsing statement {:?}",
                     self.token.kind()
                 ));
-                None
+                return None;
             }
         }
+        self.read_token(); // consume ';'
+        Some(statement)
     }
 
     fn parse_next(&mut self) -> Option<Statement> {
-        self.read_token();
         match self.token.kind() {
             Kind::EndOfFile => None,
             _ => self.parse_statement(),
