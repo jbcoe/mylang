@@ -28,7 +28,7 @@ pub struct Opt {
 ///
 /// Will return Err if files couldn't be opened, or found
 /// or if they could not be lexed, parsed or evaluated
-pub fn process_files(opt: &Opt) -> Result<i32> {
+pub fn go(opt: &Opt) -> Result<i32> {
     let stdout = io::stdout();
     let mut outio = stdout.lock();
 
@@ -112,7 +112,7 @@ mod tests {
         let opts = Opt {
             files: vec![PathBuf::from(r"/dev/null/madeupfile")],
         };
-        process_files(&opts).unwrap();
+        go(&opts).unwrap();
     }
 
     #[test]
