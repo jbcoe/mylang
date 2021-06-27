@@ -103,7 +103,7 @@ mod tests {
     }
 
     #[test]
-    fn test_end_of_file_token() {
+    fn end_of_file_token() {
         let end_of_file = Token::end_of_file(0);
         assert_eq!(end_of_file.text(), "");
 
