@@ -115,7 +115,7 @@ mod tests {
     #[test]
     fn evaluate() {
         let test_cases = vec![EvaluatorTestCase {
-            input: "return 42;",
+            input: "return 42",
             return_value: 42,
         }];
 
