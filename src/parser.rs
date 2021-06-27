@@ -595,7 +595,8 @@ mod tests {
                 mutable: false,
             },
         ];
-        for test_case in test_cases.iter() {
+
+        for test_case in &test_cases {
             let tokens = Lexer::new(test_case.input).tokens();
             let parser = Parser::new(tokens);
             let ast = parser.ast();
@@ -608,7 +609,7 @@ mod tests {
                     assert_eq!(let_statement.mutable, test_case.mutable);
                     // TODO: Check some property of the expression.
                 }
-                _ => panic!("Expected a let statement"),
+                Statement::Return(_) => panic!("Expected a let statement"),
             }
         }
     }
@@ -628,7 +629,7 @@ mod tests {
             },
         ];
 
-        for test_case in test_cases.iter() {
+        for test_case in &test_cases {
             let tokens = Lexer::new(test_case.input).tokens();
             let parser = Parser::new(tokens);
             let ast = parser.ast();
@@ -640,7 +641,7 @@ mod tests {
                 Statement::Return(_) => {
                     // TODO: Check some property of the expression.
                 }
-                _ => panic!("Expected a return statement."),
+                Statement::Let(_) => panic!("Expected a return statement."),
             }
         }
     }
