@@ -84,7 +84,7 @@ impl Evaluator {
                             Value::Integer(integer) => return Some(*integer),
                             _ => panic!(
                                 "Unhandled identifier kind in top-level return statement {:?}",
-                                &*_return_statement.expression
+                                &*return_statement.expression
                             ),
                         }
                     } else {
