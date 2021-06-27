@@ -470,6 +470,7 @@ mod tests {
             }
         }
     }
+
     struct ParseReturnStatementTest {
         input: &'static str,
     }
@@ -510,7 +511,7 @@ mod tests {
     }
 
     #[test]
-    fn parse_let_statement() {
+    fn test_parse_let_statement() {
         let test_cases = vec![
             ParseLetStatementTest {
                 input: "let x = a;",
