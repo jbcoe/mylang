@@ -691,9 +691,9 @@ mod tests {
             },
         ];
 
-        for test_case in test_cases.iter() {
+        for test_case in &test_cases {
             let mut lexer = Lexer::new(test_case.input);
-            for expected_token in test_case.expected_tokens.iter() {
+            for expected_token in &test_case.expected_tokens {
                 let mut t = lexer.next_token();
                 while t.kind() == Kind::Whitespace && test_case.skip_whitespace {
                     t = lexer.next_token();

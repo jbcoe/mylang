@@ -376,6 +376,8 @@ impl<'a> Parser<'a> {
 #[cfg(test)]
 mod tests {
 
+    use std::cmp::Ordering;
+
     use super::*;
     use crate::lexer::Lexer;
 
@@ -431,7 +433,7 @@ mod tests {
             },
         ];
 
-        for test_case in test_cases.iter() {
+        for test_case in &test_cases {
             let tokens = Lexer::new(test_case.input).tokens();
             let parser = Parser::new(tokens);
             let ast = parser.ast();
@@ -445,7 +447,6 @@ mod tests {
                 );
             }
 
-            use std::cmp::Ordering;
             match test_case.expected_errors.len().cmp(&errors.len()) {
                 Ordering::Greater => {
                     for expected in &test_case.expected_errors[errors.len()..] {

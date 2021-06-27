@@ -92,9 +92,10 @@ mod tests {
 
     #[test]
     fn utf8_token_can_be_constructed_and_unicode_read_from_it() {
+        // https://unicode-table.com/en/1F496/
         let sparkle_bytes = vec![240, 159, 146, 150];
         let sparkle_heart = Token::new(&sparkle_bytes, 0, Kind::Identifier);
-        assert_eq!(sparkle_heart.text(), "💖");
+        assert_eq!(sparkle_heart.text(), "\u{1f496}");
 
         // Simple checks to ensure code coverage is high and accessor functions do what is expected.
         assert_eq!(sparkle_heart.kind(), Kind::Identifier);
