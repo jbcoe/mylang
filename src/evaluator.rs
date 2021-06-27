@@ -47,15 +47,13 @@ impl Evaluator {
                 Expression::StringLiteral(string_literal) => {
                     self.globals.values.insert(
                         let_statement.identifier.clone(),
-                        Value::String(string_literal.value.clone(),
-                        ),
+                        Value::String(string_literal.value.clone()),
                     );
                 }
                 Expression::FloatingPoint(float) => {
-                    self.globals.values.insert(
-                        let_statement.identifier.clone(),
-                        Value::Float(float.value),
-                    );
+                    self.globals
+                        .values
+                        .insert(let_statement.identifier.clone(), Value::Float(float.value));
                 }
                 Expression::Integer(integer) => {
                     self.globals.values.insert(

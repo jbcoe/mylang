@@ -71,7 +71,7 @@ fn process_text<W: Write>(text: &str, mut out: W) -> Result<i64> {
     let result = evaluator.evaluate(&ast);
     for err in evaluator.errors() {
         writeln!(out, "{}", err)?;
-    };
+    }
     result
 }
 
