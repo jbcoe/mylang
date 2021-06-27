@@ -6,7 +6,7 @@ pub struct StringLiteralExpression {
 }
 #[derive(Debug)]
 pub struct IntegerExpression {
-    pub value: i64,
+    pub value: i32,
 }
 #[derive(Debug)]
 pub struct FloatingPointExpression {
@@ -306,7 +306,7 @@ impl<'a> Parser<'a> {
 
         match self.token.kind() {
             Kind::Integer => {
-                if let Ok(value) = self.token.text().parse::<i64>() {
+                if let Ok(value) = self.token.text().parse::<i32>() {
                     self.read_token(); // consume `value`
                     Some(IntegerExpression { value })
                 } else {

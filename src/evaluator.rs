@@ -7,9 +7,10 @@ struct Environment {
 }
 enum Value {
     Float(f64),
-    Integer(i64),
+    Integer(i32),
     String(String),
 }
+
 pub struct Evaluator {
     globals: Environment,
     errors: Vec<String>,
@@ -29,7 +30,7 @@ impl Evaluator {
         &self.errors
     }
 
-    pub fn evaluate(&mut self, ast: &AbstractSyntaxTree) -> i64 {
+    pub fn evaluate(&mut self, ast: &AbstractSyntaxTree) -> i32 {
         let mut return_code = 0;
 
         for statement in ast.statements() {
@@ -40,7 +41,7 @@ impl Evaluator {
         return_code
     }
 
-    fn evaluate_statement(&mut self, statement: &Statement) -> Option<i64> {
+    fn evaluate_statement(&mut self, statement: &Statement) -> Option<i32> {
         match &statement {
             Statement::Let(let_statement) => match &*let_statement.expression {
                 Expression::StringLiteral(string_literal) => {
@@ -95,7 +96,7 @@ mod tests {
 
     struct EvaluatorTestCase {
         input: &'static str,
-        return_value: i64,
+        return_value: i32,
     }
 
     #[test]

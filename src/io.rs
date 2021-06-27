@@ -22,13 +22,13 @@ pub struct Opt {
     files: Vec<PathBuf>,
 }
 
-/// process first filepath in the input Vec, or stdin if empty
+/// process first filepath in Files, or stdin if empty
 ///
 /// # Errors
 ///
 /// Will return Err if files couldn't be opened, or found
 /// or if they could not be lexed, parsed or evaluated
-pub fn process_files(opt: &Opt) -> Result<i64> {
+pub fn process_files(opt: &Opt) -> Result<i32> {
     let stdout = io::stdout();
     let mut outio = stdout.lock();
 
@@ -45,7 +45,7 @@ pub fn process_files(opt: &Opt) -> Result<i64> {
 
 /// process an input stream from inio, reading its text and writing the
 /// processed results to outio
-fn process_stream<R, W>(mut inio: R, outio: W) -> Result<i64>
+fn process_stream<R, W>(mut inio: R, outio: W) -> Result<i32>
 where
     R: Read,
     W: Write,
@@ -59,7 +59,7 @@ where
 /// process an input text, writing a printable form of all tokens except
 /// whitespace, one token per line onto out. Line numbers and columns are
 /// written. Any AST errors are written
-fn process_text<W: Write>(text: &str, mut out: W) -> Result<i64> {
+fn process_text<W: Write>(text: &str, mut out: W) -> Result<i32> {
     let lexer = Lexer::new(text);
     let tokens = lexer.tokens();
     for token in &tokens {
