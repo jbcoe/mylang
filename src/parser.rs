@@ -29,7 +29,7 @@ pub enum UnaryMinusExpression {
 }
 
 #[derive(Debug)]
-pub enum ExpressionStatement {
+pub enum Expression {
     StringLiteral(StringLiteralExpression),
     Integer(IntegerExpression),
     FloatingPoint(FloatingPointExpression),
@@ -41,12 +41,19 @@ pub enum ExpressionStatement {
 pub struct LetStatement {
     pub mutable: bool,
     pub identifier: String,
-    pub expression: Box<ExpressionStatement>,
+    pub expression: Box<Expression>,
 }
+
+#[derive(Debug)]
+pub struct ReturnStatement {
+    pub expression: Box<Expression>,
+}
+
 #[derive(Debug)]
 pub enum Statement {
-    //    Expression(ExpressionStatement),
+    //    Expression(Expression),
     Let(LetStatement),
+    Return(ReturnStatement),
 }
 
 #[derive(Debug)]
@@ -128,10 +135,28 @@ impl<'a> Parser<'a> {
         }
     }
 
+    fn parse_return_statement(&mut self) -> Option<ReturnStatement> {
+        assert!(self.token.kind() == Kind::Return);
+        let start = self.position;
+        self.read_token(); // consume return
+        match self.parse_expression() {
+            None => {
+                self.errors
+                    .push(format!("expected expression, got {:?}", self.token));
+                self.reset(start);
+                None
+            }
+            Some(expression) => Some(ReturnStatement {
+                expression: Box::new(expression),
+            }),
+        }
+    }
+
     // Matches:
     //   "let identifier = expression;"
     //   "let mut identifier = expression;"
     fn parse_let_statement(&mut self) -> Option<LetStatement> {
+        assert!(self.token.kind() == Kind::Let);
         let start = self.position;
         self.read_token(); // consume let
 
@@ -175,26 +200,24 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn parse_expression(&mut self) -> Option<ExpressionStatement> {
+    fn parse_expression(&mut self) -> Option<Expression> {
         match self.token.kind() {
             Kind::Identifier => self
                 .parse_identifier_expression()
-                .map(ExpressionStatement::Identifier),
-            Kind::Integer => self
-                .parse_integer_expression()
-                .map(ExpressionStatement::Integer),
+                .map(Expression::Identifier),
+            Kind::Integer => self.parse_integer_expression().map(Expression::Integer),
             Kind::FloatingPoint => self
                 .parse_floating_point_expression()
-                .map(ExpressionStatement::FloatingPoint),
+                .map(Expression::FloatingPoint),
             Kind::String => self
                 .parse_string_literal_expression()
-                .map(ExpressionStatement::StringLiteral),
+                .map(Expression::StringLiteral),
             Kind::Plus => self
                 .parse_unary_plus_expression()
-                .map(ExpressionStatement::UnaryPlus),
+                .map(Expression::UnaryPlus),
             Kind::Minus => self
                 .parse_unary_minus_expression()
-                .map(ExpressionStatement::UnaryMinus),
+                .map(Expression::UnaryMinus),
             _ => {
                 self.errors.push(format!(
                     "Parse error when parsing expression {:?}",
@@ -328,6 +351,16 @@ impl<'a> Parser<'a> {
                     None
                 }
             }
+            Kind::Return => {
+                if let Some(stmt) = self.parse_return_statement() {
+                    return Some(Statement::Return(stmt));
+                }
+                self.errors.push(format!(
+                    "Parse error when parsing return-statement {:?}",
+                    self.token
+                ));
+                None
+            }
             Kind::EndOfFile => None,
             _ => {
                 self.errors.push(format!(
@@ -433,6 +466,38 @@ mod tests {
                     }
                 }
                 Ordering::Equal => {}
+            }
+        }
+    }
+
+    struct ParseReturnStatementTest {
+        input: &'static str,
+    }
+
+    #[test]
+    fn parse_return_statement_test() {
+        let test_cases = vec![
+            ParseReturnStatementTest {
+                input: "return 42;",
+            },
+            ParseReturnStatementTest {
+                input: r#"return "the solution";"#,
+            },
+        ];
+
+        for test_case in test_cases.iter() {
+            let tokens = Lexer::new(test_case.input).tokens();
+            let parser = Parser::new(tokens);
+            let ast = parser.ast();
+            let errors = ast.errors();
+
+            assert!(errors.is_empty(), "Expected no errors, got {:?}", errors);
+            assert_eq!(ast.statements.len(), 1);
+            match &ast.statements[0] {
+                Statement::Return(_) => {
+                    // TODO: Check some property of the expression.
+                }
+                _ => panic!("Expected a return statement."),
             }
         }
     }
