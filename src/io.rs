@@ -1,3 +1,4 @@
+use crate::evaluator::Evaluator;
 use crate::lexer::Lexer;
 use crate::parser::Parser;
 use crate::token::Kind;
@@ -8,27 +9,24 @@ use std::{
     io::{self, Read, Write},
 };
 
-/// process each filepath in the input Vec, or stdin if empty
-pub fn process_files(filepaths: Vec<String>) -> Result<()> {
+/// process first filepath in the input Vec, or stdin if empty
+pub fn process_files(filepaths: Vec<String>) -> Result<i64> {
     let stdout = io::stdout();
     let mut outio = stdout.lock();
 
     if filepaths.is_empty() {
-        process_stream(io::stdin(), &mut outio).with_context(|| "while reading stdin")?;
+        process_stream(io::stdin(), &mut outio).with_context(|| "while reading stdin")
     } else {
-        for filepath in filepaths {
-            let file = File::open(&filepath)
-                .with_context(|| format!("Failed to open file at {}", filepath))?;
-            process_stream(file, &mut outio)
-                .with_context(|| format!("while reading {}", filepath))?;
-        }
+        let filepath = &filepaths[0];
+        let file = File::open(&filepath)
+            .with_context(|| format!("Failed to open file at {}", filepath))?;
+        process_stream(file, &mut outio).with_context(|| format!("while reading {}", filepath))
     }
-    Ok(())
 }
 
 /// process an input stream from inio, reading its text and writing the
 /// processed results to outio
-fn process_stream<R, W>(mut inio: R, outio: W) -> Result<()>
+fn process_stream<R, W>(mut inio: R, outio: W) -> Result<i64>
 where
     R: Read,
     W: Write,
@@ -42,7 +40,7 @@ where
 /// process an input text, writing a printable form of all tokens except
 /// whitespace, one token per line onto out. Line numbers and columns are
 /// written. Any AST errors are written
-fn process_text<W: Write>(text: &str, mut out: W) -> Result<()> {
+fn process_text<W: Write>(text: &str, mut out: W) -> Result<i64> {
     let lexer = Lexer::new(text);
     let tokens = lexer.tokens();
     for token in &tokens {
@@ -65,10 +63,12 @@ fn process_text<W: Write>(text: &str, mut out: W) -> Result<()> {
         )?;
     }
     let parser = Parser::new(tokens);
-    for err in parser.ast().errors() {
+    let ast = parser.ast();
+    for err in ast.errors() {
         writeln!(out, "{}", err)?;
     }
-    Ok(())
+    let mut evaluator = Evaluator::new();
+    evaluator.evaluate(&ast)
 }
 
 #[cfg(test)]
@@ -84,9 +84,9 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "Failed to open file at /made/up/file/location")]
+    #[should_panic(expected = "Failed to open file at /dev/null/madeupfile")]
     fn missing_file_causes_a_panic() {
-        process_files(vec!["/made/up/file/location".to_string()]).unwrap();
+        process_files(vec!["/dev/null/madeupfile".to_string()]).unwrap();
     }
 
     #[test]
