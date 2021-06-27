@@ -68,7 +68,11 @@ fn process_text<W: Write>(text: &str, mut out: W) -> Result<i64> {
         writeln!(out, "{}", err)?;
     }
     let mut evaluator = Evaluator::new();
-    evaluator.evaluate(&ast)
+    let result = evaluator.evaluate(&ast);
+    for err in evaluator.errors() {
+        writeln!(out, "{}", err)?;
+    };
+    result
 }
 
 #[cfg(test)]
