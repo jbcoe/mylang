@@ -1,11 +1,5 @@
-mod evaluator;
-mod io;
-mod lexer;
-mod parser;
-mod token;
-
 use anyhow::Result;
-use io::process_files;
+use mylang::io::process_files;
 use std::{env, process};
 
 fn main() -> Result<()> {
