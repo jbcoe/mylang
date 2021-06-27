@@ -61,9 +61,10 @@ impl<'a> Lexer<'a> {
             let t = self.next_token();
             tokens.push(t);
             if t.kind() == Kind::EndOfFile {
-                return tokens;
+                break;
             }
         }
+        tokens
     }
 
     pub fn next_token(&mut self) -> Token<'a> {
@@ -153,7 +154,7 @@ impl<'a> Lexer<'a> {
     }
 
     fn text_token(&self, start: usize, kind: Kind) -> Token<'a> {
-        return Token::new(self.text_range(start), start, kind);
+        Token::new(self.text_range(start), start, kind)
     }
 
     fn read_junk(&mut self) -> Token<'a> {
@@ -205,12 +206,15 @@ impl<'a> Lexer<'a> {
     fn read_string(&mut self) -> Token<'a> {
         let start = self.position;
         self.read_char(); // Advance past '"'.
+        let mut kind = Kind::String;
         loop {
             match self.peek_char() {
                 '\0' => {
-                    return self.text_token(start, Kind::Unknown);
+                    kind = Kind::Unknown;
+                    break;
                 }
                 '"' => {
+                    self.read_char(); // Consume closing '"'.
                     break;
                 }
                 _ => {
@@ -218,8 +222,7 @@ impl<'a> Lexer<'a> {
                 }
             }
         }
-        self.read_char(); // Consume closing '"'.
-        self.text_token(start, Kind::String)
+        self.text_token(start, kind)
     }
 
     fn read_number(&mut self) -> Option<Token<'a>> {
@@ -241,10 +244,10 @@ impl<'a> Lexer<'a> {
         let p = self.peek_char();
         if p.is_ascii_alphabetic() {
             self.reset(start);
-            return None;
+            None
+        } else {
+            Some(self.text_token(start, Kind::Integer))
         }
-
-        Some(self.text_token(start, Kind::Integer))
     }
 
     fn read_decimal_part(&mut self, start: usize) -> Token<'a> {
@@ -285,10 +288,10 @@ impl<'a> Lexer<'a> {
             // alphabetic char or a period indicates we have a junk token.
             // Other symbols, including '+' and '-', are not considered here
             // as they form the beginning of the next token.
-            return self.read_number_cleanup_junk(start);
+            self.read_number_cleanup_junk(start)
+        } else {
+            self.text_token(start, Kind::FloatingPoint)
         }
-
-        self.text_token(start, Kind::FloatingPoint)
     }
 
     fn read_number_cleanup_junk(&mut self, start: usize) -> Token<'a> {
@@ -305,10 +308,7 @@ impl<'a> Lexer<'a> {
         // characters to make the unknown token visually distinct from
         // a valid token.
         const fn in_numeric_charset(ch: char) -> bool {
-            if ch.is_ascii_alphanumeric() {
-                return true;
-            }
-            matches!(ch, 'e' | 'E' | '.' | '+' | '-')
+            ch.is_ascii_alphanumeric() || matches!(ch, 'e' | 'E' | '.' | '+' | '-')
         }
 
         while in_numeric_charset(self.peek_char()) {
