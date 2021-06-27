@@ -1,7 +1,5 @@
 use std::collections::HashMap;
 
-use anyhow::Result;
-
 use crate::parser::{AbstractSyntaxTree, Expression, Statement};
 
 struct Environment {
@@ -18,8 +16,8 @@ pub struct Evaluator {
 }
 
 impl Evaluator {
-    pub fn new() -> Evaluator {
-        Evaluator {
+    pub fn new() -> Self {
+        Self {
             globals: Environment {
                 values: HashMap::new(),
             },
@@ -31,14 +29,15 @@ impl Evaluator {
         &self.errors
     }
 
-    pub fn evaluate(&mut self, ast: &AbstractSyntaxTree) -> Result<i64> {
+    pub fn evaluate(&mut self, ast: &AbstractSyntaxTree) -> i64 {
+        let mut return_code = 0;
+
         for statement in ast.statements() {
-            match self.evaluate_statement(statement) {
-                None => (),
-                Some(rc) => return Ok(rc),
+            if let Some(result) = self.evaluate_statement(statement) {
+                return_code = result;
             }
         }
-        Ok(0)
+        return_code
     }
 
     fn evaluate_statement(&mut self, statement: &Statement) -> Option<i64> {
@@ -68,20 +67,20 @@ impl Evaluator {
                     );
                 }
             },
-            Statement::Return(_return_statement) => match &*_return_statement.expression {
+            Statement::Return(return_statement) => match &*return_statement.expression {
                 Expression::StringLiteral(_)
                 | Expression::Function(_)
                 | Expression::FloatingPoint(_) => {
                     panic!(
                         "Bad expression kind in top-level return statement {:?}",
-                        &*_return_statement.expression
+                        &*return_statement.expression
                     );
                 }
                 Expression::Integer(integer) => return Some(integer.value),
                 _ => {
                     panic!(
                         "Unhandled expression kind in top-level return statement {:?}",
-                        &*_return_statement.expression
+                        &*return_statement.expression
                     );
                 }
             },
@@ -132,12 +131,7 @@ mod tests {
 
             assert!(errors.is_empty(), "Expected no errors, got {:?}", errors);
             let mut evaluator = Evaluator::new();
-            let return_value = evaluator.evaluate(&ast);
-
-            match return_value {
-                Ok(rc) => assert_eq!(rc, test_case.return_value),
-                _ => panic!("Code failed to evaluate: {:?}", test_case.input),
-            }
+            assert_eq!(evaluator.evaluate(&ast), test_case.return_value);
         }
     }
 }

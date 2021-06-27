@@ -73,7 +73,7 @@ impl AbstractSyntaxTree {
     pub const fn errors(&self) -> &Vec<String> {
         &self.errors
     }
-    pub fn statements(&self) -> &Vec<Statement> {
+    pub const fn statements(&self) -> &Vec<Statement> {
         &self.statements
     }
 }
