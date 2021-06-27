@@ -84,3 +84,16 @@ impl<'a> fmt::Display for Token<'a> {
         write!(f, "{:?} '{}'", self.kind, self.text())
     }
 }
+
+#[cfg(test)]
+mod tests {
+
+    use super::{Kind, Token};
+
+    #[test]
+    fn utf8_token_can_be_constructed_and_unicode_read_from_it() {
+        let sparkle_bytes = vec![240, 159, 146, 150];
+        let sparkle_heart = Token::new(&sparkle_bytes, 0, Kind::Identifier);
+        assert_eq!(sparkle_heart.text(), "💖");
+    }
+}
