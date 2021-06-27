@@ -114,10 +114,28 @@ mod tests {
 
     #[test]
     fn evaluate() {
-        let test_cases = vec![EvaluatorTestCase {
-            input: "return 42;",
-            return_value: 42,
-        }];
+        let test_cases = vec![
+            EvaluatorTestCase {
+                input: "return 42;",
+                return_value: 42,
+            },
+            EvaluatorTestCase {
+                input: r#"let a = "Hello";"#,
+                return_value: 0,
+            },
+            EvaluatorTestCase {
+                input: "let a = 3.14159;",
+                return_value: 0,
+            },
+            EvaluatorTestCase {
+                input: "let a = 42;",
+                return_value: 0,
+            },
+            EvaluatorTestCase {
+                input: r#"let a = 42; let b = "Hello"; let c = 3.14159; return 7;"#,
+                return_value: 7,
+            },
+        ];
 
         for test_case in test_cases {
             let tokens = Lexer::new(test_case.input).tokens();
