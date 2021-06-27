@@ -79,6 +79,19 @@ impl Evaluator {
                     );
                 }
                 Expression::Integer(integer) => return Some(integer.value),
+                Expression::Identifier(identifier) => {
+                    if let Some(value) = self.globals.values.get(&identifier.name) {
+                        match &value {
+                            Value::Integer(integer) => return Some(*integer),
+                            _ => panic!(
+                                "Unhandled identifier kind in top-level return statement {:?}",
+                                &*_return_statement.expression
+                            ),
+                        }
+                    } else {
+                        panic!("Return of unknown value '{:?}'", identifier.name);
+                    }
+                }
                 _ => {
                     panic!(
                         "Unhandled expression kind in top-level return statement {:?}",
@@ -118,6 +131,10 @@ mod tests {
             EvaluatorTestCase {
                 input: "let a = 42;",
                 return_value: 0,
+            },
+            EvaluatorTestCase {
+                input: "let a = 42; return a;",
+                return_value: 42,
             },
             EvaluatorTestCase {
                 input: r#"let a = 42; let b = "Hello"; let c = 3.14159; return 7;"#,
