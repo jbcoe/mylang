@@ -6,11 +6,11 @@ pub struct StringLiteralExpression {
 }
 #[derive(Debug)]
 pub struct IntegerExpression {
-    pub value: String,
+    pub value: i64,
 }
 #[derive(Debug)]
 pub struct FloatingPointExpression {
-    pub value: String,
+    pub value: f64,
 }
 #[derive(Debug)]
 pub struct IdentifierExpression {
@@ -65,13 +65,16 @@ pub enum Statement {
 
 #[derive(Debug)]
 pub struct AbstractSyntaxTree {
-    pub statements: Vec<Statement>,
+    statements: Vec<Statement>,
     errors: Vec<String>,
 }
 
 impl AbstractSyntaxTree {
     pub const fn errors(&self) -> &Vec<String> {
         &self.errors
+    }
+    pub fn statements(&self) -> &Vec<Statement> {
+        &self.statements
     }
 }
 pub struct Parser<'a> {
@@ -301,11 +304,15 @@ impl<'a> Parser<'a> {
 
     fn parse_integer_expression(&mut self) -> Option<IntegerExpression> {
         assert!(self.token.kind() == Kind::Integer);
+
         match self.token.kind() {
             Kind::Integer => {
-                let value = self.token.text();
-                self.read_token(); // consume `value`
-                Some(IntegerExpression { value })
+                if let Ok(value) = self.token.text().parse::<i64>() {
+                    self.read_token(); // consume `value`
+                    Some(IntegerExpression { value })
+                } else {
+                    None
+                }
             }
             _ => None,
         }
@@ -315,9 +322,12 @@ impl<'a> Parser<'a> {
         assert!(self.token.kind() == Kind::FloatingPoint);
         match self.token.kind() {
             Kind::FloatingPoint => {
-                let value = self.token.text();
-                self.read_token(); // consume `value`
-                Some(FloatingPointExpression { value })
+                if let Ok(value) = self.token.text().parse::<f64>() {
+                    self.read_token(); // consume `value`
+                    Some(FloatingPointExpression { value })
+                } else {
+                    None
+                }
             }
             _ => None,
         }
