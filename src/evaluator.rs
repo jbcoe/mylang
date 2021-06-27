@@ -5,25 +5,13 @@ use anyhow::Result;
 use crate::parser::{AbstractSyntaxTree, Expression, Statement};
 
 struct Environment {
-    values: HashMap<String, MyObject>,
+    values: HashMap<String, Value>,
 }
-enum MyObject {
-    Float(FloatObject),
-    Integer(IntegerObject),
-    String(StringObject),
+enum Value {
+    Float(f64),
+    Integer(i64),
+    String(String),
 }
-
-struct FloatObject {
-    value: f64,
-}
-
-struct IntegerObject {
-    value: i64,
-}
-struct StringObject {
-    value: String,
-}
-
 pub struct Evaluator {
     globals: Environment,
     errors: Vec<String>,
@@ -39,7 +27,11 @@ impl Evaluator {
         }
     }
 
-    pub(crate) fn evaluate(&mut self, ast: &AbstractSyntaxTree) -> Result<i64> {
+    pub const fn errors(&self) -> &Vec<String> {
+        &self.errors
+    }
+
+    pub fn evaluate(&mut self, ast: &AbstractSyntaxTree) -> Result<i64> {
         for statement in ast.statements() {
             match self.evaluate_statement(statement) {
                 None => (),
@@ -55,23 +47,18 @@ impl Evaluator {
                 Expression::StringLiteral(string_literal) => {
                     self.globals.values.insert(
                         let_statement.identifier.clone(),
-                        MyObject::String(StringObject {
-                            value: string_literal.value.clone(),
-                        }),
+                        Value::String(string_literal.value.clone()),
                     );
                 }
                 Expression::FloatingPoint(float) => {
-                    self.globals.values.insert(
-                        let_statement.identifier.clone(),
-                        MyObject::Float(FloatObject { value: float.value }),
-                    );
+                    self.globals
+                        .values
+                        .insert(let_statement.identifier.clone(), Value::Float(float.value));
                 }
                 Expression::Integer(integer) => {
                     self.globals.values.insert(
                         let_statement.identifier.clone(),
-                        MyObject::Integer(IntegerObject {
-                            value: integer.value,
-                        }),
+                        Value::Integer(integer.value),
                     );
                 }
                 _ => {
