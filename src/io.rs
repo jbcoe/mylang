@@ -84,9 +84,9 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "Failed to open file at /made/up/file/location")]
+    #[should_panic(expected = "Failed to open file at /dev/null/madeupfile")]
     fn missing_file_causes_a_panic() {
-        process_files(vec!["/made/up/file/location".to_string()]).unwrap();
+        process_files(vec!["/dev/null/madeupfile".to_string()]).unwrap();
     }
 
     #[test]
