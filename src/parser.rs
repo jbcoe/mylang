@@ -161,7 +161,7 @@ impl<'a> Parser<'a> {
         self.read_token(); // consume let
 
         let mut mutable = false;
-        if self.peek_token().kind() == Kind::Mut {
+        if self.token.kind() == Kind::Mut {
             mutable = true;
             self.read_token(); // consume mut
         }
@@ -382,49 +382,49 @@ mod tests {
     use crate::lexer::Lexer;
 
     #[derive(Debug)]
-    struct TestCase {
+    struct ParserErrorTestCase {
         input: &'static str,
         expected_errors: Vec<&'static str>,
     }
 
     #[test]
-    fn parser() {
+    fn check_errors() {
         let test_cases = vec![
             // Success cases
-            TestCase {
+            ParserErrorTestCase {
                 input: "let x = a;",
                 expected_errors: vec![],
             },
-            TestCase {
+            ParserErrorTestCase {
                 input: "let x = 5;",
                 expected_errors: vec![],
             },
-            TestCase {
+            ParserErrorTestCase {
                 input: "let x = 3.14159;",
                 expected_errors: vec![],
             },
-            TestCase {
+            ParserErrorTestCase {
                 input: r#"let x = "Hello";"#,
                 expected_errors: vec![],
             },
-            TestCase {
+            ParserErrorTestCase {
                 input: "let x = +1;",
                 expected_errors: vec![],
             },
-            TestCase {
+            ParserErrorTestCase {
                 input: "let x = -1;",
                 expected_errors: vec![],
             },
-            TestCase {
+            ParserErrorTestCase {
                 input: "let x = +3.14159;",
                 expected_errors: vec![],
             },
-            TestCase {
+            ParserErrorTestCase {
                 input: "let x = -3.14159;",
                 expected_errors: vec![],
             },
             // Error cases
-            TestCase {
+            ParserErrorTestCase {
                 input: "let 123 = x;",
                 expected_errors: vec![
                     r#"expected identifier, got Token { text: "123", kind: Integer }"#,
@@ -470,13 +470,12 @@ mod tests {
             }
         }
     }
-
     struct ParseReturnStatementTest {
         input: &'static str,
     }
 
     #[test]
-    fn parse_return_statement_test() {
+    fn parse_return_statement() {
         let test_cases = vec![
             ParseReturnStatementTest {
                 input: "return 42;",
@@ -499,6 +498,52 @@ mod tests {
                     // TODO: Check some property of the expression.
                 }
                 _ => panic!("Expected a return statement."),
+            }
+        }
+    }
+
+    #[derive(Debug)]
+    struct ParseLetStatementTest {
+        input: &'static str,
+        identifier: &'static str,
+        mutable: bool,
+    }
+
+    #[test]
+    fn parse_let_statement() {
+        let test_cases = vec![
+            ParseLetStatementTest {
+                input: "let x = a;",
+                identifier: "x",
+                mutable: false,
+            },
+            ParseLetStatementTest {
+                input: "let mut minus_pi = -3.14159;",
+                identifier: "minus_pi",
+                mutable: true,
+            },
+            ParseLetStatementTest {
+                input: r#"let x = "Hello";"#,
+                identifier: "x",
+                mutable: false,
+            },
+        ];
+
+        for test_case in test_cases.iter() {
+            let tokens = Lexer::new(test_case.input).tokens();
+            let parser = Parser::new(tokens);
+            let ast = parser.ast();
+
+            print!("{:?}", ast.errors());
+            assert!(ast.errors().is_empty());
+            assert!(ast.statements.len() == 1);
+            match &ast.statements[0] {
+                Statement::Let(let_statement) => {
+                    assert_eq!(let_statement.identifier, test_case.identifier);
+                    assert_eq!(let_statement.mutable, test_case.mutable);
+                    // TODO: Check some property of the expression.
+                }
+                _ => panic!("Expected a let statement"),
             }
         }
     }
