@@ -343,6 +343,8 @@ impl<'a> Parser<'a> {
 #[cfg(test)]
 mod tests {
 
+    use std::cmp::Ordering;
+
     use super::*;
     use crate::lexer::Lexer;
 
@@ -412,7 +414,6 @@ mod tests {
                 );
             }
 
-            use std::cmp::Ordering;
             match test_case.expected_errors.len().cmp(&errors.len()) {
                 Ordering::Greater => {
                     for expected in &test_case.expected_errors[errors.len()..] {

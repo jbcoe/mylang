@@ -1,12 +1,12 @@
 mod lexer;
 mod parser;
-mod process;
+mod io;
 mod token;
 
 use anyhow::Result;
-use process::files;
+use io::process_files;
 use std::env;
 
 fn main() -> Result<()> {
-    files(env::args().skip(1).collect())
+    process_files(env::args().skip(1).collect())
 }

@@ -9,7 +9,7 @@ use std::{
 };
 
 /// process each filepath in the input Vec, or stdin if empty
-pub fn files(filepaths: Vec<String>) -> Result<()> {
+pub fn process_files(filepaths: Vec<String>) -> Result<()> {
     let stdout = io::stdout();
     let mut outio = stdout.lock();
 
@@ -86,7 +86,7 @@ mod tests {
     #[test]
     #[should_panic(expected = "Failed to open file at /made/up/file/location")]
     fn missing_file_causes_a_panic() {
-        files(vec!["/made/up/file/location".to_string()]).unwrap();
+        process_files(vec!["/made/up/file/location".to_string()]).unwrap();
     }
 
     #[test]
