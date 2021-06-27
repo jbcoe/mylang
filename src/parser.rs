@@ -51,7 +51,7 @@ pub struct ReturnStatement {
 
 #[derive(Debug)]
 pub enum Statement {
-    //    Expression(Expression),
+    // Expression(Expression),
     Let(LetStatement),
     Return(ReturnStatement),
 }
@@ -471,38 +471,6 @@ mod tests {
         }
     }
 
-    struct ParseReturnStatementTest {
-        input: &'static str,
-    }
-
-    #[test]
-    fn parse_return_statement() {
-        let test_cases = vec![
-            ParseReturnStatementTest {
-                input: "return 42;",
-            },
-            ParseReturnStatementTest {
-                input: r#"return "the solution";"#,
-            },
-        ];
-
-        for test_case in test_cases.iter() {
-            let tokens = Lexer::new(test_case.input).tokens();
-            let parser = Parser::new(tokens);
-            let ast = parser.ast();
-            let errors = ast.errors();
-
-            assert!(errors.is_empty(), "Expected no errors, got {:?}", errors);
-            assert_eq!(ast.statements.len(), 1);
-            match &ast.statements[0] {
-                Statement::Return(_) => {
-                    // TODO: Check some property of the expression.
-                }
-                _ => panic!("Expected a return statement."),
-            }
-        }
-    }
-
     #[derive(Debug)]
     struct ParseLetStatementTest {
         input: &'static str,
@@ -528,8 +496,12 @@ mod tests {
                 identifier: "x",
                 mutable: false,
             },
+            ParseLetStatementTest {
+                input: "let first = func (a, b) { return a; };",
+                identifier: "first",
+                mutable: false,
+            },
         ];
-
         for test_case in test_cases.iter() {
             let tokens = Lexer::new(test_case.input).tokens();
             let parser = Parser::new(tokens);
@@ -545,6 +517,38 @@ mod tests {
                     // TODO: Check some property of the expression.
                 }
                 _ => panic!("Expected a let statement"),
+            }
+        }
+    }
+
+    struct ParseReturnStatementTest {
+        input: &'static str,
+    }
+
+    #[test]
+    fn parse_return_statement_test() {
+        let test_cases = vec![
+            ParseReturnStatementTest {
+                input: "return 42;",
+            },
+            ParseReturnStatementTest {
+                input: r#"return "the solution";"#,
+            },
+        ];
+
+        for test_case in test_cases.iter() {
+            let tokens = Lexer::new(test_case.input).tokens();
+            let parser = Parser::new(tokens);
+            let ast = parser.ast();
+            let errors = ast.errors();
+
+            assert!(errors.is_empty(), "Expected no errors, got {:?}", errors);
+            assert_eq!(ast.statements.len(), 1);
+            match &ast.statements[0] {
+                Statement::Return(_) => {
+                    // TODO: Check some property of the expression.
+                }
+                _ => panic!("Expected a return statement."),
             }
         }
     }
