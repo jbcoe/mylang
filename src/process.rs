@@ -78,9 +78,9 @@ mod tests {
 
     #[test]
     #[should_panic(expected = "stream did not contain valid UTF-8")]
-    fn bad_utf8_input_causes_a_panic() {
-        let bad_utf8: &[u8] = &[0x44, 0xEF];
-        process_stream(bad_utf8, io::sink()).unwrap();
+    fn invalid_utf8_input_causes_a_panic() {
+        let invalid_utf8: &[u8] = &[0x44, 0xEF];
+        process_stream(invalid_utf8, io::sink()).unwrap();
     }
 
     #[test]
@@ -91,7 +91,7 @@ mod tests {
 
     #[test]
     fn valid_utf8_input_doesnt_panic() {
-        let good_utf8 = "meow".as_bytes();
-        process_stream(good_utf8, io::sink()).unwrap();
+        let valid_utf8 = "meow".as_bytes();
+        process_stream(valid_utf8, io::sink()).unwrap();
     }
 }
