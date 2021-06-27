@@ -49,7 +49,7 @@ impl<'a> Token<'a> {
         Token { text, offset, kind }
     }
 
-    pub const fn eof(offset: usize) -> Token<'static> {
+    pub const fn end_of_file(offset: usize) -> Token<'static> {
         Token {
             text: &[],
             offset,
@@ -95,5 +95,19 @@ mod tests {
         let sparkle_bytes = vec![240, 159, 146, 150];
         let sparkle_heart = Token::new(&sparkle_bytes, 0, Kind::Identifier);
         assert_eq!(sparkle_heart.text(), "💖");
+
+        // Simple checks to ensure code coverage is high and accessor functions do what is expected.
+        assert_eq!(sparkle_heart.kind(), Kind::Identifier);
+        assert_eq!(sparkle_heart.offset(), 0);
+    }
+
+    #[test]
+    fn test_end_of_file_token() {
+        let end_of_file = Token::end_of_file(0);
+        assert_eq!(end_of_file.text(), "");
+
+        // Simple checks to ensure code coverage is high and accessor functions do what is expected.
+        assert_eq!(end_of_file.kind(), Kind::EndOfFile);
+        assert_eq!(end_of_file.offset(), 0);
     }
 }
