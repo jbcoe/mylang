@@ -9,18 +9,37 @@ use std::{
     io::{self, Read, Write},
 };
 
-/// process first filepath in the input Vec, or stdin if empty
-pub fn process_files(filepaths: Vec<String>) -> Result<i32> {
+use std::path::PathBuf;
+use structopt::StructOpt;
+
+/// A lexer, parser, interpreter, JIT and AOT compiler and
+/// runtime written in Rust for a new (simple) language
+#[derive(StructOpt, Debug)]
+#[structopt(name = "mylang")]
+pub struct Opt {
+    /// Files to process
+    #[structopt(name = "FILE", parse(from_os_str))]
+    files: Vec<PathBuf>,
+}
+
+/// process first filepath in Files, or stdin if empty
+///
+/// # Errors
+///
+/// Will return Err if files couldn't be opened, or found
+/// or if they could not be lexed, parsed or evaluated
+pub fn go(opt: &Opt) -> Result<i32> {
     let stdout = io::stdout();
     let mut outio = stdout.lock();
 
-    if filepaths.is_empty() {
+    if opt.files.is_empty() {
         process_stream(io::stdin(), &mut outio).with_context(|| "while reading stdin")
     } else {
-        let filepath = &filepaths[0];
+        let filepath = &opt.files[0];
         let file = File::open(&filepath)
-            .with_context(|| format!("Failed to open file at {}", filepath))?;
-        process_stream(file, &mut outio).with_context(|| format!("while reading {}", filepath))
+            .with_context(|| format!("Failed to open file at {}", filepath.display()))?;
+        process_stream(file, &mut outio)
+            .with_context(|| format!("while reading {}", filepath.display()))
     }
 }
 
@@ -72,7 +91,7 @@ fn process_text<W: Write>(text: &str, mut out: W) -> Result<i32> {
     for err in evaluator.errors() {
         writeln!(out, "{}", err)?;
     }
-    result
+    Ok(result)
 }
 
 #[cfg(test)]
@@ -90,7 +109,10 @@ mod tests {
     #[test]
     #[should_panic(expected = "Failed to open file at /dev/null/madeupfile")]
     fn missing_file_causes_a_panic() {
-        process_files(vec!["/dev/null/madeupfile".to_string()]).unwrap();
+        let opts = Opt {
+            files: vec![PathBuf::from(r"/dev/null/madeupfile")],
+        };
+        go(&opts).unwrap();
     }
 
     #[test]

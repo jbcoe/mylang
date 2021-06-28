@@ -12,3 +12,4 @@ path = "src/main.rs"
 
 [dependencies]
 anyhow = "1.0.41"
+structopt = "0.3.21"
