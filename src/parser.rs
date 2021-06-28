@@ -18,6 +18,12 @@ pub struct IdentifierExpression {
 }
 
 #[derive(Debug)]
+pub struct FunctionCallExpression {
+    pub name: String,
+    pub arguments: Vec<String>,
+}
+
+#[derive(Debug)]
 pub enum UnaryPlusExpression {
     Integer(IntegerExpression),
     FloatingPoint(FloatingPointExpression),
@@ -32,8 +38,8 @@ pub enum UnaryMinusExpression {
 
 #[derive(Debug)]
 pub struct FunctionExpression {
-    identifiers: Vec<String>,
-    body: Vec<Statement>,
+    pub arguments: Vec<String>,
+    pub body: Vec<Statement>,
 }
 
 #[derive(Debug)]
@@ -45,6 +51,7 @@ pub enum Expression {
     UnaryPlus(UnaryPlusExpression),
     UnaryMinus(UnaryMinusExpression),
     Function(FunctionExpression),
+    FunctionCall(FunctionCallExpression),
 }
 #[derive(Debug)]
 pub struct LetStatement {
@@ -223,9 +230,14 @@ impl<'a> Parser<'a> {
 
     fn parse_expression(&mut self) -> Option<Expression> {
         match self.token.kind() {
-            Kind::Identifier => self
-                .parse_identifier_expression()
-                .map(Expression::Identifier),
+            Kind::Identifier => {
+                if let Some(function_call) = self.parse_fuction_call_expression() {
+                    Some(Expression::FunctionCall(function_call))
+                } else {
+                    self.parse_identifier_expression()
+                        .map(Expression::Identifier)
+                }
+            }
             Kind::Integer => self.parse_integer_expression().map(Expression::Integer),
             Kind::FloatingPoint => self
                 .parse_floating_point_expression()
@@ -261,6 +273,47 @@ impl<'a> Parser<'a> {
             }
             _ => None,
         }
+    }
+
+    fn parse_fuction_call_expression(&mut self) -> Option<FunctionCallExpression> {
+        assert!(self.token.kind() == Kind::Identifier);
+        let start = self.position;
+        let name = self.token.text();
+        self.read_token(); // consume identifier.
+
+        if self.token.kind() != Kind::LeftParen {
+            self.reset(start);
+            return None;
+        }
+        self.read_token(); // consume '('.
+
+        let mut arguments = vec![];
+        loop {
+            match self.token.kind() {
+                Kind::Identifier => {
+                    arguments.push(self.token.text());
+                    self.read_token();
+                }
+                Kind::Comma => self.read_token(),
+                Kind::RightParen => {
+                    break;
+                }
+                _ => {
+                    self.errors
+                        .push(format!("expected ',' or identifier, got {:?}", self.token));
+                    self.reset(start);
+                    return None;
+                }
+            }
+        }
+
+        if self.token.kind() != Kind::RightParen {
+            self.reset(start);
+            return None;
+        }
+        self.read_token(); // consume ')'.
+
+        Some(FunctionCallExpression { name, arguments })
     }
 
     fn parse_unary_plus_expression(&mut self) -> Option<UnaryPlusExpression> {
@@ -370,11 +423,11 @@ impl<'a> Parser<'a> {
         }
         self.read_token(); // consume "("
 
-        let mut identifiers = vec![];
+        let mut arguments = vec![];
         loop {
             match self.token.kind() {
                 Kind::Identifier => {
-                    identifiers.push(self.token.text());
+                    arguments.push(self.token.text());
                     self.read_token();
                 }
                 Kind::Comma => self.read_token(),
@@ -401,13 +454,13 @@ impl<'a> Parser<'a> {
         }
         self.read_token(); // consume "{"
 
-        let mut statements = vec![];
+        let mut body = vec![];
         loop {
             match self.token.kind() {
                 Kind::RightBrace => break,
                 _ => {
                     if let Some(s) = self.parse_statement() {
-                        statements.push(s);
+                        body.push(s);
                     } else {
                         self.errors.push(format!(
                             "expected function-body statement, got {:?}",
@@ -422,10 +475,7 @@ impl<'a> Parser<'a> {
         assert_eq!(self.token.kind(), Kind::RightBrace);
         self.read_token(); // consume "}"
 
-        Some(FunctionExpression {
-            identifiers,
-            body: statements,
-        })
+        Some(FunctionExpression { arguments, body })
     }
 
     fn parse_statement(&mut self) -> Option<Statement> {
@@ -610,6 +660,11 @@ mod tests {
                 identifier: "first",
                 mutable: false,
             },
+            ParseLetStatementTest {
+                input: "let max = largest (a, b);",
+                identifier: "max",
+                mutable: false,
+            },
         ];
 
         for test_case in &test_cases {
@@ -617,6 +672,7 @@ mod tests {
             let parser = Parser::new(tokens);
             let ast = parser.ast();
 
+            dbg!(ast.errors());
             assert!(ast.errors().is_empty());
             assert!(ast.statements.len() == 1);
             match &ast.statements[0] {
