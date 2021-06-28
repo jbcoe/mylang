@@ -1,7 +1,8 @@
 use anyhow::Result;
-use mylang::io::process_files;
-use std::{env, process};
+use mylang::driver::{go, Opt};
+use std::process;
+use structopt::StructOpt;
 
 fn main() -> Result<()> {
-    process::exit(process_files(env::args().skip(1).collect())? as i32)
+    process::exit(go(&Opt::from_args())?)
 }

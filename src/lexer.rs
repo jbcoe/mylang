@@ -331,6 +331,8 @@ mod tests {
     }
 
     #[test]
+    #[allow(clippy::too_many_lines)]
+
     fn lexer() {
         let test_cases = vec![
             TestCase {

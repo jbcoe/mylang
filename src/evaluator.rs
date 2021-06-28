@@ -1,28 +1,15 @@
-use std::collections::HashMap;
+use crate::frame::{Frame, Value};
+use crate::parser::AbstractSyntaxTree;
 
-use anyhow::Result;
-
-use crate::parser::{AbstractSyntaxTree, Expression, Statement};
-
-struct Environment {
-    values: HashMap<String, Value>,
-}
-enum Value {
-    Float(f64),
-    Integer(i64),
-    String(String),
-}
 pub struct Evaluator {
-    globals: Environment,
+    global: Frame,
     errors: Vec<String>,
 }
 
 impl Evaluator {
     pub fn new() -> Evaluator {
         Evaluator {
-            globals: Environment {
-                values: HashMap::new(),
-            },
+            global: Frame::new(),
             errors: vec![],
         }
     }
@@ -31,62 +18,16 @@ impl Evaluator {
         &self.errors
     }
 
-    pub fn evaluate(&mut self, ast: &AbstractSyntaxTree) -> Result<i64> {
-        for statement in ast.statements() {
-            match self.evaluate_statement(statement) {
-                None => (),
-                Some(rc) => return Ok(rc),
+    pub fn evaluate(&mut self, ast: &AbstractSyntaxTree) -> i32 {
+        // Evaluate statements at global scope until one of them returns.
+        if let Some(rc) = self.global.evaluate_body(ast.statements()) {
+            match rc {
+                Value::Integer(i) => i,
+                _ => panic!("Non-integer return type at global scope"),
             }
+        } else {
+            0
         }
-        Ok(0)
-    }
-
-    fn evaluate_statement(&mut self, statement: &Statement) -> Option<i64> {
-        match &statement {
-            Statement::Let(let_statement) => match &*let_statement.expression {
-                Expression::StringLiteral(string_literal) => {
-                    self.globals.values.insert(
-                        let_statement.identifier.clone(),
-                        Value::String(string_literal.value.clone()),
-                    );
-                }
-                Expression::FloatingPoint(float) => {
-                    self.globals
-                        .values
-                        .insert(let_statement.identifier.clone(), Value::Float(float.value));
-                }
-                Expression::Integer(integer) => {
-                    self.globals.values.insert(
-                        let_statement.identifier.clone(),
-                        Value::Integer(integer.value),
-                    );
-                }
-                _ => {
-                    panic!(
-                        "Unhandled expression kind in top-level let statement {:?}",
-                        &*let_statement.expression
-                    );
-                }
-            },
-            Statement::Return(_return_statement) => match &*_return_statement.expression {
-                Expression::StringLiteral(_)
-                | Expression::Function(_)
-                | Expression::FloatingPoint(_) => {
-                    panic!(
-                        "Bad expression kind in top-level return statement {:?}",
-                        &*_return_statement.expression
-                    );
-                }
-                Expression::Integer(integer) => return Some(integer.value),
-                _ => {
-                    panic!(
-                        "Unhandled expression kind in top-level return statement {:?}",
-                        &*_return_statement.expression
-                    );
-                }
-            },
-        }
-        None
     }
 }
 
@@ -96,7 +37,7 @@ mod tests {
 
     struct EvaluatorTestCase {
         input: &'static str,
-        return_value: i64,
+        return_value: i32,
     }
 
     #[test]
@@ -119,6 +60,10 @@ mod tests {
                 return_value: 0,
             },
             EvaluatorTestCase {
+                input: "let a = 42; return a;",
+                return_value: 42,
+            },
+            EvaluatorTestCase {
                 input: r#"let a = 42; let b = "Hello"; let c = 3.14159; return 7;"#,
                 return_value: 7,
             },
@@ -132,12 +77,7 @@ mod tests {
 
             assert!(errors.is_empty(), "Expected no errors, got {:?}", errors);
             let mut evaluator = Evaluator::new();
-            let return_value = evaluator.evaluate(&ast);
-
-            match return_value {
-                Ok(rc) => assert_eq!(rc, test_case.return_value),
-                _ => panic!("Code failed to evaluate: {:?}", test_case.input),
-            }
+            assert_eq!(evaluator.evaluate(&ast), test_case.return_value);
         }
     }
 }
