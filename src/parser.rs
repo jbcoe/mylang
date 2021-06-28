@@ -20,7 +20,7 @@ pub struct IdentifierExpression {
 #[derive(Debug)]
 pub struct FunctionCallExpression {
     pub name: String,
-    pub arguments: Vec<String>,
+    pub arguments: Vec<Expression>,
 }
 
 #[derive(Debug)]
@@ -287,22 +287,22 @@ impl<'a> Parser<'a> {
         }
         self.read_token(); // consume '('.
 
-        let mut arguments = vec![];
+        let mut argument_expressions = vec![];
         loop {
             match self.token.kind() {
-                Kind::Identifier => {
-                    arguments.push(self.token.text());
-                    self.read_token();
-                }
                 Kind::Comma => self.read_token(),
                 Kind::RightParen => {
                     break;
                 }
                 _ => {
-                    self.errors
-                        .push(format!("expected ',' or identifier, got {:?}", self.token));
-                    self.reset(start);
-                    return None;
+                    if let Some(expression) = self.parse_expression() {
+                        argument_expressions.push(expression);
+                    } else {
+                        self.errors
+                            .push(format!("expected ',' or identifier, got {:?}", self.token));
+                        self.reset(start);
+                        return None;
+                    }
                 }
             }
         }
@@ -313,7 +313,10 @@ impl<'a> Parser<'a> {
         }
         self.read_token(); // consume ')'.
 
-        Some(FunctionCallExpression { name, arguments })
+        Some(FunctionCallExpression {
+            name,
+            arguments: argument_expressions,
+        })
     }
 
     fn parse_unary_plus_expression(&mut self) -> Option<UnaryPlusExpression> {

@@ -68,6 +68,25 @@ mod tests {
                 return_value: 0,
             },
             EvaluatorTestCase {
+                input: r#"
+let first = func (a, b) { 
+    return a; 
+};
+let x = 1;
+let y = 2;
+let z = first(x, y);
+return z;"#,
+                return_value: 1,
+            },
+            EvaluatorTestCase {
+                input: r#"
+let first = func (a, b) { 
+    return a; 
+};
+return first(101, 2);"#,
+                return_value: 101,
+            },
+            EvaluatorTestCase {
                 input: r#"let a = 42; let b = "Hello"; let c = 3.14159; return 7;"#,
                 return_value: 7,
             },
