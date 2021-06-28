@@ -1,27 +1,15 @@
-use std::collections::HashMap;
-
-use crate::parser::{AbstractSyntaxTree, Expression, Statement};
-
-struct Environment {
-    values: HashMap<String, Value>,
-}
-enum Value {
-    Float(f64),
-    Integer(i32),
-    String(String),
-}
+use crate::frame::{Frame, Value};
+use crate::parser::AbstractSyntaxTree;
 
 pub struct Evaluator {
-    globals: Environment,
+    global: Frame,
     errors: Vec<String>,
 }
 
 impl Evaluator {
-    pub fn new() -> Self {
-        Self {
-            globals: Environment {
-                values: HashMap::new(),
-            },
+    pub fn new() -> Evaluator {
+        Evaluator {
+            global: Frame::new(),
             errors: vec![],
         }
     }
@@ -31,75 +19,15 @@ impl Evaluator {
     }
 
     pub fn evaluate(&mut self, ast: &AbstractSyntaxTree) -> i32 {
-        let mut return_code = 0;
-
-        for statement in ast.statements() {
-            if let Some(result) = self.evaluate_statement(statement) {
-                return_code = result;
+        // Evaluate statements at global scope until one of them returns.
+        if let Some(rc) = self.global.evaluate_body(ast.statements()) {
+            match rc {
+                Value::Integer(i) => i,
+                _ => panic!("Non-integer return type at global scope"),
             }
+        } else {
+            0
         }
-        return_code
-    }
-
-    fn evaluate_statement(&mut self, statement: &Statement) -> Option<i32> {
-        match &statement {
-            Statement::Let(let_statement) => match &*let_statement.expression {
-                Expression::StringLiteral(string_literal) => {
-                    self.globals.values.insert(
-                        let_statement.identifier.clone(),
-                        Value::String(string_literal.value.clone()),
-                    );
-                }
-                Expression::FloatingPoint(float) => {
-                    self.globals
-                        .values
-                        .insert(let_statement.identifier.clone(), Value::Float(float.value));
-                }
-                Expression::Integer(integer) => {
-                    self.globals.values.insert(
-                        let_statement.identifier.clone(),
-                        Value::Integer(integer.value),
-                    );
-                }
-                _ => {
-                    panic!(
-                        "Unhandled expression kind in top-level let statement {:?}",
-                        &*let_statement.expression
-                    );
-                }
-            },
-            Statement::Return(return_statement) => match &*return_statement.expression {
-                Expression::StringLiteral(_)
-                | Expression::Function(_)
-                | Expression::FloatingPoint(_) => {
-                    panic!(
-                        "Bad expression kind in top-level return statement {:?}",
-                        &*return_statement.expression
-                    );
-                }
-                Expression::Integer(integer) => return Some(integer.value),
-                Expression::Identifier(identifier) => {
-                    if let Some(value) = self.globals.values.get(&identifier.name) {
-                        match &value {
-                            Value::Integer(integer) => return Some(*integer),
-                            _ => panic!(
-                                "Unhandled identifier kind in top-level return statement {:?}",
-                                &*return_statement.expression
-                            ),
-                        }
-                    } else {
-                        panic!("Return of unknown value '{:?}'", identifier.name);
-                    }
-                }
-                _ => {
-                    panic!(
-                        "Unhandled expression kind in top-level return statement {:?}",
-                        &*return_statement.expression
-                    );
-                }
-            },
-        }
-        None
     }
 }
 
