@@ -21,11 +21,13 @@ pub struct IdentifierExpression {
 pub enum UnaryPlusExpression {
     Integer(IntegerExpression),
     FloatingPoint(FloatingPointExpression),
+    Identifier(IdentifierExpression),
 }
 #[derive(Debug)]
 pub enum UnaryMinusExpression {
     Integer(IntegerExpression),
     FloatingPoint(FloatingPointExpression),
+    Identifier(IdentifierExpression),
 }
 
 #[derive(Debug)]
@@ -271,6 +273,9 @@ impl<'a> Parser<'a> {
             Kind::FloatingPoint => self
                 .parse_floating_point_expression()
                 .map(UnaryPlusExpression::FloatingPoint),
+            Kind::Identifier => self
+                .parse_identifier_expression()
+                .map(UnaryPlusExpression::Identifier),
             _ => {
                 self.errors.push(format!(
                     "Parse error when parsing unary plus expression {:?}",
@@ -291,6 +296,9 @@ impl<'a> Parser<'a> {
             Kind::FloatingPoint => self
                 .parse_floating_point_expression()
                 .map(UnaryMinusExpression::FloatingPoint),
+            Kind::Identifier => self
+                .parse_identifier_expression()
+                .map(UnaryMinusExpression::Identifier),
             _ => {
                 self.errors.push(format!(
                     "Parse error when parsing unary minus expression {:?}",
@@ -514,6 +522,14 @@ mod tests {
             },
             ParserErrorTestCase {
                 input: "let x = -3.14159;",
+                expected_errors: vec![],
+            },
+            ParserErrorTestCase {
+                input: "let x = -a;",
+                expected_errors: vec![],
+            },
+            ParserErrorTestCase {
+                input: "let x = +a;",
                 expected_errors: vec![],
             },
             // Error cases
