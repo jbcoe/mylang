@@ -7,8 +7,8 @@ pub struct Evaluator {
 }
 
 impl Evaluator {
-    pub fn new() -> Evaluator {
-        Evaluator {
+    pub fn new() -> Self {
+        Self {
             global: Frame::new(),
             errors: vec![],
         }
