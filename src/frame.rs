@@ -1,24 +1,24 @@
-use crate::parser::{Expression, Statement};
-use std::collections::HashMap;
+use crate::parser::{Expression, FunctionExpression, Statement};
+use std::{collections::HashMap, rc::Rc};
 
-#[derive(Clone)]
-pub enum Value {
+pub(crate) enum Value<'a> {
     Float(f64),
     Integer(i32),
     String(String),
+    Function(&'a FunctionExpression),
 }
-pub struct Frame {
-    values: HashMap<String, Value>,
+pub(crate) struct Frame<'a> {
+    values: HashMap<String, Rc<Value<'a>>>,
 }
 
-impl Frame {
+impl<'a> Frame<'a> {
     pub(crate) fn new() -> Self {
         Self {
             values: HashMap::new(),
         }
     }
 
-    pub(crate) fn evaluate_body(&mut self, body: &[Statement]) -> Option<Value> {
+    pub(crate) fn evaluate_body(&mut self, body: &'a [Statement]) -> Option<Rc<Value<'a>>> {
         for statement in body {
             if let Some(v) = self.evaluate_statement(statement) {
                 return Some(v);
@@ -27,24 +27,32 @@ impl Frame {
         None
     }
 
-    fn evaluate_statement(&mut self, statement: &Statement) -> Option<Value> {
+    fn evaluate_statement(&mut self, statement: &'a Statement) -> Option<Rc<Value<'a>>> {
         match &statement {
             Statement::Let(let_statement) => {
                 match &*let_statement.expression {
                     Expression::StringLiteral(string_literal) => {
                         self.values.insert(
                             let_statement.identifier.clone(),
-                            Value::String(string_literal.value.clone()),
+                            Rc::new(Value::String(string_literal.value.clone())),
                         );
                     }
                     Expression::FloatingPoint(float) => {
-                        self.values
-                            .insert(let_statement.identifier.clone(), Value::Float(float.value));
+                        self.values.insert(
+                            let_statement.identifier.clone(),
+                            Rc::new(Value::Float(float.value)),
+                        );
                     }
                     Expression::Integer(integer) => {
                         self.values.insert(
                             let_statement.identifier.clone(),
-                            Value::Integer(integer.value),
+                            Rc::new(Value::Integer(integer.value)),
+                        );
+                    }
+                    Expression::Function(function) => {
+                        self.values.insert(
+                            let_statement.identifier.clone(),
+                            Rc::new(Value::Function(function)),
                         );
                     }
                     _ => {
@@ -57,12 +65,12 @@ impl Frame {
                 None
             }
             Statement::Return(return_statement) => match &*return_statement.expression {
-                Expression::StringLiteral(s) => Some(Value::String(s.value.clone())),
-                Expression::FloatingPoint(f) => Some(Value::Float(f.value)),
-                Expression::Integer(i) => Some(Value::Integer(i.value)),
+                Expression::StringLiteral(s) => Some(Rc::new(Value::String(s.value.clone()))),
+                Expression::FloatingPoint(f) => Some(Rc::new(Value::Float(f.value))),
+                Expression::Integer(i) => Some(Rc::new(Value::Integer(i.value))),
                 Expression::Identifier(identifier) => {
-                    if let Some(id) = self.values.get(&identifier.name) {
-                        Some(id.clone())
+                    if let Some(value) = self.values.get(&identifier.name) {
+                        Some(Rc::clone(value))
                     } else {
                         panic!("Unknown identifier {:?}", *return_statement.expression)
                     }
