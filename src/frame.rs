@@ -2,18 +2,18 @@ use crate::parser::{Expression, Statement};
 use std::collections::HashMap;
 
 #[derive(Clone)]
-pub(crate) enum Value {
+pub enum Value {
     Float(f64),
     Integer(i32),
     String(String),
 }
-pub(crate) struct Frame {
+pub struct Frame {
     values: HashMap<String, Value>,
 }
 
 impl Frame {
     pub(crate) fn new() -> Self {
-        Frame {
+        Self {
             values: HashMap::new(),
         }
     }
