@@ -123,6 +123,7 @@ impl<'a> Lexer<'a> {
             '}' => self.char_token(Kind::RightBrace),
             '[' => self.char_token(Kind::LeftSqBracket),
             ']' => self.char_token(Kind::RightSqBracket),
+            '#' => self.read_comment(),
             '"' => self.read_string(),
             _ => {
                 // read whitespace
@@ -182,6 +183,18 @@ impl<'a> Lexer<'a> {
         }
 
         self.text_token(start, Kind::Identifier)
+    }
+
+    fn read_comment(&mut self) -> Token<'a> {
+        let start = self.position;
+        self.read_char();
+        loop {
+            match char::from(self.byte) {
+                '\n' | '\0' => break,
+                _ => self.read_char(),
+            }
+        }
+        self.text_token(start, Kind::Comment)
     }
 
     fn read_keyword(&mut self) -> Option<Token<'a>> {
@@ -690,6 +703,20 @@ mod tests {
                 input: "@123",
                 skip_whitespace: true,
                 expected_tokens: vec![("@123", Kind::Unknown)],
+            },
+            TestCase {
+                input: "# comment",
+                skip_whitespace: true,
+                expected_tokens: vec![("# comment", Kind::Comment)],
+            },
+            TestCase {
+                input: "a; # comment",
+                skip_whitespace: true,
+                expected_tokens: vec![
+                    ("a", Kind::Identifier),
+                    (";", Kind::SemiColon),
+                    ("# comment", Kind::Comment),
+                ],
             },
         ];
 
