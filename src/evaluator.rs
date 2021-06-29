@@ -1,14 +1,14 @@
 use crate::frame::{Frame, Value};
 use crate::parser::AbstractSyntaxTree;
 
-pub struct Evaluator {
-    global: Frame,
+pub struct Evaluator<'a> {
+    global: Frame<'a>,
     errors: Vec<String>,
 }
 
-impl Evaluator {
+impl<'a> Evaluator<'a> {
     pub fn new() -> Self {
-        Self {
+        Evaluator {
             global: Frame::new(),
             errors: vec![],
         }
@@ -18,10 +18,10 @@ impl Evaluator {
         &self.errors
     }
 
-    pub fn evaluate(&mut self, ast: &AbstractSyntaxTree) -> i32 {
+    pub fn evaluate(&mut self, ast: &'a AbstractSyntaxTree) -> i32 {
         // Evaluate statements at global scope until one of them returns.
         if let Some(rc) = self.global.evaluate_body(ast.statements()) {
-            match rc {
+            match *rc {
                 Value::Integer(i) => i,
                 _ => panic!("Non-integer return type at global scope"),
             }
@@ -62,6 +62,10 @@ mod tests {
             EvaluatorTestCase {
                 input: "let a = 42; return a;",
                 return_value: 42,
+            },
+            EvaluatorTestCase {
+                input: "let a = func ( x, y ) { return x; };",
+                return_value: 0,
             },
             EvaluatorTestCase {
                 input: r#"let a = 42; let b = "Hello"; let c = 3.14159; return 7;"#,
