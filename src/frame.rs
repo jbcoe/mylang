@@ -48,7 +48,7 @@ impl<'a> Frame<'a> {
                         Value::String(_) => panic!("Cannot call a string"),
                         Value::Function(function) => {
                             if function.arguments.len() != call.arguments.len() {
-                                panic!("Mismatch in argument count for function {}", call.name)
+                                panic!("Mismatch in argument count for function {}", call.name);
                             }
                             let mut function_frame = Frame::new();
                             for (arg_name, arg_expression) in
@@ -71,8 +71,7 @@ impl<'a> Frame<'a> {
                     panic!("Unknown identifier {:?}", expression)
                 }
             }
-            Expression::UnaryPlus(_) => todo!(),
-            Expression::UnaryMinus(_) => todo!(),
+            Expression::UnaryPlus(_) | Expression::UnaryMinus(_) => todo!(),
         }
     }
 
