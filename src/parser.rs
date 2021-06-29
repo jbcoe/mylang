@@ -1,5 +1,11 @@
-use crate::ast::*;
-use crate::token::{Kind, Token};
+use crate::{
+    ast::{
+        AbstractSyntaxTree, Expression, FloatingPointExpression, FunctionCallExpression,
+        FunctionExpression, IdentifierExpression, IntegerExpression, LetStatement, ReturnStatement,
+        Statement, StringLiteralExpression, UnaryMinusExpression, UnaryPlusExpression,
+    },
+    token::{Kind, Token},
+};
 pub struct Parser<'a> {
     tokens: Vec<Token<'a>>,
     position: usize,
@@ -74,11 +80,12 @@ impl<'a> Parser<'a> {
                     self.errors
                         .push(format!("expected ';', got {:?}", self.token));
                     self.reset(start);
-                    return None;
+                    None
+                } else {
+                    Some(ReturnStatement {
+                        expression: Box::new(expression),
+                    })
                 }
-                Some(ReturnStatement {
-                    expression: Box::new(expression),
-                })
             }
         }
     }
@@ -116,13 +123,14 @@ impl<'a> Parser<'a> {
                             self.errors
                                 .push(format!("expected ';', got {:?}", self.token));
                             self.reset(start);
-                            return None;
+                            None
+                        } else {
+                            Some(LetStatement {
+                                mutable,
+                                identifier,
+                                expression: Box::new(expression),
+                            })
                         }
-                        Some(LetStatement {
-                            mutable,
-                            identifier,
-                            expression: Box::new(expression),
-                        })
                     }
                 }
             } else {
@@ -220,14 +228,15 @@ impl<'a> Parser<'a> {
 
         if self.token.kind() != Kind::RightParen {
             self.reset(start);
-            return None;
-        }
-        self.read_token(); // consume ')'.
+            None
+        } else {
+            self.read_token(); // consume ')'.
 
-        Some(FunctionCallExpression {
-            name,
-            arguments: argument_expressions,
-        })
+            Some(FunctionCallExpression {
+                name,
+                arguments: argument_expressions,
+            })
+        }
     }
 
     fn parse_unary_plus_expression(&mut self) -> Option<UnaryPlusExpression> {
