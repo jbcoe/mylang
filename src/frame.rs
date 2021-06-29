@@ -1,4 +1,4 @@
-use crate::parser::{Expression, FunctionExpression, Statement};
+use crate::ast::{Expression, FunctionExpression, Statement};
 use std::{collections::HashMap, rc::Rc};
 
 pub enum Value<'a> {
@@ -40,9 +40,39 @@ impl<'a> Frame<'a> {
                     panic!("Unknown identifier {:?}", expression)
                 }
             }
+            Expression::FunctionCall(call) => {
+                if let Some(value) = self.values.get(&call.name) {
+                    match **value {
+                        Value::Float(_) => panic!("Cannot call a float"),
+                        Value::Integer(_) => panic!("Cannot call an int"),
+                        Value::String(_) => panic!("Cannot call a string"),
+                        Value::Function(function) => {
+                            if function.arguments.len() != call.arguments.len() {
+                                panic!("Mismatch in argument count for function {}", call.name)
+                            }
+                            let mut function_frame = Frame::new();
+                            for (arg_name, arg_expression) in
+                                function.arguments.iter().zip(call.arguments.iter())
+                            {
+                                let argument_value = self.evaluate_expression(arg_expression);
+                                function_frame
+                                    .values
+                                    .insert(arg_name.clone(), argument_value);
+                            }
+                            if let Some(return_value) = function_frame.evaluate_body(&function.body)
+                            {
+                                Rc::clone(&return_value)
+                            } else {
+                                panic!("Function did not return a value")
+                            }
+                        }
+                    }
+                } else {
+                    panic!("Unknown identifier {:?}", expression)
+                }
+            }
             Expression::UnaryPlus(_) => todo!(),
             Expression::UnaryMinus(_) => todo!(),
-            Expression::FunctionCall(_) => todo!(),
         }
     }
 
