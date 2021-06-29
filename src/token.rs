@@ -4,6 +4,7 @@ use std::fmt;
 pub enum Kind {
     Colon,
     Comma,
+    Comment,
     Divide,
     DoubleEquals,
     EndOfFile,

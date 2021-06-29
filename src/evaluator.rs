@@ -69,8 +69,9 @@ mod tests {
             },
             EvaluatorTestCase {
                 input: r#"
+# Define a function.
 let first = func (a, b) { 
-    return a; 
+    return a; # indenting is non-syntactic.
 };
 let x = 1;
 let y = 2;
