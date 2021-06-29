@@ -1,24 +1,24 @@
-use crate::parser::{Expression, Statement};
-use std::collections::HashMap;
+use crate::ast::{Expression, FunctionExpression, Statement};
+use std::{collections::HashMap, rc::Rc};
 
-#[derive(Clone)]
-pub enum Value {
+pub enum Value<'a> {
     Float(f64),
     Integer(i32),
     String(String),
+    Function(&'a FunctionExpression),
 }
-pub struct Frame {
-    values: HashMap<String, Value>,
+pub struct Frame<'a> {
+    values: HashMap<String, Rc<Value<'a>>>,
 }
 
-impl Frame {
-    pub(crate) fn new() -> Self {
+impl<'a> Frame<'a> {
+    pub fn new() -> Self {
         Self {
             values: HashMap::new(),
         }
     }
 
-    pub(crate) fn evaluate_body(&mut self, body: &[Statement]) -> Option<Value> {
+    pub fn evaluate_body(&mut self, body: &'a [Statement]) -> Option<Rc<Value<'a>>> {
         for statement in body {
             if let Some(v) = self.evaluate_statement(statement) {
                 return Some(v);
@@ -27,51 +27,66 @@ impl Frame {
         None
     }
 
-    fn evaluate_statement(&mut self, statement: &Statement) -> Option<Value> {
+    fn evaluate_expression(&mut self, expression: &'a Expression) -> Rc<Value<'a>> {
+        match expression {
+            Expression::StringLiteral(s) => Rc::new(Value::String(s.value.clone())),
+            Expression::FloatingPoint(f) => Rc::new(Value::Float(f.value)),
+            Expression::Integer(i) => Rc::new(Value::Integer(i.value)),
+            Expression::Function(function) => Rc::new(Value::Function(function)),
+            Expression::Identifier(identifier) => {
+                if let Some(value) = self.values.get(&identifier.name) {
+                    Rc::clone(value)
+                } else {
+                    panic!("Unknown identifier {:?}", expression)
+                }
+            }
+            Expression::FunctionCall(call) => {
+                if let Some(value) = self.values.get(&call.name) {
+                    match **value {
+                        Value::Float(_) => panic!("Cannot call a float"),
+                        Value::Integer(_) => panic!("Cannot call an int"),
+                        Value::String(_) => panic!("Cannot call a string"),
+                        Value::Function(function) => {
+                            if function.arguments.len() != call.arguments.len() {
+                                panic!("Mismatch in argument count for function {}", call.name)
+                            }
+                            let mut function_frame = Frame::new();
+                            for (arg_name, arg_expression) in
+                                function.arguments.iter().zip(call.arguments.iter())
+                            {
+                                let argument_value = self.evaluate_expression(arg_expression);
+                                function_frame
+                                    .values
+                                    .insert(arg_name.clone(), argument_value);
+                            }
+                            if let Some(return_value) = function_frame.evaluate_body(&function.body)
+                            {
+                                Rc::clone(&return_value)
+                            } else {
+                                panic!("Function did not return a value")
+                            }
+                        }
+                    }
+                } else {
+                    panic!("Unknown identifier {:?}", expression)
+                }
+            }
+            Expression::UnaryPlus(_) => todo!(),
+            Expression::UnaryMinus(_) => todo!(),
+        }
+    }
+
+    fn evaluate_statement(&mut self, statement: &'a Statement) -> Option<Rc<Value<'a>>> {
         match &statement {
             Statement::Let(let_statement) => {
-                match &*let_statement.expression {
-                    Expression::StringLiteral(string_literal) => {
-                        self.values.insert(
-                            let_statement.identifier.clone(),
-                            Value::String(string_literal.value.clone()),
-                        );
-                    }
-                    Expression::FloatingPoint(float) => {
-                        self.values
-                            .insert(let_statement.identifier.clone(), Value::Float(float.value));
-                    }
-                    Expression::Integer(integer) => {
-                        self.values.insert(
-                            let_statement.identifier.clone(),
-                            Value::Integer(integer.value),
-                        );
-                    }
-                    _ => {
-                        panic!(
-                            "Unhandled expression kind in top-level let statement {:?}",
-                            &*let_statement.expression
-                        );
-                    }
-                }
+                let value = self.evaluate_expression(&let_statement.expression);
+                self.values.insert(let_statement.identifier.clone(), value);
                 None
             }
-            Statement::Return(return_statement) => match &*return_statement.expression {
-                Expression::StringLiteral(s) => Some(Value::String(s.value.clone())),
-                Expression::FloatingPoint(f) => Some(Value::Float(f.value)),
-                Expression::Integer(i) => Some(Value::Integer(i.value)),
-                Expression::Identifier(identifier) => {
-                    if let Some(id) = self.values.get(&identifier.name) {
-                        Some(id.clone())
-                    } else {
-                        panic!("Unknown identifier {:?}", *return_statement.expression)
-                    }
-                }
-                _ => panic!(
-                    "Unhandled expression kind in top-level return statement {:?}",
-                    *return_statement.expression
-                ),
-            },
+            Statement::Return(return_statement) => {
+                let value = self.evaluate_expression(&return_statement.expression);
+                Some(value)
+            }
         }
     }
 }
