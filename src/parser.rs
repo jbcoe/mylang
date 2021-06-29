@@ -20,8 +20,10 @@ impl<'a> Parser<'a> {
     pub fn new(input: Vec<Token>) -> Parser {
         let mut tokens = vec![];
         for token in input {
-            if token.kind() != Kind::Whitespace {
-                tokens.push(token);
+            match token.kind() {
+                // Drop whitespace and comments as they are only for humans.
+                Kind::Comment | Kind::Whitespace => (),
+                _ => tokens.push(token),
             }
         }
         Parser {
