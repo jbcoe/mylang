@@ -1,91 +1,5 @@
+use crate::ast::*;
 use crate::token::{Kind, Token};
-
-#[derive(Debug)]
-pub struct StringLiteralExpression {
-    pub value: String,
-}
-#[derive(Debug)]
-pub struct IntegerExpression {
-    pub value: i32,
-}
-#[derive(Debug)]
-pub struct FloatingPointExpression {
-    pub value: f64,
-}
-#[derive(Debug)]
-pub struct IdentifierExpression {
-    pub name: String,
-}
-
-#[derive(Debug)]
-pub struct FunctionCallExpression {
-    pub name: String,
-    pub arguments: Vec<Expression>,
-}
-
-#[derive(Debug)]
-pub enum UnaryPlusExpression {
-    Integer(IntegerExpression),
-    FloatingPoint(FloatingPointExpression),
-    Identifier(IdentifierExpression),
-}
-#[derive(Debug)]
-pub enum UnaryMinusExpression {
-    Integer(IntegerExpression),
-    FloatingPoint(FloatingPointExpression),
-    Identifier(IdentifierExpression),
-}
-
-#[derive(Debug)]
-pub struct FunctionExpression {
-    pub arguments: Vec<String>,
-    pub body: Vec<Statement>,
-}
-
-#[derive(Debug)]
-pub enum Expression {
-    StringLiteral(StringLiteralExpression),
-    Integer(IntegerExpression),
-    FloatingPoint(FloatingPointExpression),
-    Identifier(IdentifierExpression),
-    UnaryPlus(UnaryPlusExpression),
-    UnaryMinus(UnaryMinusExpression),
-    Function(FunctionExpression),
-    FunctionCall(FunctionCallExpression),
-}
-#[derive(Debug)]
-pub struct LetStatement {
-    pub mutable: bool,
-    pub identifier: String,
-    pub expression: Box<Expression>,
-}
-
-#[derive(Debug)]
-pub struct ReturnStatement {
-    pub expression: Box<Expression>,
-}
-
-#[derive(Debug)]
-pub enum Statement {
-    // Expression(Expression),
-    Let(LetStatement),
-    Return(ReturnStatement),
-}
-
-#[derive(Debug)]
-pub struct AbstractSyntaxTree {
-    statements: Vec<Statement>,
-    errors: Vec<String>,
-}
-
-impl AbstractSyntaxTree {
-    pub const fn errors(&self) -> &Vec<String> {
-        &self.errors
-    }
-    pub const fn statements(&self) -> &Vec<Statement> {
-        &self.statements
-    }
-}
 pub struct Parser<'a> {
     tokens: Vec<Token<'a>>,
     position: usize,
@@ -121,10 +35,7 @@ impl<'a> Parser<'a> {
         while let Some(stmt) = self.parse_next() {
             statements.push(stmt);
         }
-        AbstractSyntaxTree {
-            statements,
-            errors: self.errors,
-        }
+        AbstractSyntaxTree::new(statements, self.errors)
     }
 
     fn reset(&mut self, position: usize) {
@@ -677,8 +588,8 @@ mod tests {
 
             dbg!(ast.errors());
             assert!(ast.errors().is_empty());
-            assert!(ast.statements.len() == 1);
-            match &ast.statements[0] {
+            assert!(ast.statements().len() == 1);
+            match &ast.statements()[0] {
                 Statement::Let(let_statement) => {
                     assert_eq!(let_statement.identifier, test_case.identifier);
                     assert_eq!(let_statement.mutable, test_case.mutable);
@@ -711,8 +622,8 @@ mod tests {
             let errors = ast.errors();
 
             assert!(errors.is_empty(), "Expected no errors, got {:?}", errors);
-            assert_eq!(ast.statements.len(), 1);
-            match &ast.statements[0] {
+            assert_eq!(ast.statements().len(), 1);
+            match &ast.statements()[0] {
                 Statement::Return(_) => {
                     // TODO: Check some property of the expression.
                 }

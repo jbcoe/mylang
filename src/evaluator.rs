@@ -1,5 +1,5 @@
+use crate::ast::AbstractSyntaxTree;
 use crate::frame::{Frame, Value};
-use crate::parser::AbstractSyntaxTree;
 
 pub struct Evaluator<'a> {
     global: Frame<'a>,

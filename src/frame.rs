@@ -1,4 +1,4 @@
-use crate::parser::{Expression, FunctionExpression, Statement};
+use crate::ast::{Expression, FunctionExpression, Statement};
 use std::{collections::HashMap, rc::Rc};
 
 pub enum Value<'a> {
