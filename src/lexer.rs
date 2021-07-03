@@ -472,21 +472,6 @@ mod tests {
     ];
 
     lexer_test_case![
-        let_statement_with_integer_no_whitespace_checks,
-        TestCase {
-            input: "let my_value =  10;",
-            skip_whitespace: true,
-            expected_tokens: vec![
-                ("let", Kind::Let),
-                ("my_value", Kind::Identifier),
-                ("=", Kind::EqualSign),
-                ("10", Kind::Integer),
-                (";", Kind::SemiColon),
-            ],
-        }
-    ];
-
-    lexer_test_case![
         let_statement_with_function_definition,
         TestCase {
             input: "let add = func (lhs, rhs) { return lhs + rhs; };",
