@@ -40,35 +40,74 @@ mod tests {
         return_value: i32,
     }
 
-    #[test]
-    fn evaluate() {
-        let test_cases = vec![
-            EvaluatorTestCase {
-                input: "return 42;",
-                return_value: 42,
-            },
-            EvaluatorTestCase {
-                input: r#"let a = "Hello";"#,
-                return_value: 0,
-            },
-            EvaluatorTestCase {
-                input: "let a = 3.14159;",
-                return_value: 0,
-            },
-            EvaluatorTestCase {
-                input: "let a = 42;",
-                return_value: 0,
-            },
-            EvaluatorTestCase {
-                input: "let a = 42; return a;",
-                return_value: 42,
-            },
-            EvaluatorTestCase {
-                input: "let a = func ( x, y ) { return x; };",
-                return_value: 0,
-            },
-            EvaluatorTestCase {
-                input: r#"
+    macro_rules! evaluator_test_case {
+        ($test_name:ident, $test_case:expr) => {
+            #[test]
+            fn $test_name() {
+                let tokens = Lexer::new($test_case.input).tokens();
+                let parser = Parser::new(tokens);
+                let ast = parser.ast();
+                let errors = ast.errors();
+
+                assert!(errors.is_empty(), "Expected no errors, got {:?}", errors);
+                let mut evaluator = Evaluator::new();
+                assert_eq!(evaluator.evaluate(&ast), $test_case.return_value);
+            }
+        };
+    }
+
+    evaluator_test_case![
+        return_integer,
+        EvaluatorTestCase {
+            input: "return 42;",
+            return_value: 42,
+        }
+    ];
+
+    evaluator_test_case![
+        let_string_no_return,
+        EvaluatorTestCase {
+            input: r#"let a = "Hello";"#,
+            return_value: 0,
+        }
+    ];
+
+    evaluator_test_case![
+        let_float_no_return,
+        EvaluatorTestCase {
+            input: "let a = 3.14159;",
+            return_value: 0,
+        }
+    ];
+
+    evaluator_test_case![
+        let_integer_no_return,
+        EvaluatorTestCase {
+            input: "let a = 42;",
+            return_value: 0,
+        }
+    ];
+
+    evaluator_test_case![
+        let_integer_return_identifier,
+        EvaluatorTestCase {
+            input: "let a = 42; return a;",
+            return_value: 42,
+        }
+    ];
+
+    evaluator_test_case![
+        let_function_no_return,
+        EvaluatorTestCase {
+            input: "let a = func ( x, y ) { return x; };",
+            return_value: 0,
+        }
+    ];
+
+    evaluator_test_case![
+        let_function_return_invocation_with_identifiers,
+        EvaluatorTestCase {
+            input: r#"
 # Define a function.
 let first = func (a, b) { 
     return a; # indenting is non-syntactic.
@@ -77,35 +116,35 @@ let x = 1;
 let y = 2;
 let z = first(x, y);
 return z;"#,
-                return_value: 1,
-            },
-            EvaluatorTestCase {
-                input: r#"
+            return_value: 1,
+        }
+    ];
+
+    evaluator_test_case![
+        let_function_return_invocation_with_literals,
+        EvaluatorTestCase {
+            input: r#"
 let first = func (a, b) { 
     return a; 
 };
 return first(101, 2);"#,
-                return_value: 101,
-            },
-            EvaluatorTestCase {
-                input: r#"let a = 42; let b = "Hello"; let c = 3.14159; return 7;"#,
-                return_value: 7,
-            },
-            EvaluatorTestCase {
-                input: r#"let a = 42; a;"#,
-                return_value: 0, // not 42
-            },
-        ];
-
-        for test_case in test_cases {
-            let tokens = Lexer::new(test_case.input).tokens();
-            let parser = Parser::new(tokens);
-            let ast = parser.ast();
-            let errors = ast.errors();
-
-            assert!(errors.is_empty(), "Expected no errors, got {:?}", errors);
-            let mut evaluator = Evaluator::new();
-            assert_eq!(evaluator.evaluate(&ast), test_case.return_value);
+            return_value: 101,
         }
-    }
+    ];
+
+    evaluator_test_case![
+        assorted_let_with_return_integer,
+        EvaluatorTestCase {
+            input: r#"let a = 42; let b = "Hello"; let c = 3.14159; return 7;"#,
+            return_value: 7,
+        }
+    ];
+
+    evaluator_test_case![
+        assorted_let_with_return_identifier,
+        EvaluatorTestCase {
+            input: r#"let a = 42; a;"#,
+            return_value: 0, // not 42
+        }
+    ];
 }

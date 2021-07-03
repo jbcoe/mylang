@@ -468,97 +468,59 @@ mod tests {
         expected_errors: Vec<&'static str>,
     }
 
-    #[test]
-    fn check_errors() {
-        let test_cases = vec![
-            // Success cases
-            ParserErrorTestCase {
-                input: "let x = a;",
-                expected_errors: vec![],
-            },
-            ParserErrorTestCase {
-                input: "let x = 5;",
-                expected_errors: vec![],
-            },
-            ParserErrorTestCase {
-                input: "let x = 3.14159;",
-                expected_errors: vec![],
-            },
-            ParserErrorTestCase {
-                input: r#"let x = "Hello";"#,
-                expected_errors: vec![],
-            },
-            ParserErrorTestCase {
-                input: "let x = +1;",
-                expected_errors: vec![],
-            },
-            ParserErrorTestCase {
-                input: "let x = -1;",
-                expected_errors: vec![],
-            },
-            ParserErrorTestCase {
-                input: "let x = +3.14159;",
-                expected_errors: vec![],
-            },
-            ParserErrorTestCase {
-                input: "let x = -3.14159;",
-                expected_errors: vec![],
-            },
-            ParserErrorTestCase {
-                input: "let x = -a;",
-                expected_errors: vec![],
-            },
-            ParserErrorTestCase {
-                input: "let x = +a;",
-                expected_errors: vec![],
-            },
-            // Error cases
-            ParserErrorTestCase {
-                input: "let 123 = x;",
-                expected_errors: vec![
-                    r#"expected identifier, got Token { text: "123", kind: Integer }"#,
-                    r#"Parse error when parsing let-statement Token { text: "let", kind: Let }"#,
-                ],
-            },
-        ];
+    macro_rules! parser_error_test_case {
+        ($test_name:ident, $test_case:expr) => {
+            #[test]
+            fn $test_name() {
+                let tokens = Lexer::new($test_case.input).tokens();
+                let parser = Parser::new(tokens);
+                let ast = parser.ast();
+                let errors = ast.errors();
 
-        for test_case in &test_cases {
-            let tokens = Lexer::new(test_case.input).tokens();
-            let parser = Parser::new(tokens);
-            let ast = parser.ast();
-            let errors = ast.errors();
-
-            for (expected, actual) in test_case.expected_errors.iter().zip(errors.iter()) {
-                assert_eq!(
-                    expected, actual,
-                    "Parse error mismatch while parsing {}",
-                    test_case.input
-                );
-            }
-
-            match test_case.expected_errors.len().cmp(&errors.len()) {
-                Ordering::Greater => {
-                    for expected in &test_case.expected_errors[errors.len()..] {
-                        assert_eq!(
-                            *expected, "",
-                            "Expected parse error not encountered while parsing {}",
-                            test_case.input
-                        );
-                    }
+                for (expected, actual) in $test_case.expected_errors.iter().zip(errors.iter()) {
+                    assert_eq!(
+                        expected, actual,
+                        "Parse error mismatch while parsing {}",
+                        $test_case.input
+                    );
                 }
-                Ordering::Less => {
-                    for error in &errors[test_case.expected_errors.len()..] {
-                        assert_eq!(
-                            error, "",
-                            "Unexpected parse error encountered while parsing {}",
-                            test_case.input
-                        );
+
+                match $test_case.expected_errors.len().cmp(&errors.len()) {
+                    Ordering::Greater => {
+                        for expected in &$test_case.expected_errors[errors.len()..] {
+                            assert_eq!(
+                                *expected, "",
+                                "Expected parse error not encountered while parsing {}",
+                                $test_case.input
+                            );
+                        }
                     }
+                    Ordering::Less => {
+                        for error in &errors[$test_case.expected_errors.len()..] {
+                            assert_eq!(
+                                error, "",
+                                "Unexpected parse error encountered while parsing {}",
+                                $test_case.input
+                            );
+                        }
+                    }
+                    Ordering::Equal => {}
                 }
-                Ordering::Equal => {}
             }
-        }
+        };
     }
+
+    parser_error_test_case![
+        let_assigns_to_an_integer,
+        // Error cases
+        ParserErrorTestCase {
+            input: "let 123 = x;",
+            expected_errors: vec![
+                r#"expected identifier, got Token { text: "123", kind: Integer }"#,
+                r#"Parse error when parsing let-statement Token { text: "let", kind: Let }"#,
+            ],
+        }
+    ];
 
     #[derive(Debug)]
     struct ParseLetStatementTest {
@@ -567,109 +529,114 @@ mod tests {
         mutable: bool,
     }
 
-    #[test]
-    fn test_parse_let_statement() {
-        let test_cases = vec![
-            ParseLetStatementTest {
-                input: "let x = a;",
-                identifier: "x",
-                mutable: false,
-            },
-            ParseLetStatementTest {
-                input: "let mut minus_pi = -3.14159;",
-                identifier: "minus_pi",
-                mutable: true,
-            },
-            ParseLetStatementTest {
-                input: r#"let x = "Hello";"#,
-                identifier: "x",
-                mutable: false,
-            },
-            ParseLetStatementTest {
-                input: "let first = func (a, b) { return a; };",
-                identifier: "first",
-                mutable: false,
-            },
-            ParseLetStatementTest {
-                input: "let max = largest (a, b);",
-                identifier: "max",
-                mutable: false,
-            },
-        ];
+    macro_rules! parse_let_statement_test_case {
+        ($test_name:ident, $test_case:expr) => {
+            #[test]
+            fn $test_name() {
+                let tokens = Lexer::new($test_case.input).tokens();
+                let parser = Parser::new(tokens);
+                let ast = parser.ast();
+                let errors = ast.errors();
 
-        for test_case in &test_cases {
-            let tokens = Lexer::new(test_case.input).tokens();
-            let parser = Parser::new(tokens);
-            let ast = parser.ast();
-
-            dbg!(ast.errors());
-            assert!(ast.errors().is_empty());
-            assert!(ast.statements().len() == 1);
-            match &ast.statements()[0] {
-                Statement::Let(let_statement) => {
-                    assert_eq!(let_statement.identifier, test_case.identifier);
-                    assert_eq!(let_statement.mutable, test_case.mutable);
-                    // TODO: Check some property of the expression.
-                }
-                Statement::Expression(_) | Statement::Return(_) => {
-                    panic!("Expected a let statement");
+                assert!(errors.is_empty(), "Expected no errors, got {:?}", errors);
+                assert_eq!(ast.statements().len(), 1);
+                match &ast.statements()[0] {
+                    Statement::Let(let_statement) => {
+                        assert_eq!(let_statement.identifier, $test_case.identifier);
+                        assert_eq!(let_statement.mutable, $test_case.mutable);
+                        // TODO: Check some property of the expression.
+                    }
+                    Statement::Expression(_) | Statement::Return(_) => {
+                        panic!("Expected a let statement")
+                    }
                 }
             }
-        }
+        };
     }
+
+    parse_let_statement_test_case![
+        let_identifier,
+        ParseLetStatementTest {
+            input: "let x = a;",
+            identifier: "x",
+            mutable: false,
+        }
+    ];
+
+    parse_let_statement_test_case![
+        let_mutable_float,
+        ParseLetStatementTest {
+            input: "let mut minus_pi = -3.14159;",
+            identifier: "minus_pi",
+            mutable: true,
+        }
+    ];
+
+    parse_let_statement_test_case![
+        let_string,
+        ParseLetStatementTest {
+            input: r#"let x = "Hello";"#,
+            identifier: "x",
+            mutable: false,
+        }
+    ];
+
+    parse_let_statement_test_case![
+        let_function,
+        ParseLetStatementTest {
+            input: "let first = func (a, b) { return a; };",
+            identifier: "first",
+            mutable: false,
+        }
+    ];
+
+    parse_let_statement_test_case![
+        let_function_call,
+        ParseLetStatementTest {
+            input: "let max = largest (a, b);",
+            identifier: "max",
+            mutable: false,
+        }
+    ];
 
     struct ParseReturnStatementTest {
         input: &'static str,
     }
 
-    #[test]
-    fn parse_return_statement_test() {
-        let test_cases = vec![
-            ParseReturnStatementTest {
-                input: "return 42;",
-            },
-            ParseReturnStatementTest {
-                input: r#"return "the solution";"#,
-            },
-        ];
+    macro_rules! parse_return_statement_test_case {
+        ($test_name:ident, $test_case:expr) => {
+            #[test]
+            fn $test_name() {
+                let tokens = Lexer::new($test_case.input).tokens();
+                let parser = Parser::new(tokens);
+                let ast = parser.ast();
+                let errors = ast.errors();
 
-        for test_case in &test_cases {
-            let tokens = Lexer::new(test_case.input).tokens();
-            let parser = Parser::new(tokens);
-            let ast = parser.ast();
-            let errors = ast.errors();
-
-            assert!(errors.is_empty(), "Expected no errors, got {:?}", errors);
-            assert_eq!(ast.statements().len(), 1);
-            match &ast.statements()[0] {
-                Statement::Return(_) => {
-                    // TODO: Check some property of the expression.
-                }
-                Statement::Expression(_) | Statement::Let(_) => {
-                    panic!("Expected a return statement.");
+                assert!(errors.is_empty(), "Expected no errors, got {:?}", errors);
+                assert_eq!(ast.statements().len(), 1);
+                match &ast.statements()[0] {
+                    Statement::Return(_) => {
+                        // TODO: Check some property of the expression.
+                    }
+                    Statement::Expression(_) | Statement::Let(_) => {
+                        panic!("Expected a return statement.")
+                    }
                 }
             }
-        }
+        };
     }
 
-    #[test]
-    fn parse_identifier_expression_statement_test() {
-        let input = "a;";
-        let tokens = Lexer::new(input).tokens();
-        let parser = Parser::new(tokens);
-        let ast = parser.ast();
-        let errors = ast.errors();
-
-        assert!(errors.is_empty(), "Expected no errors, got {:?}", errors);
-        assert_eq!(ast.statements().len(), 1);
-        match &ast.statements()[0] {
-            Statement::Expression(expression) => match expression {
-                Expression::Identifier(identifier) => {
-                    assert_eq!(identifier.name, "a");
-                }
-                _ => panic!("Expected an identifier expression."),
-            },
-            Statement::Return(_) | Statement::Let(_) => panic!("Expected an expression statement."),
+    parse_return_statement_test_case![
+        return_integer,
+        ParseReturnStatementTest {
+            input: "return 42;",
         }
-    }
+    ];
+
+    parse_return_statement_test_case![
+        return_string_literal,
+        ParseReturnStatementTest {
+            input: r#"return "the solution";"#,
+        }
+    ];
 }
