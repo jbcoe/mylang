@@ -78,15 +78,15 @@ impl<'a> Parser<'a> {
                 None
             }
             Some(expression) => {
-                if self.token.kind() != Kind::SemiColon {
+                if self.token.kind() == Kind::SemiColon {
+                    Some(ReturnStatement {
+                        expression: Box::new(expression),
+                    })
+                } else {
                     self.errors
                         .push(format!("expected ';', got {:?}", self.token));
                     self.reset(start);
                     None
-                } else {
-                    Some(ReturnStatement {
-                        expression: Box::new(expression),
-                    })
                 }
             }
         }
@@ -121,17 +121,17 @@ impl<'a> Parser<'a> {
                         None
                     }
                     Some(expression) => {
-                        if self.token.kind() != Kind::SemiColon {
-                            self.errors
-                                .push(format!("expected ';', got {:?}", self.token));
-                            self.reset(start);
-                            None
-                        } else {
+                        if self.token.kind() == Kind::SemiColon {
                             Some(LetStatement {
                                 mutable,
                                 identifier,
                                 expression: Box::new(expression),
                             })
+                        } else {
+                            self.errors
+                                .push(format!("expected ';', got {:?}", self.token));
+                            self.reset(start);
+                            None
                         }
                     }
                 }
@@ -151,14 +151,12 @@ impl<'a> Parser<'a> {
 
     fn parse_expression(&mut self) -> Option<Expression> {
         match self.token.kind() {
-            Kind::Identifier => {
-                if let Some(function_call) = self.parse_fuction_call_expression() {
-                    Some(Expression::FunctionCall(function_call))
-                } else {
-                    self.parse_identifier_expression()
-                        .map(Expression::Identifier)
-                }
-            }
+            Kind::Identifier => match self.parse_function_call_expression() {
+                Some(function_call) => Some(Expression::FunctionCall(function_call)),
+                None => self
+                    .parse_identifier_expression()
+                    .map(Expression::Identifier),
+            },
             Kind::Integer => self.parse_integer_expression().map(Expression::Integer),
             Kind::FloatingPoint => self
                 .parse_floating_point_expression()
@@ -196,7 +194,7 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn parse_fuction_call_expression(&mut self) -> Option<FunctionCallExpression> {
+    fn parse_function_call_expression(&mut self) -> Option<FunctionCallExpression> {
         assert!(self.token.kind() == Kind::Identifier);
         let start = self.position;
         let name = self.token.text();
@@ -228,16 +226,16 @@ impl<'a> Parser<'a> {
             }
         }
 
-        if self.token.kind() != Kind::RightParen {
-            self.reset(start);
-            None
-        } else {
+        if self.token.kind() == Kind::RightParen {
             self.read_token(); // consume ')'.
 
             Some(FunctionCallExpression {
                 name,
                 arguments: argument_expressions,
             })
+        } else {
+            self.reset(start);
+            None
         }
     }
 
@@ -613,8 +611,9 @@ mod tests {
                     assert_eq!(let_statement.mutable, test_case.mutable);
                     // TODO: Check some property of the expression.
                 }
-                Statement::Expression(_) => panic!("Expected a let statement"),
-                Statement::Return(_) => panic!("Expected a let statement"),
+                Statement::Expression(_) | Statement::Return(_) => {
+                    panic!("Expected a let statement");
+                }
             }
         }
     }
@@ -646,8 +645,9 @@ mod tests {
                 Statement::Return(_) => {
                     // TODO: Check some property of the expression.
                 }
-                Statement::Expression(_) => panic!("Expected a return statement."),
-                Statement::Let(_) => panic!("Expected a return statement."),
+                Statement::Expression(_) | Statement::Let(_) => {
+                    panic!("Expected a return statement.");
+                }
             }
         }
     }
@@ -665,12 +665,11 @@ mod tests {
         match &ast.statements()[0] {
             Statement::Expression(expression) => match expression {
                 Expression::Identifier(identifier) => {
-                    assert_eq!(identifier.name, "a")
+                    assert_eq!(identifier.name, "a");
                 }
                 _ => panic!("Expected an identifier expression."),
             },
-            Statement::Return(_) => panic!("Expected an expression statement."),
-            Statement::Let(_) => panic!("Expected an expression statement."),
+            Statement::Return(_) | Statement::Let(_) => panic!("Expected an expression statement."),
         }
     }
 }
