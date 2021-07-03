@@ -403,42 +403,49 @@ impl<'a> Parser<'a> {
         Some(FunctionExpression { arguments, body })
     }
 
-    fn parse_statement(&mut self) -> Option<Statement> {
-        let statement;
+    fn parse_expression_statement(&mut self) -> Option<Expression> {
+        self.parse_expression()
+    }
 
+    fn parse_statement(&mut self) -> Option<Statement> {
         match self.token.kind() {
             Kind::Let => {
                 if let Some(stmt) = self.parse_let_statement() {
-                    statement = Statement::Let(stmt);
+                    self.read_token(); // consume ';'
+                    Some(Statement::Let(stmt))
                 } else {
                     self.errors.push(format!(
                         "Parse error when parsing let-statement {:?}",
                         self.token
                     ));
-                    return None;
+                    None
                 }
             }
             Kind::Return => {
                 if let Some(stmt) = self.parse_return_statement() {
-                    statement = Statement::Return(stmt);
+                    self.read_token(); // consume ';'
+                    Some(Statement::Return(stmt))
                 } else {
                     self.errors.push(format!(
                         "Parse error when parsing return-statement {:?}",
                         self.token
                     ));
-                    return None;
+                    None
                 }
             }
             _ => {
-                self.errors.push(format!(
-                    "Parse error: unexpected token kind when parsing statement {:?}",
-                    self.token.kind()
-                ));
-                return None;
+                if let Some(stmt) = self.parse_expression_statement() {
+                    self.read_token(); // consume ';'
+                    Some(Statement::Expression(stmt))
+                } else {
+                    self.errors.push(format!(
+                        "Parse error: unexpected token kind when parsing statement {:?}",
+                        self.token.kind()
+                    ));
+                    None
+                }
             }
         }
-        self.read_token(); // consume ';'
-        Some(statement)
     }
 
     fn parse_next(&mut self) -> Option<Statement> {
@@ -606,6 +613,7 @@ mod tests {
                     assert_eq!(let_statement.mutable, test_case.mutable);
                     // TODO: Check some property of the expression.
                 }
+                Statement::Expression(_) => panic!("Expected a let statement"),
                 Statement::Return(_) => panic!("Expected a let statement"),
             }
         }
@@ -638,8 +646,31 @@ mod tests {
                 Statement::Return(_) => {
                     // TODO: Check some property of the expression.
                 }
+                Statement::Expression(_) => panic!("Expected a return statement."),
                 Statement::Let(_) => panic!("Expected a return statement."),
             }
+        }
+    }
+
+    #[test]
+    fn parse_identifier_expression_statement_test() {
+        let input = "a;";
+        let tokens = Lexer::new(input).tokens();
+        let parser = Parser::new(tokens);
+        let ast = parser.ast();
+        let errors = ast.errors();
+
+        assert!(errors.is_empty(), "Expected no errors, got {:?}", errors);
+        assert_eq!(ast.statements().len(), 1);
+        match &ast.statements()[0] {
+            Statement::Expression(expression) => match expression {
+                Expression::Identifier(identifier) => {
+                    assert_eq!(identifier.name, "a")
+                }
+                _ => panic!("Expected an identifier expression."),
+            },
+            Statement::Return(_) => panic!("Expected an expression statement."),
+            Statement::Let(_) => panic!("Expected an expression statement."),
         }
     }
 }

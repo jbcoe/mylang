@@ -86,6 +86,11 @@ impl<'a> Frame<'a> {
                 let value = self.evaluate_expression(&return_statement.expression);
                 Some(value)
             }
+            Statement::Expression(expression) => {
+                let _value = self.evaluate_expression(expression);
+                // TODO: Print _value to the console if we're in a REPL.
+                None
+            }
         }
     }
 }
