@@ -147,4 +147,20 @@ return first(101, 2);"#,
             return_value: 0, // not 42
         }
     ];
+
+    evaluator_test_case![
+        function_call_returns_true,
+        EvaluatorTestCase {
+            input: r#"let f = func() { return True;}; let a = f();"#,
+            return_value: 0,
+        }
+    ];
+
+    evaluator_test_case![
+        function_call_returns_false,
+        EvaluatorTestCase {
+            input: r#"let f = func() { return False;}; let a = f();"#,
+            return_value: 0,
+        }
+    ];
 }
