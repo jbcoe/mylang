@@ -26,9 +26,9 @@ pub struct Opt {
     #[structopt(short, long)]
     parse_only: bool,
 
-    /// Files to process
+    /// Filename to process. Omit to process standard input
     #[structopt(name = "FILE", parse(from_os_str))]
-    files: Vec<PathBuf>,
+    file: Option<PathBuf>,
 }
 
 /// process first filepath in Files, or stdin if empty
@@ -41,14 +41,14 @@ pub fn real_main(opt: &Opt) -> Result<i32> {
     let stdout = io::stdout();
     let mut outio = stdout.lock();
 
-    if opt.files.is_empty() {
-        process_stream(io::stdin(), &mut outio, opt).with_context(|| "while reading stdin")
-    } else {
-        let filepath = &opt.files[0];
-        let file = File::open(&filepath)
-            .with_context(|| format!("Failed to open file at {}", filepath.display()))?;
-        process_stream(file, &mut outio, opt)
-            .with_context(|| format!("while reading {}", filepath.display()))
+    match &opt.file {
+        Some(filepath) => {
+            let file = File::open(&filepath)
+                .with_context(|| format!("Failed to open file at {}", filepath.display()))?;
+            process_stream(file, &mut outio, opt)
+                .with_context(|| format!("while reading {}", filepath.display()))
+        }
+        None => process_stream(io::stdin(), &mut outio, opt).with_context(|| "while reading stdin"),
     }
 }
 
