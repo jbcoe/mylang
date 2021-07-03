@@ -22,6 +22,10 @@ pub struct Opt {
     #[structopt(short, long)]
     alternate: bool,
 
+    /// Parse only (skip evaluation)
+    #[structopt(short, long)]
+    parse_only: bool,
+
     /// Files to process
     #[structopt(name = "FILE", parse(from_os_str))]
     files: Vec<PathBuf>,
@@ -70,8 +74,17 @@ fn process_text<W: Write>(mut out: W, text: &str, options: &Opt) -> Result<i32> 
     } else {
         lex_and_parse(&mut out, text)?
     };
+    let result = if options.parse_only {
+        0
+    } else {
+        evaluate(out, &ast)?
+    };
+    Ok(result)
+}
+
+fn evaluate<W: Write>(mut out: W, ast: &AbstractSyntaxTree) -> Result<i32, anyhow::Error> {
     let mut evaluator = Evaluator::new();
-    let result = evaluator.evaluate(&ast);
+    let result = evaluator.evaluate(ast);
     for err in evaluator.errors() {
         writeln!(out, "{}", err)?;
     }
