@@ -65,7 +65,7 @@ pub struct ReturnStatement {
 
 #[derive(Debug)]
 pub enum Statement {
-    // Expression(Expression),
+    Expression(Expression),
     Let(LetStatement),
     Return(ReturnStatement),
 }
