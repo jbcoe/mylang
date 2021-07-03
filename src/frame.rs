@@ -2,10 +2,11 @@ use crate::ast::{Expression, FunctionExpression, Statement};
 use std::{collections::HashMap, rc::Rc};
 
 pub enum Value<'a> {
+    Boolean(bool),
     Float(f64),
+    Function(&'a FunctionExpression),
     Integer(i32),
     String(String),
-    Function(&'a FunctionExpression),
 }
 pub struct Frame<'a> {
     values: HashMap<String, Rc<Value<'a>>>,
@@ -29,10 +30,11 @@ impl<'a> Frame<'a> {
 
     fn evaluate_expression(&mut self, expression: &'a Expression) -> Rc<Value<'a>> {
         match expression {
-            Expression::StringLiteral(s) => Rc::new(Value::String(s.value.clone())),
+            Expression::Boolean(b) => Rc::new(Value::Boolean(b.value)),
             Expression::FloatingPoint(f) => Rc::new(Value::Float(f.value)),
-            Expression::Integer(i) => Rc::new(Value::Integer(i.value)),
             Expression::Function(function) => Rc::new(Value::Function(function)),
+            Expression::Integer(i) => Rc::new(Value::Integer(i.value)),
+            Expression::StringLiteral(s) => Rc::new(Value::String(s.value.clone())),
             Expression::Identifier(identifier) => {
                 if let Some(value) = self.values.get(&identifier.name) {
                     Rc::clone(value)
@@ -43,6 +45,7 @@ impl<'a> Frame<'a> {
             Expression::FunctionCall(call) => {
                 if let Some(value) = self.values.get(&call.name) {
                     match **value {
+                        Value::Boolean(_) => panic!("Cannot call a boolean"),
                         Value::Float(_) => panic!("Cannot call a float"),
                         Value::Integer(_) => panic!("Cannot call an int"),
                         Value::String(_) => panic!("Cannot call a string"),

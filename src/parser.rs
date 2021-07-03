@@ -1,8 +1,9 @@
 use crate::{
     ast::{
-        AbstractSyntaxTree, Expression, FloatingPointExpression, FunctionCallExpression,
-        FunctionExpression, IdentifierExpression, IntegerExpression, LetStatement, ReturnStatement,
-        Statement, StringLiteralExpression, UnaryMinusExpression, UnaryPlusExpression,
+        AbstractSyntaxTree, BooleanExpression, Expression, FloatingPointExpression,
+        FunctionCallExpression, FunctionExpression, IdentifierExpression, IntegerExpression,
+        LetStatement, ReturnStatement, Statement, StringLiteralExpression, UnaryMinusExpression,
+        UnaryPlusExpression,
     },
     token::{Kind, Token},
 };
@@ -171,6 +172,7 @@ impl<'a> Parser<'a> {
             Kind::Minus => self
                 .parse_unary_minus_expression()
                 .map(Expression::UnaryMinus),
+            Kind::True | Kind::False => self.parse_boolean_expression().map(Expression::Boolean),
             _ => {
                 self.errors.push(format!(
                     "Parse error when parsing expression {:?}",
@@ -282,6 +284,21 @@ impl<'a> Parser<'a> {
                 ));
                 None
             }
+        }
+    }
+
+    fn parse_boolean_expression(&mut self) -> Option<BooleanExpression> {
+        assert!(self.token.kind() == Kind::True || self.token.kind() == Kind::False);
+        match self.token.kind() {
+            Kind::True => {
+                self.read_token(); // consume `value`
+                Some(BooleanExpression { value: true })
+            }
+            Kind::False => {
+                self.read_token(); // consume `value`
+                Some(BooleanExpression { value: false })
+            }
+            _ => None,
         }
     }
 
@@ -576,6 +593,24 @@ mod tests {
         let_string,
         ParseLetStatementTest {
             input: r#"let x = "Hello";"#,
+            identifier: "x",
+            mutable: false,
+        }
+    ];
+
+    parse_let_statement_test_case![
+        let_true,
+        ParseLetStatementTest {
+            input: r"let x = True;",
+            identifier: "x",
+            mutable: false,
+        }
+    ];
+
+    parse_let_statement_test_case![
+        let_false,
+        ParseLetStatementTest {
+            input: r"let x = False;",
             identifier: "x",
             mutable: false,
         }

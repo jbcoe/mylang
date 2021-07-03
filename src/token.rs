@@ -9,6 +9,7 @@ pub enum Kind {
     DoubleEquals,
     EndOfFile,
     EqualSign,
+    False,
     FloatingPoint,
     Function,
     Greater,
@@ -34,6 +35,7 @@ pub enum Kind {
     SemiColon,
     Star,
     String,
+    True,
     Unknown,
     Whitespace,
 }

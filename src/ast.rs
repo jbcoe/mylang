@@ -11,6 +11,10 @@ pub struct FloatingPointExpression {
     pub value: f64,
 }
 #[derive(Debug)]
+pub struct BooleanExpression {
+    pub value: bool,
+}
+#[derive(Debug)]
 pub struct IdentifierExpression {
     pub name: String,
 }
@@ -42,14 +46,15 @@ pub struct FunctionExpression {
 
 #[derive(Debug)]
 pub enum Expression {
-    StringLiteral(StringLiteralExpression),
-    Integer(IntegerExpression),
+    Boolean(BooleanExpression),
     FloatingPoint(FloatingPointExpression),
-    Identifier(IdentifierExpression),
-    UnaryPlus(UnaryPlusExpression),
-    UnaryMinus(UnaryMinusExpression),
     Function(FunctionExpression),
     FunctionCall(FunctionCallExpression),
+    Identifier(IdentifierExpression),
+    Integer(IntegerExpression),
+    StringLiteral(StringLiteralExpression),
+    UnaryMinus(UnaryMinusExpression),
+    UnaryPlus(UnaryPlusExpression),
 }
 #[derive(Debug)]
 pub struct LetStatement {
