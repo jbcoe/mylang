@@ -91,6 +91,10 @@ return first(101, 2);"#,
                 input: r#"let a = 42; let b = "Hello"; let c = 3.14159; return 7;"#,
                 return_value: 7,
             },
+            EvaluatorTestCase {
+                input: r#"let a = 42; a;"#,
+                return_value: 0, // not 42
+            },
         ];
 
         for test_case in test_cases {

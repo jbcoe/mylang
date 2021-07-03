@@ -117,7 +117,7 @@ mod tests {
 
     #[test]
     fn valid_utf8_input_doesnt_panic() {
-        let valid_utf8: &[u8] = b"meow";
+        let valid_utf8: &[u8] = b"let meow; meow";
         process_stream(valid_utf8, io::sink()).unwrap();
     }
 }
