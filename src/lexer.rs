@@ -346,13 +346,13 @@ mod tests {
     }
 
     macro_rules! lexer_test_case {
-        ( $test_name:ident, $test_case:expr ) => {
+        ( name: $test_name:ident, input: $input:expr, expected_tokens:$expected_tokens:expr,) => {
             #[test]
             fn $test_name() {
-                let mut lexer = Lexer::new($test_case.input);
-                for expected_token in &$test_case.expected_tokens {
+                let mut lexer = Lexer::new($input);
+                for expected_token in &$expected_tokens {
                     let mut t = lexer.next_token();
-                    while t.kind() == Kind::Whitespace && $test_case.skip_whitespace {
+                    while t.kind() == Kind::Whitespace {
                         t = lexer.next_token();
                     }
                     assert_eq!(t.text(), expected_token.0);
@@ -361,537 +361,432 @@ mod tests {
                 assert_eq!(lexer.next_token().kind(), Kind::EndOfFile);
             }
         };
+        ( name: $test_name:ident, input: $input:expr, expected_tokens:$expected_tokens:expr, check_whitespace: true,) => {
+            #[test]
+            fn $test_name() {
+                let mut lexer = Lexer::new($input);
+                for expected_token in &$expected_tokens {
+                    let t = lexer.next_token();
+                    assert_eq!(t.text(), expected_token.0);
+                    assert_eq!(t.kind(), expected_token.1);
+                }
+                assert_eq!(lexer.next_token().kind(), Kind::EndOfFile);
+            }
+        };
     }
 
-    lexer_test_case![
-        let_statement_with_string,
-        TestCase {
-            input: r#"let myPet = "Timmy the dog";"#,
-            skip_whitespace: false,
-            expected_tokens: vec![
-                ("let", Kind::Let),
-                (" ", Kind::Whitespace),
-                ("myPet", Kind::Identifier),
-                (" ", Kind::Whitespace),
-                ("=", Kind::EqualSign),
-                (" ", Kind::Whitespace),
-                (r#""Timmy the dog""#, Kind::String),
-                (";", Kind::SemiColon),
+    lexer_test_case! {
+        name: let_statement_with_string,
+        input: r#"let myPet = "Timmy the dog";"#,
+        expected_tokens: vec![
+            ("let", Kind::Let),
+            (" ", Kind::Whitespace),
+            ("myPet", Kind::Identifier),
+            (" ", Kind::Whitespace),
+            ("=", Kind::EqualSign),
+            (" ", Kind::Whitespace),
+            (r#""Timmy the dog""#, Kind::String),
+            (";", Kind::SemiColon),
+        ],
+        check_whitespace: true,
+    }
+
+    lexer_test_case! {
+        name: let_statement_with_bad_identifier,
+        input: "let myPet  =  10dog01 ;",
+        expected_tokens: vec![
+            ("let", Kind::Let),
+            (" ", Kind::Whitespace),
+            ("myPet", Kind::Identifier),
+            ("  ", Kind::Whitespace),
+            ("=", Kind::EqualSign),
+            ("  ", Kind::Whitespace),
+            ("10dog01", Kind::Unknown),
+            (" ", Kind::Whitespace),
+            (";", Kind::SemiColon),
+        ],
+        check_whitespace: true,
+    }
+
+    lexer_test_case! {
+        name: let_statement_with_unfinished_string,
+        input: r#"let mut myPet = "string with unbalanced quotes"#,
+        expected_tokens: vec![
+            ("let", Kind::Let),
+            (" ", Kind::Whitespace),
+            ("mut", Kind::Mut),
+            (" ", Kind::Whitespace),
+            ("myPet", Kind::Identifier),
+            (" ", Kind::Whitespace),
+            ("=", Kind::EqualSign),
+            (" ", Kind::Whitespace),
+            (r#""string with unbalanced quotes"#, Kind::Unknown),
+        ],
+        check_whitespace: true,
+    }
+
+    lexer_test_case! {
+        name: let_statement_with_integer,
+        input: "let myNumber = 1001;",
+        expected_tokens: vec![
+            ("let", Kind::Let),
+            (" ", Kind::Whitespace),
+            ("myNumber", Kind::Identifier),
+            (" ", Kind::Whitespace),
+            ("=", Kind::EqualSign),
+            (" ", Kind::Whitespace),
+            ("1001", Kind::Integer),
+            (";", Kind::SemiColon),
+        ],
+        check_whitespace: true,
+    }
+
+    lexer_test_case! {
+        name: let_statement_with_identifier,
+        input: "let myValue = anotherValue;",
+        expected_tokens: vec![
+            ("let", Kind::Let),
+            (" ", Kind::Whitespace),
+            ("myValue", Kind::Identifier),
+            (" ", Kind::Whitespace),
+            ("=", Kind::EqualSign),
+            (" ", Kind::Whitespace),
+            ("anotherValue", Kind::Identifier),
+            (";", Kind::SemiColon),
+        ],
+        check_whitespace: true,
+    }
+
+    lexer_test_case! {
+    name: let_statement_with_identifier_containing_number,
+    input: "let value = value0;",
+        expected_tokens: vec![
+            ("let", Kind::Let),
+            (" ", Kind::Whitespace),
+            ("value", Kind::Identifier),
+            (" ", Kind::Whitespace),
+            ("=", Kind::EqualSign),
+            (" ", Kind::Whitespace),
+            ("value0", Kind::Identifier),
+            (";", Kind::SemiColon),
+        ],
+        check_whitespace: true,
+    }
+
+    lexer_test_case! {
+        name: let_statement_with_function_definition,
+        input: "let add = func (lhs, rhs) { return lhs + rhs; };",
+        expected_tokens: vec![
+            ("let", Kind::Let),
+            ("add", Kind::Identifier),
+            ("=", Kind::EqualSign),
+            ("func", Kind::Function),
+            ("(", Kind::LeftParen),
+            ("lhs", Kind::Identifier),
+            (",", Kind::Comma),
+            ("rhs", Kind::Identifier),
+            (")", Kind::RightParen),
+            ("{", Kind::LeftBrace),
+            ("return", Kind::Return),
+            ("lhs", Kind::Identifier),
+            ("+", Kind::Plus),
+            ("rhs", Kind::Identifier),
+            (";", Kind::SemiColon),
+            ("}", Kind::RightBrace),
+            (";", Kind::SemiColon),
             ],
-        }
-    ];
+    }
 
-    lexer_test_case![
-        let_statement_with_bad_identifier,
-        TestCase {
-            input: "let myPet  =  10dog01 ;",
-            skip_whitespace: false,
-            expected_tokens: vec![
-                ("let", Kind::Let),
-                (" ", Kind::Whitespace),
-                ("myPet", Kind::Identifier),
-                ("  ", Kind::Whitespace),
-                ("=", Kind::EqualSign),
-                ("  ", Kind::Whitespace),
-                ("10dog01", Kind::Unknown),
-                (" ", Kind::Whitespace),
-                (";", Kind::SemiColon),
+    lexer_test_case! {
+        name: greater_than,
+        input: "a > b;",
+        expected_tokens: vec![
+            ("a", Kind::Identifier),
+            (">", Kind::Greater),
+            ("b", Kind::Identifier),
+            (";", Kind::SemiColon),
             ],
-        }
-    ];
+    }
 
-    lexer_test_case![
-        let_statement_with_unfinished_string,
-        TestCase {
-            input: r#"let mut myPet = "string with unbalanced quotes"#,
-            skip_whitespace: false,
-            expected_tokens: vec![
-                ("let", Kind::Let),
-                (" ", Kind::Whitespace),
-                ("mut", Kind::Mut),
-                (" ", Kind::Whitespace),
-                ("myPet", Kind::Identifier),
-                (" ", Kind::Whitespace),
-                ("=", Kind::EqualSign),
-                (" ", Kind::Whitespace),
-                (r#""string with unbalanced quotes"#, Kind::Unknown),
+    lexer_test_case! {
+        name: less_than,
+        input: "a < b;",
+        expected_tokens: vec![
+            ("a", Kind::Identifier),
+            ("<", Kind::Less),
+            ("b", Kind::Identifier),
+            (";", Kind::SemiColon),
             ],
-        }
-    ];
+    }
 
-    lexer_test_case![
-        let_statement_with_integer,
-        TestCase {
-            input: "let myNumber = 1001;",
-            skip_whitespace: false,
-            expected_tokens: vec![
-                ("let", Kind::Let),
-                (" ", Kind::Whitespace),
-                ("myNumber", Kind::Identifier),
-                (" ", Kind::Whitespace),
-                ("=", Kind::EqualSign),
-                (" ", Kind::Whitespace),
-                ("1001", Kind::Integer),
-                (";", Kind::SemiColon),
+    lexer_test_case! {
+        name: greater_than_or_equal,
+        input: "a >= b;",
+        expected_tokens: vec![
+            ("a", Kind::Identifier),
+            (">=", Kind::GreaterOrEqual),
+            ("b", Kind::Identifier),
+            (";", Kind::SemiColon),
             ],
-        }
-    ];
+    }
 
-    lexer_test_case![
-        let_statement_with_identifier,
-        TestCase {
-            input: "let myValue = anotherValue;",
-            skip_whitespace: false,
-            expected_tokens: vec![
-                ("let", Kind::Let),
-                (" ", Kind::Whitespace),
-                ("myValue", Kind::Identifier),
-                (" ", Kind::Whitespace),
-                ("=", Kind::EqualSign),
-                (" ", Kind::Whitespace),
-                ("anotherValue", Kind::Identifier),
-                (";", Kind::SemiColon),
+    lexer_test_case! {
+        name: less_than_or_equal,
+        input: "a <= b;",
+        expected_tokens: vec![
+            ("a", Kind::Identifier),
+            ("<=", Kind::LessOrEqual),
+            ("b", Kind::Identifier),
+            (";", Kind::SemiColon),
             ],
-        }
-    ];
+    }
 
-    lexer_test_case![
-        let_statement_with_identifier_containing_number,
-        TestCase {
-            input: "let value = value0;",
-            skip_whitespace: false,
-            expected_tokens: vec![
-                ("let", Kind::Let),
-                (" ", Kind::Whitespace),
-                ("value", Kind::Identifier),
-                (" ", Kind::Whitespace),
-                ("=", Kind::EqualSign),
-                (" ", Kind::Whitespace),
-                ("value0", Kind::Identifier),
-                (";", Kind::SemiColon),
+    lexer_test_case! {
+        name: equal_to,
+        input: "a == b;",
+        expected_tokens: vec![
+            ("a", Kind::Identifier),
+            ("==", Kind::DoubleEquals),
+            ("b", Kind::Identifier),
+            (";", Kind::SemiColon),
             ],
-        }
-    ];
+    }
 
-    lexer_test_case![
-        let_statement_with_function_definition,
-        TestCase {
-            input: "let add = func (lhs, rhs) { return lhs + rhs; };",
-            skip_whitespace: true,
-            expected_tokens: vec![
-                ("let", Kind::Let),
-                ("add", Kind::Identifier),
-                ("=", Kind::EqualSign),
-                ("func", Kind::Function),
-                ("(", Kind::LeftParen),
-                ("lhs", Kind::Identifier),
-                (",", Kind::Comma),
-                ("rhs", Kind::Identifier),
-                (")", Kind::RightParen),
-                ("{", Kind::LeftBrace),
-                ("return", Kind::Return),
-                ("lhs", Kind::Identifier),
-                ("+", Kind::Plus),
-                ("rhs", Kind::Identifier),
-                (";", Kind::SemiColon),
-                ("}", Kind::RightBrace),
-                (";", Kind::SemiColon),
+    lexer_test_case! {
+        name: not_equal_to,
+        input: "a != b;",
+        expected_tokens: vec![
+            ("a", Kind::Identifier),
+            ("!=", Kind::NotEquals),
+            ("b", Kind::Identifier),
+            (";", Kind::SemiColon),
             ],
-        }
-    ];
+    }
 
-    lexer_test_case![
-        greater_than,
-        TestCase {
-            input: "a > b;",
-            skip_whitespace: true,
-            expected_tokens: vec![
-                ("a", Kind::Identifier),
-                (">", Kind::Greater),
-                ("b", Kind::Identifier),
-                (";", Kind::SemiColon),
+    lexer_test_case! {
+        name: unary_not,
+        input: "let a = !b;",
+        expected_tokens: vec![
+            ("let", Kind::Let),
+            ("a", Kind::Identifier),
+            ("=", Kind::EqualSign),
+            ("!", Kind::Not),
+            ("b", Kind::Identifier),
+            (";", Kind::SemiColon),
             ],
-        }
-    ];
+    }
 
-    lexer_test_case![
-        less_than,
-        TestCase {
-            input: "a < b;",
-            skip_whitespace: true,
-            expected_tokens: vec![
-                ("a", Kind::Identifier),
-                ("<", Kind::Less),
-                ("b", Kind::Identifier),
-                (";", Kind::SemiColon),
+    lexer_test_case! {
+        name: star,
+        input: "let x = 3 * 4;",
+        expected_tokens: vec![
+            ("let", Kind::Let),
+            ("x", Kind::Identifier),
+            ("=", Kind::EqualSign),
+            ("3", Kind::Integer),
+            ("*", Kind::Star),
+            ("4", Kind::Integer),
+            (";", Kind::SemiColon),
             ],
-        }
-    ];
+    }
 
-    lexer_test_case![
-        greater_than_or_equal,
-        TestCase {
-            input: "a >= b;",
-            skip_whitespace: true,
-            expected_tokens: vec![
-                ("a", Kind::Identifier),
-                (">=", Kind::GreaterOrEqual),
-                ("b", Kind::Identifier),
-                (";", Kind::SemiColon),
+    lexer_test_case! {
+        name: divide,
+        input: "let x = 4 / 2;",
+        expected_tokens: vec![
+            ("let", Kind::Let),
+            ("x", Kind::Identifier),
+            ("=", Kind::EqualSign),
+            ("4", Kind::Integer),
+            ("/", Kind::Divide),
+            ("2", Kind::Integer),
+            (";", Kind::SemiColon),
             ],
-        }
-    ];
+    }
 
-    lexer_test_case![
-        less_than_or_equal,
-        TestCase {
-            input: "a <= b;",
-            skip_whitespace: true,
-            expected_tokens: vec![
-                ("a", Kind::Identifier),
-                ("<=", Kind::LessOrEqual),
-                ("b", Kind::Identifier),
-                (";", Kind::SemiColon),
+    lexer_test_case! {
+        name: digit,
+        input: "3",
+        expected_tokens: vec![("3", Kind::Integer)],
+    }
+
+    lexer_test_case! {
+        name: integer,
+        input: "314",
+        expected_tokens: vec![("314", Kind::Integer)],
+    }
+
+    lexer_test_case! {
+        name: float,
+        input: "3.14",
+        expected_tokens: vec![("3.14", Kind::FloatingPoint)],
+    }
+
+    lexer_test_case! {
+        name: boolean_true,
+        input: "True",
+        expected_tokens: vec![("True", Kind::True)],
+    }
+
+    lexer_test_case! {
+        name: boolean_false,
+        input: "False",
+        expected_tokens: vec![("False", Kind::False)],
+    }
+
+    lexer_test_case! {
+        name: float_with_trailing_dot,
+        input: "3.",
+        expected_tokens: vec![("3.", Kind::FloatingPoint)],
+    }
+
+    lexer_test_case! {
+        name: float_with_leading_dot,
+        input: ".14",
+        expected_tokens: vec![(".14", Kind::FloatingPoint)],
+    }
+
+    lexer_test_case! {
+        name: float_with_exponent,
+        input: "3e8",
+        expected_tokens: vec![("3e8", Kind::FloatingPoint)],
+    }
+
+    lexer_test_case! {
+        name: float_with_exponent_and_dot,
+        input: "0.314e1",
+        expected_tokens: vec![("0.314e1", Kind::FloatingPoint)],
+    }
+
+    lexer_test_case! {
+        name: float_with_negative_exponent_and_dot,
+        input: "9.1e-31",
+        expected_tokens: vec![("9.1e-31", Kind::FloatingPoint)],
+    }
+
+    lexer_test_case! {
+        name: float_with_positive_exponent_and_dot,
+        input: "6.02e+23",
+        expected_tokens: vec![("6.02e+23", Kind::FloatingPoint)],
+    }
+
+    lexer_test_case! {
+        name: bad_float_with_exponent_and_no_following_number,
+        input: "2e",
+        expected_tokens: vec![("2e", Kind::Unknown)],
+    }
+
+    lexer_test_case! {
+        name: bad_float_with_dot_and_exponent_and_no_following_number,
+        input: "2.e",
+        expected_tokens: vec![("2.e", Kind::Unknown)],
+    }
+
+    lexer_test_case! {
+        name: bad_float_with_dot_and_f_exponent_and_no_following_number,
+        input: "2.4f",
+        expected_tokens: vec![("2.4f", Kind::Unknown)],
+    }
+
+    lexer_test_case! {
+        name: bad_float_with_dot_and_exponent_and_trailing_letter,
+        input: "2.4e3a",
+        expected_tokens: vec![("2.4e3a", Kind::Unknown)],
+    }
+
+    lexer_test_case! {
+        name: bad_float_with_confused_exponent,
+        input: "123f+4.2e-3",
+        expected_tokens: vec![
+            ("123f", Kind::Unknown),
+            ("+", Kind::Plus),
+            ("4.2e-3", Kind::FloatingPoint),
+        ],
+    }
+
+    lexer_test_case! {
+        name: bad_float_with_dot_and_exponent_with_dot,
+        input: "1.23e-4.56",
+        expected_tokens: vec![("1.23e-4.56", Kind::Unknown)],
+    }
+
+    lexer_test_case! {
+        name: bad_float_with_dot_and_exponent_with_float,
+        input: "1.23e-4+3.2e-5",
+        expected_tokens: vec![
+            ("1.23e-4", Kind::FloatingPoint),
+            ("+", Kind::Plus),
+            ("3.2e-5", Kind::FloatingPoint),
+        ],
+    }
+
+    lexer_test_case! {
+        name: bad_float_with_dot_and_exponent_with_negative_float,
+        input: "1.23e-4e-3.2",
+        expected_tokens: vec![("1.23e-4e-3.2", Kind::Unknown)],
+    }
+
+    lexer_test_case! {
+        name: let_with_dot_and_parens,
+        input: "let x = self.x();",
+        expected_tokens: vec![
+            ("let", Kind::Let),
+            ("x", Kind::Identifier),
+            ("=", Kind::EqualSign),
+            ("self", Kind::Identifier),
+            (".", Kind::Period),
+            ("x", Kind::Identifier),
+            ("(", Kind::LeftParen),
+            (")", Kind::RightParen),
+            (";", Kind::SemiColon),
+        ],
+    }
+
+    lexer_test_case! {
+    name: braces_and_colon,
+    input: "{a: 3}",
+    expected_tokens: vec![
+        ("{", Kind::LeftBrace),
+        ("a", Kind::Identifier),
+        (":", Kind::Colon),
+        ("3", Kind::Integer),
+        ("}", Kind::RightBrace),
+        ],
+    }
+
+    lexer_test_case! {
+        name: square_bracket_and_comma,
+        input: "[1, 2, 3]",
+        expected_tokens: vec![
+            ("[", Kind::LeftSqBracket),
+            ("1", Kind::Integer),
+            (",", Kind::Comma),
+            ("2", Kind::Integer),
+            (",", Kind::Comma),
+            ("3", Kind::Integer),
+            ("]", Kind::RightSqBracket),
             ],
-        }
-    ];
+    }
 
-    lexer_test_case![
-        equal_to,
-        TestCase {
-            input: "a == b;",
-            skip_whitespace: true,
-            expected_tokens: vec![
-                ("a", Kind::Identifier),
-                ("==", Kind::DoubleEquals),
-                ("b", Kind::Identifier),
-                (";", Kind::SemiColon),
+    lexer_test_case! {
+        name: at_sigil,
+        input: "@123",
+        expected_tokens: vec![("@123", Kind::Unknown)],
+    }
+
+    lexer_test_case! {
+        name: line_comment,
+        input: "# comment",
+        expected_tokens: vec![("# comment", Kind::Comment)],
+    }
+
+    lexer_test_case! {
+        name: end_of_line_comment,
+        input: "a; # comment",
+        expected_tokens: vec![
+            ("a", Kind::Identifier),
+            (";", Kind::SemiColon),
+            ("# comment", Kind::Comment),
             ],
-        }
-    ];
-
-    lexer_test_case![
-        not_equal_to,
-        TestCase {
-            input: "a != b;",
-            skip_whitespace: true,
-            expected_tokens: vec![
-                ("a", Kind::Identifier),
-                ("!=", Kind::NotEquals),
-                ("b", Kind::Identifier),
-                (";", Kind::SemiColon),
-            ],
-        }
-    ];
-
-    lexer_test_case![
-        unary_not,
-        TestCase {
-            input: "let a = !b;",
-            skip_whitespace: true,
-            expected_tokens: vec![
-                ("let", Kind::Let),
-                ("a", Kind::Identifier),
-                ("=", Kind::EqualSign),
-                ("!", Kind::Not),
-                ("b", Kind::Identifier),
-                (";", Kind::SemiColon),
-            ],
-        }
-    ];
-
-    lexer_test_case![
-        star,
-        TestCase {
-            input: "let x = 3 * 4;",
-            skip_whitespace: true,
-            expected_tokens: vec![
-                ("let", Kind::Let),
-                ("x", Kind::Identifier),
-                ("=", Kind::EqualSign),
-                ("3", Kind::Integer),
-                ("*", Kind::Star),
-                ("4", Kind::Integer),
-                (";", Kind::SemiColon),
-            ],
-        }
-    ];
-
-    lexer_test_case![
-        divide,
-        TestCase {
-            input: "let x = 4 / 2;",
-            skip_whitespace: true,
-            expected_tokens: vec![
-                ("let", Kind::Let),
-                ("x", Kind::Identifier),
-                ("=", Kind::EqualSign),
-                ("4", Kind::Integer),
-                ("/", Kind::Divide),
-                ("2", Kind::Integer),
-                (";", Kind::SemiColon),
-            ],
-        }
-    ];
-
-    lexer_test_case![
-        digit,
-        TestCase {
-            input: "3",
-            skip_whitespace: false,
-            expected_tokens: vec![("3", Kind::Integer)],
-        }
-    ];
-
-    lexer_test_case![
-        integer,
-        TestCase {
-            input: "314",
-            skip_whitespace: false,
-            expected_tokens: vec![("314", Kind::Integer)],
-        }
-    ];
-
-    lexer_test_case![
-        float,
-        TestCase {
-            input: "3.14",
-            skip_whitespace: false,
-            expected_tokens: vec![("3.14", Kind::FloatingPoint)],
-        }
-    ];
-
-    lexer_test_case![
-        boolean_true,
-        TestCase {
-            input: "True",
-            skip_whitespace: false,
-            expected_tokens: vec![("True", Kind::True)],
-        }
-    ];
-
-    lexer_test_case![
-        boolean_false,
-        TestCase {
-            input: "False",
-            skip_whitespace: false,
-            expected_tokens: vec![("False", Kind::False)],
-        }
-    ];
-
-    lexer_test_case![
-        float_with_trailing_dot,
-        TestCase {
-            input: "3.",
-            skip_whitespace: false,
-            expected_tokens: vec![("3.", Kind::FloatingPoint)],
-        }
-    ];
-
-    lexer_test_case![
-        float_with_leading_dot,
-        TestCase {
-            input: ".14",
-            skip_whitespace: false,
-            expected_tokens: vec![(".14", Kind::FloatingPoint)],
-        }
-    ];
-
-    lexer_test_case![
-        float_with_exponent,
-        TestCase {
-            input: "3e8",
-            skip_whitespace: false,
-            expected_tokens: vec![("3e8", Kind::FloatingPoint)],
-        }
-    ];
-
-    lexer_test_case![
-        float_with_exponent_and_dot,
-        TestCase {
-            input: "0.314e1",
-            skip_whitespace: false,
-            expected_tokens: vec![("0.314e1", Kind::FloatingPoint)],
-        }
-    ];
-
-    lexer_test_case![
-        float_with_negative_exponent_and_dot,
-        TestCase {
-            input: "9.1e-31",
-            skip_whitespace: false,
-            expected_tokens: vec![("9.1e-31", Kind::FloatingPoint)],
-        }
-    ];
-
-    lexer_test_case![
-        float_with_positive_exponent_and_dot,
-        TestCase {
-            input: "6.02e+23",
-            skip_whitespace: false,
-            expected_tokens: vec![("6.02e+23", Kind::FloatingPoint)],
-        }
-    ];
-
-    lexer_test_case![
-        bad_float_with_exponent_and_no_following_number,
-        TestCase {
-            input: "2e",
-            skip_whitespace: false,
-            expected_tokens: vec![("2e", Kind::Unknown)],
-        }
-    ];
-
-    lexer_test_case![
-        bad_float_with_dot_and_exponent_and_no_following_number,
-        TestCase {
-            input: "2.e",
-            skip_whitespace: false,
-            expected_tokens: vec![("2.e", Kind::Unknown)],
-        }
-    ];
-
-    lexer_test_case![
-        bad_float_with_dot_and_f_exponent_and_no_following_number,
-        TestCase {
-            input: "2.4f",
-            skip_whitespace: false,
-            expected_tokens: vec![("2.4f", Kind::Unknown)],
-        }
-    ];
-
-    lexer_test_case![
-        bad_float_with_dot_and_exponent_and_trailing_letter,
-        TestCase {
-            input: "2.4e3a",
-            skip_whitespace: false,
-            expected_tokens: vec![("2.4e3a", Kind::Unknown)],
-        }
-    ];
-
-    lexer_test_case![
-        bad_float_with_confused_exponent,
-        TestCase {
-            input: "123f+4.2e-3",
-            skip_whitespace: false,
-            expected_tokens: vec![
-                ("123f", Kind::Unknown),
-                ("+", Kind::Plus),
-                ("4.2e-3", Kind::FloatingPoint),
-            ],
-        }
-    ];
-
-    lexer_test_case![
-        bad_float_with_dot_and_exponent_with_dot,
-        TestCase {
-            input: "1.23e-4.56",
-            skip_whitespace: false,
-            expected_tokens: vec![("1.23e-4.56", Kind::Unknown)],
-        }
-    ];
-
-    lexer_test_case![
-        bad_float_with_dot_and_exponent_with_float,
-        TestCase {
-            input: "1.23e-4+3.2e-5",
-            skip_whitespace: false,
-            expected_tokens: vec![
-                ("1.23e-4", Kind::FloatingPoint),
-                ("+", Kind::Plus),
-                ("3.2e-5", Kind::FloatingPoint),
-            ],
-        }
-    ];
-
-    lexer_test_case![
-        bad_float_with_dot_and_exponent_with_negative_float,
-        TestCase {
-            input: "1.23e-4e-3.2",
-            skip_whitespace: false,
-            expected_tokens: vec![("1.23e-4e-3.2", Kind::Unknown)],
-        }
-    ];
-
-    lexer_test_case![
-        let_with_dot_and_parens,
-        TestCase {
-            input: "let x = self.x();",
-            skip_whitespace: true,
-            expected_tokens: vec![
-                ("let", Kind::Let),
-                ("x", Kind::Identifier),
-                ("=", Kind::EqualSign),
-                ("self", Kind::Identifier),
-                (".", Kind::Period),
-                ("x", Kind::Identifier),
-                ("(", Kind::LeftParen),
-                (")", Kind::RightParen),
-                (";", Kind::SemiColon),
-            ],
-        }
-    ];
-
-    lexer_test_case![
-        braces_and_colon,
-        TestCase {
-            input: "{a: 3}",
-            skip_whitespace: true,
-            expected_tokens: vec![
-                ("{", Kind::LeftBrace),
-                ("a", Kind::Identifier),
-                (":", Kind::Colon),
-                ("3", Kind::Integer),
-                ("}", Kind::RightBrace),
-            ],
-        }
-    ];
-
-    lexer_test_case![
-        square_bracket_and_comma,
-        TestCase {
-            input: "[1, 2, 3]",
-            skip_whitespace: true,
-            expected_tokens: vec![
-                ("[", Kind::LeftSqBracket),
-                ("1", Kind::Integer),
-                (",", Kind::Comma),
-                ("2", Kind::Integer),
-                (",", Kind::Comma),
-                ("3", Kind::Integer),
-                ("]", Kind::RightSqBracket),
-            ],
-        }
-    ];
-
-    lexer_test_case![
-        at_sigil,
-        TestCase {
-            input: "@123",
-            skip_whitespace: true,
-            expected_tokens: vec![("@123", Kind::Unknown)],
-        }
-    ];
-
-    lexer_test_case![
-        line_comment,
-        TestCase {
-            input: "# comment",
-            skip_whitespace: true,
-            expected_tokens: vec![("# comment", Kind::Comment)],
-        }
-    ];
-
-    lexer_test_case![
-        end_of_line_comment,
-        TestCase {
-            input: "a; # comment",
-            skip_whitespace: true,
-            expected_tokens: vec![
-                ("a", Kind::Identifier),
-                (";", Kind::SemiColon),
-                ("# comment", Kind::Comment),
-            ],
-        }
-    ];
+    }
 }
