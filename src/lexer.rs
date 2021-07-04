@@ -75,13 +75,7 @@ impl<'a> Lexer<'a> {
             '-' => self.char_token(Kind::Minus),
             '*' => self.char_token(Kind::Star),
             '/' => self.char_token(Kind::Divide),
-            '.' => {
-                if self.peek_char().is_ascii_digit() {
-                    self.read_decimal_part(self.position)
-                } else {
-                    self.char_token(Kind::Period)
-                }
-            }
+            '.' => self.read_period_or_decimal_token(),
             '=' => match self.peek_char() {
                 '=' => {
                     let start = self.position;
@@ -125,25 +119,7 @@ impl<'a> Lexer<'a> {
             ']' => self.char_token(Kind::RightSqBracket),
             '#' => self.read_comment(),
             '"' => self.read_string(),
-            _ => {
-                // read whitespace
-                if c.is_whitespace() {
-                    self.read_whitespace()
-                }
-                // read keyword or identifier
-                else if c.is_ascii_alphabetic() {
-                    self.read_keyword()
-                        .map_or_else(|| self.read_identifier(), |t| t)
-                }
-                // read number
-                else if c.is_ascii_digit() {
-                    self.read_number().map_or_else(|| self.read_junk(), |t| t)
-                }
-                // read junk
-                else {
-                    self.read_junk()
-                }
-            }
+            _ => self.read_non_special_token(c),
         };
 
         self.read_char();
@@ -156,6 +132,34 @@ impl<'a> Lexer<'a> {
 
     fn text_token(&self, start: usize, kind: Kind) -> Token<'a> {
         Token::new(self.text_range(start), start, kind)
+    }
+
+    fn read_non_special_token(&mut self, c: char) -> Token<'a> {
+        // read whitespace
+        if c.is_whitespace() {
+            self.read_whitespace()
+        }
+        // read keyword or identifier
+        else if c.is_ascii_alphabetic() {
+            self.read_keyword()
+                .map_or_else(|| self.read_identifier(), |t| t)
+        }
+        // read number
+        else if c.is_ascii_digit() {
+            self.read_number().map_or_else(|| self.read_junk(), |t| t)
+        }
+        // read junk
+        else {
+            self.read_junk()
+        }
+    }
+
+    fn read_period_or_decimal_token(&mut self) -> Token<'a> {
+        if self.peek_char().is_ascii_digit() {
+            self.read_decimal_part(self.position)
+        } else {
+            self.char_token(Kind::Period)
+        }
     }
 
     fn read_junk(&mut self) -> Token<'a> {
@@ -232,9 +236,7 @@ impl<'a> Lexer<'a> {
                     self.read_char(); // Consume closing '"'.
                     break;
                 }
-                _ => {
-                    self.read_char();
-                }
+                _ => self.read_char(),
             }
         }
         self.text_token(start, kind)
