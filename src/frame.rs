@@ -1,10 +1,10 @@
-use crate::ast::{Expression, FunctionExpression, Statement};
+use crate::ast::{Expression, Function, Statement};
 use std::{collections::HashMap, rc::Rc};
 
 pub enum Value<'a> {
     Boolean(bool),
     Float(f64),
-    Function(&'a FunctionExpression),
+    Function(&'a Function),
     Integer(i32),
     String(String),
 }
@@ -30,19 +30,19 @@ impl<'a> Frame<'a> {
 
     fn evaluate_expression(&mut self, expression: &'a Expression) -> Rc<Value<'a>> {
         match expression {
-            Expression::Boolean(b) => Rc::new(Value::Boolean(b.value)),
-            Expression::FloatingPoint(f) => Rc::new(Value::Float(f.value)),
+            Expression::Boolean(b) => Rc::new(Value::Boolean(*b)),
+            Expression::FloatingPoint(f) => Rc::new(Value::Float(*f)),
             Expression::Function(function) => Rc::new(Value::Function(function)),
-            Expression::Integer(i) => Rc::new(Value::Integer(i.value)),
-            Expression::StringLiteral(s) => Rc::new(Value::String(s.value.clone())),
+            Expression::Integer(i) => Rc::new(Value::Integer(*i)),
+            Expression::StringLiteral(s) => Rc::new(Value::String(s.clone())),
             Expression::Identifier(identifier) => {
-                if let Some(value) = self.values.get(&identifier.name) {
+                if let Some(value) = self.values.get(identifier) {
                     Rc::clone(value)
                 } else {
                     panic!("Unknown identifier {:?}", expression)
                 }
             }
-            Expression::FunctionCall(call) => {
+            Expression::Call(call) => {
                 if let Some(value) = self.values.get(&call.name) {
                     match **value {
                         Value::Boolean(_) => panic!("Cannot call a boolean"),
@@ -86,8 +86,7 @@ impl<'a> Frame<'a> {
                 None
             }
             Statement::Return(return_statement) => {
-                let value = self.evaluate_expression(&return_statement.expression);
-                Some(value)
+                Some(self.evaluate_expression(&return_statement))
             }
             Statement::Expression(expression) => {
                 let _value = self.evaluate_expression(expression);

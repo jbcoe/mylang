@@ -1,78 +1,52 @@
 #[derive(Debug)]
-pub struct StringLiteralExpression {
-    pub value: String,
-}
-#[derive(Debug)]
-pub struct IntegerExpression {
-    pub value: i32,
-}
-#[derive(Debug)]
-pub struct FloatingPointExpression {
-    pub value: f64,
-}
-#[derive(Debug)]
-pub struct BooleanExpression {
-    pub value: bool,
-}
-#[derive(Debug)]
-pub struct IdentifierExpression {
-    pub name: String,
-}
-
-#[derive(Debug)]
-pub struct FunctionCallExpression {
+pub struct Call {
     pub name: String,
     pub arguments: Vec<Expression>,
 }
 
 #[derive(Debug)]
-pub enum UnaryPlusExpression {
-    Integer(IntegerExpression),
-    FloatingPoint(FloatingPointExpression),
-    Identifier(IdentifierExpression),
+pub enum UnaryPlus {
+    Integer(i32),
+    FloatingPoint(f64),
+    Identifier(String),
 }
 #[derive(Debug)]
-pub enum UnaryMinusExpression {
-    Integer(IntegerExpression),
-    FloatingPoint(FloatingPointExpression),
-    Identifier(IdentifierExpression),
+pub enum UnaryMinus {
+    Integer(i32),
+    FloatingPoint(f64),
+    Identifier(String),
 }
 
 #[derive(Debug)]
-pub struct FunctionExpression {
+pub struct Function {
     pub arguments: Vec<String>,
     pub body: Vec<Statement>,
 }
 
 #[derive(Debug)]
 pub enum Expression {
-    Boolean(BooleanExpression),
-    FloatingPoint(FloatingPointExpression),
-    Function(FunctionExpression),
-    FunctionCall(FunctionCallExpression),
-    Identifier(IdentifierExpression),
-    Integer(IntegerExpression),
-    StringLiteral(StringLiteralExpression),
-    UnaryMinus(UnaryMinusExpression),
-    UnaryPlus(UnaryPlusExpression),
+    Boolean(bool),
+    FloatingPoint(f64),
+    Function(Function),
+    Call(Call),
+    Identifier(String),
+    Integer(i32),
+    StringLiteral(String),
+    UnaryMinus(UnaryMinus),
+    UnaryPlus(UnaryPlus),
 }
 #[derive(Debug)]
-pub struct LetStatement {
+pub struct Let {
     pub mutable: bool,
     pub identifier: String,
     pub expression: Box<Expression>,
 }
 
 #[derive(Debug)]
-pub struct ReturnStatement {
-    pub expression: Box<Expression>,
-}
-
-#[derive(Debug)]
 pub enum Statement {
     Expression(Expression),
-    Let(LetStatement),
-    Return(ReturnStatement),
+    Let(Let),
+    Return(Box<Expression>),
 }
 
 #[derive(Debug)]

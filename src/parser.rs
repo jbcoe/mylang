@@ -1,10 +1,5 @@
 use crate::{
-    ast::{
-        AbstractSyntaxTree, BooleanExpression, Expression, FloatingPointExpression,
-        FunctionCallExpression, FunctionExpression, IdentifierExpression, IntegerExpression,
-        LetStatement, ReturnStatement, Statement, StringLiteralExpression, UnaryMinusExpression,
-        UnaryPlusExpression,
-    },
+    ast::{AbstractSyntaxTree, Call, Expression, Function, Let, Statement, UnaryMinus, UnaryPlus},
     token::{Kind, Token},
 };
 pub struct Parser<'a> {
@@ -67,7 +62,7 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn parse_return_statement(&mut self) -> Option<ReturnStatement> {
+    fn parse_return(&mut self) -> Option<Statement> {
         assert!(self.token.kind() == Kind::Return);
         let start = self.position;
         self.read_token(); // consume return
@@ -80,9 +75,7 @@ impl<'a> Parser<'a> {
             }
             Some(expression) => {
                 if self.token.kind() == Kind::SemiColon {
-                    Some(ReturnStatement {
-                        expression: Box::new(expression),
-                    })
+                    Some(Statement::Return(Box::new(expression)))
                 } else {
                     self.errors
                         .push(format!("expected ';', got {:?}", self.token));
@@ -96,7 +89,7 @@ impl<'a> Parser<'a> {
     // Matches:
     //   "let identifier = expression;"
     //   "let mut identifier = expression;"
-    fn parse_let_statement(&mut self) -> Option<LetStatement> {
+    fn parse_let(&mut self) -> Option<Let> {
         assert!(self.token.kind() == Kind::Let);
         let start = self.position;
         self.read_token(); // consume let
@@ -123,7 +116,7 @@ impl<'a> Parser<'a> {
                     }
                     Some(expression) => {
                         if self.token.kind() == Kind::SemiColon {
-                            Some(LetStatement {
+                            Some(Let {
                                 mutable,
                                 identifier,
                                 expression: Box::new(expression),
@@ -152,27 +145,17 @@ impl<'a> Parser<'a> {
 
     fn parse_expression(&mut self) -> Option<Expression> {
         match self.token.kind() {
-            Kind::Identifier => match self.parse_function_call_expression() {
-                Some(function_call) => Some(Expression::FunctionCall(function_call)),
-                None => self
-                    .parse_identifier_expression()
-                    .map(Expression::Identifier),
+            Kind::Identifier => match self.parse_call() {
+                Some(function_call) => Some(Expression::Call(function_call)),
+                None => Some(Expression::Identifier(self.parse_string())),
             },
-            Kind::Integer => self.parse_integer_expression().map(Expression::Integer),
-            Kind::FloatingPoint => self
-                .parse_floating_point_expression()
-                .map(Expression::FloatingPoint),
-            Kind::String => self
-                .parse_string_literal_expression()
-                .map(Expression::StringLiteral),
-            Kind::Function => self.parse_function_expression().map(Expression::Function),
-            Kind::Plus => self
-                .parse_unary_plus_expression()
-                .map(Expression::UnaryPlus),
-            Kind::Minus => self
-                .parse_unary_minus_expression()
-                .map(Expression::UnaryMinus),
-            Kind::True | Kind::False => self.parse_boolean_expression().map(Expression::Boolean),
+            Kind::Integer => self.parse_integer().map(Expression::Integer),
+            Kind::FloatingPoint => self.parse_float().map(Expression::FloatingPoint),
+            Kind::String => Some(Expression::StringLiteral(self.parse_string())),
+            Kind::Function => self.parse_function().map(Expression::Function),
+            Kind::Plus => self.parse_unary_plus().map(Expression::UnaryPlus),
+            Kind::Minus => self.parse_unary_minus().map(Expression::UnaryMinus),
+            Kind::True | Kind::False => Some(Expression::Boolean(self.parse_bool())),
             _ => {
                 self.errors.push(format!(
                     "Parse error when parsing expression {:?}",
@@ -183,20 +166,7 @@ impl<'a> Parser<'a> {
         }
     }
 
-    // Matches: "name;"
-    fn parse_identifier_expression(&mut self) -> Option<IdentifierExpression> {
-        assert!(self.token.kind() == Kind::Identifier);
-        match self.token.kind() {
-            Kind::Identifier => {
-                let name = self.token.text();
-                self.read_token(); // consume `name`
-                Some(IdentifierExpression { name })
-            }
-            _ => None,
-        }
-    }
-
-    fn parse_function_call_expression(&mut self) -> Option<FunctionCallExpression> {
+    fn parse_call(&mut self) -> Option<Call> {
         assert!(self.token.kind() == Kind::Identifier);
         let start = self.position;
         let name = self.token.text();
@@ -231,7 +201,7 @@ impl<'a> Parser<'a> {
         if self.token.kind() == Kind::RightParen {
             self.read_token(); // consume ')'.
 
-            Some(FunctionCallExpression {
+            Some(Call {
                 name,
                 arguments: argument_expressions,
             })
@@ -241,19 +211,13 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn parse_unary_plus_expression(&mut self) -> Option<UnaryPlusExpression> {
+    fn parse_unary_plus(&mut self) -> Option<UnaryPlus> {
         assert!(self.token.kind() == Kind::Plus);
         self.read_token(); // consume `+`
         match self.token.kind() {
-            Kind::Integer => self
-                .parse_integer_expression()
-                .map(UnaryPlusExpression::Integer),
-            Kind::FloatingPoint => self
-                .parse_floating_point_expression()
-                .map(UnaryPlusExpression::FloatingPoint),
-            Kind::Identifier => self
-                .parse_identifier_expression()
-                .map(UnaryPlusExpression::Identifier),
+            Kind::Integer => self.parse_integer().map(UnaryPlus::Integer),
+            Kind::FloatingPoint => self.parse_float().map(UnaryPlus::FloatingPoint),
+            Kind::Identifier => Some(UnaryPlus::Identifier(self.parse_string())),
             _ => {
                 self.errors.push(format!(
                     "Parse error when parsing unary plus expression {:?}",
@@ -264,19 +228,13 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn parse_unary_minus_expression(&mut self) -> Option<UnaryMinusExpression> {
+    fn parse_unary_minus(&mut self) -> Option<UnaryMinus> {
         assert!(self.token.kind() == Kind::Minus);
         self.read_token(); // consume `-`
         match self.token.kind() {
-            Kind::Integer => self
-                .parse_integer_expression()
-                .map(UnaryMinusExpression::Integer),
-            Kind::FloatingPoint => self
-                .parse_floating_point_expression()
-                .map(UnaryMinusExpression::FloatingPoint),
-            Kind::Identifier => self
-                .parse_identifier_expression()
-                .map(UnaryMinusExpression::Identifier),
+            Kind::Integer => self.parse_integer().map(UnaryMinus::Integer),
+            Kind::FloatingPoint => self.parse_float().map(UnaryMinus::FloatingPoint),
+            Kind::Identifier => Some(UnaryMinus::Identifier(self.parse_string())),
             _ => {
                 self.errors.push(format!(
                     "Parse error when parsing unary minus expression {:?}",
@@ -287,29 +245,21 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn parse_boolean_expression(&mut self) -> Option<BooleanExpression> {
+    fn parse_bool(&mut self) -> bool {
         assert!(self.token.kind() == Kind::True || self.token.kind() == Kind::False);
-        match self.token.kind() {
-            Kind::True => {
-                self.read_token(); // consume `value`
-                Some(BooleanExpression { value: true })
-            }
-            Kind::False => {
-                self.read_token(); // consume `value`
-                Some(BooleanExpression { value: false })
-            }
-            _ => None,
-        }
+        let result = self.token.kind() == Kind::True;
+        self.read_token(); // consume `value`
+        result
     }
 
-    fn parse_integer_expression(&mut self) -> Option<IntegerExpression> {
+    fn parse_integer(&mut self) -> Option<i32> {
         assert!(self.token.kind() == Kind::Integer);
 
         match self.token.kind() {
             Kind::Integer => {
                 if let Ok(value) = self.token.text().parse::<i32>() {
                     self.read_token(); // consume `value`
-                    Some(IntegerExpression { value })
+                    Some(value)
                 } else {
                     None
                 }
@@ -318,13 +268,13 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn parse_floating_point_expression(&mut self) -> Option<FloatingPointExpression> {
+    fn parse_float(&mut self) -> Option<f64> {
         assert!(self.token.kind() == Kind::FloatingPoint);
         match self.token.kind() {
             Kind::FloatingPoint => {
                 if let Ok(value) = self.token.text().parse::<f64>() {
                     self.read_token(); // consume `value`
-                    Some(FloatingPointExpression { value })
+                    Some(value)
                 } else {
                     None
                 }
@@ -333,16 +283,13 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn parse_string_literal_expression(&mut self) -> Option<StringLiteralExpression> {
-        assert!(self.token.kind() == Kind::String);
-        match self.token.kind() {
-            Kind::String => {
-                let value = self.token.text();
-                self.read_token(); // consume `value`
-                Some(StringLiteralExpression { value })
-            }
-            _ => None,
-        }
+    // Matches: "name;"
+    // Can be used on Strings or Identifiers
+    fn parse_string(&mut self) -> String {
+        assert!(self.token.kind() == Kind::String || self.token.kind() == Kind::Identifier);
+        let name = self.token.text();
+        self.read_token(); // consume `name`
+        name
     }
 
     // Matches:
@@ -350,7 +297,7 @@ impl<'a> Parser<'a> {
     //     statement*
     //   };"
     // Indenting is not checked.
-    fn parse_function_expression(&mut self) -> Option<FunctionExpression> {
+    fn parse_function(&mut self) -> Option<Function> {
         assert!(self.token.kind() == Kind::Function);
         let start = self.position;
         self.read_token(); // consume "fn"
@@ -415,7 +362,7 @@ impl<'a> Parser<'a> {
         assert_eq!(self.token.kind(), Kind::RightBrace);
         self.read_token(); // consume "}"
 
-        Some(FunctionExpression { arguments, body })
+        Some(Function { arguments, body })
     }
 
     fn parse_expression_statement(&mut self) -> Option<Expression> {
@@ -425,7 +372,7 @@ impl<'a> Parser<'a> {
     fn parse_statement(&mut self) -> Option<Statement> {
         match self.token.kind() {
             Kind::Let => {
-                if let Some(stmt) = self.parse_let_statement() {
+                if let Some(stmt) = self.parse_let() {
                     self.read_token(); // consume ';'
                     Some(Statement::Let(stmt))
                 } else {
@@ -437,9 +384,9 @@ impl<'a> Parser<'a> {
                 }
             }
             Kind::Return => {
-                if let Some(stmt) = self.parse_return_statement() {
+                if let Some(stmt) = self.parse_return() {
                     self.read_token(); // consume ';'
-                    Some(Statement::Return(stmt))
+                    Some(stmt)
                 } else {
                     self.errors.push(format!(
                         "Parse error when parsing return-statement {:?}",
