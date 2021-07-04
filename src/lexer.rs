@@ -236,9 +236,7 @@ impl<'a> Lexer<'a> {
                     self.read_char(); // Consume closing '"'.
                     break;
                 }
-                _ => {
-                    self.read_char();
-                }
+                _ => self.read_char(),
             }
         }
         self.text_token(start, kind)
