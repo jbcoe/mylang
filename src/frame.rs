@@ -13,6 +13,7 @@ pub struct Frame<'a> {
 }
 
 impl<'a> Frame<'a> {
+    #[must_use]
     pub fn new() -> Self {
         Self {
             values: HashMap::new(),

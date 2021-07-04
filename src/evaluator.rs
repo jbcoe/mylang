@@ -7,6 +7,7 @@ pub struct Evaluator<'a> {
 }
 
 impl<'a> Evaluator<'a> {
+    #[must_use]
     pub fn new() -> Self {
         Evaluator {
             global: Frame::new(),
