@@ -1,5 +1,8 @@
 use crate::{
-    ast::{AbstractSyntaxTree, Call, Expression, Function, Let, Statement, UnaryMinus, UnaryPlus},
+    ast::{
+        AbstractSyntaxTree, Call, Expression, Function, Let, PlusOrMinus, Statement, UnaryOp,
+        UnaryTarget,
+    },
     token::{Kind, Token},
 };
 pub struct Parser<'a> {
@@ -150,11 +153,15 @@ impl<'a> Parser<'a> {
                 None => Some(Expression::Identifier(self.parse_string())),
             },
             Kind::Integer => self.parse_integer().map(Expression::Integer),
-            Kind::FloatingPoint => self.parse_float().map(Expression::FloatingPoint),
+            Kind::Float => self.parse_float().map(Expression::Float),
             Kind::String => Some(Expression::StringLiteral(self.parse_string())),
             Kind::Function => self.parse_function().map(Expression::Function),
-            Kind::Plus => self.parse_unary_plus().map(Expression::UnaryPlus),
-            Kind::Minus => self.parse_unary_minus().map(Expression::UnaryMinus),
+            Kind::Plus => self
+                .parse_unary_op(PlusOrMinus::Plus)
+                .map(Expression::UnaryOp),
+            Kind::Minus => self
+                .parse_unary_op(PlusOrMinus::Minus)
+                .map(Expression::UnaryOp),
             Kind::True | Kind::False => Some(Expression::Boolean(self.parse_bool())),
             _ => {
                 self.errors.push(format!(
@@ -211,38 +218,23 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn parse_unary_plus(&mut self) -> Option<UnaryPlus> {
-        assert!(self.token.kind() == Kind::Plus);
-        self.read_token(); // consume `+`
-        match self.token.kind() {
-            Kind::Integer => self.parse_integer().map(UnaryPlus::Integer),
-            Kind::FloatingPoint => self.parse_float().map(UnaryPlus::FloatingPoint),
-            Kind::Identifier => Some(UnaryPlus::Identifier(self.parse_string())),
-            _ => {
-                self.errors.push(format!(
-                    "Parse error when parsing unary plus expression {:?}",
-                    self.token
-                ));
-                None
-            }
-        }
-    }
+    fn parse_unary_op(&mut self, operation: PlusOrMinus) -> Option<UnaryOp> {
+        assert!(self.token.kind() == Kind::Plus || self.token.kind() == Kind::Minus);
 
-    fn parse_unary_minus(&mut self) -> Option<UnaryMinus> {
-        assert!(self.token.kind() == Kind::Minus);
-        self.read_token(); // consume `-`
-        match self.token.kind() {
-            Kind::Integer => self.parse_integer().map(UnaryMinus::Integer),
-            Kind::FloatingPoint => self.parse_float().map(UnaryMinus::FloatingPoint),
-            Kind::Identifier => Some(UnaryMinus::Identifier(self.parse_string())),
+        self.read_token(); // consume `+` or `-`
+        let operand = match self.token.kind() {
+            Kind::Integer => self.parse_integer().map(UnaryTarget::Integer),
+            Kind::Float => self.parse_float().map(UnaryTarget::Float),
+            Kind::Identifier => Some(UnaryTarget::Identifier(self.parse_string())),
             _ => {
                 self.errors.push(format!(
-                    "Parse error when parsing unary minus expression {:?}",
+                    "Parse error when parsing unary operation's target {:?}",
                     self.token
                 ));
                 None
             }
-        }
+        };
+        operand.map(|target| UnaryOp { operation, target })
     }
 
     fn parse_bool(&mut self) -> bool {
@@ -269,9 +261,9 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_float(&mut self) -> Option<f64> {
-        assert!(self.token.kind() == Kind::FloatingPoint);
+        assert!(self.token.kind() == Kind::Float);
         match self.token.kind() {
-            Kind::FloatingPoint => {
+            Kind::Float => {
                 if let Ok(value) = self.token.text().parse::<f64>() {
                     self.read_token(); // consume `value`
                     Some(value)

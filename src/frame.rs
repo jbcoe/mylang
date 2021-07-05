@@ -31,7 +31,7 @@ impl<'a> Frame<'a> {
     fn evaluate_expression(&mut self, expression: &'a Expression) -> Rc<Value<'a>> {
         match expression {
             Expression::Boolean(b) => Rc::new(Value::Boolean(*b)),
-            Expression::FloatingPoint(f) => Rc::new(Value::Float(*f)),
+            Expression::Float(f) => Rc::new(Value::Float(*f)),
             Expression::Function(function) => Rc::new(Value::Function(function)),
             Expression::Integer(i) => Rc::new(Value::Integer(*i)),
             Expression::StringLiteral(s) => Rc::new(Value::String(s.clone())),
@@ -74,7 +74,7 @@ impl<'a> Frame<'a> {
                     panic!("Unknown identifier {:?}", expression)
                 }
             }
-            Expression::UnaryPlus(_) | Expression::UnaryMinus(_) => todo!(),
+            Expression::UnaryOp(_) => todo!(),
         }
     }
 

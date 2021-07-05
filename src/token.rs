@@ -10,7 +10,7 @@ pub enum Kind {
     EndOfFile,
     EqualSign,
     False,
-    FloatingPoint,
+    Float,
     Function,
     Greater,
     GreaterOrEqual,
