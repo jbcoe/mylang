@@ -19,7 +19,7 @@ pub enum UnaryTarget {
 
 #[derive(Debug)]
 pub struct UnaryOp {
-    pub sign: PlusOrMinus,
+    pub operation: PlusOrMinus,
     pub target: UnaryTarget,
 }
 

@@ -156,7 +156,12 @@ impl<'a> Parser<'a> {
             Kind::Float => self.parse_float().map(Expression::Float),
             Kind::String => Some(Expression::StringLiteral(self.parse_string())),
             Kind::Function => self.parse_function().map(Expression::Function),
-            Kind::Minus | Kind::Plus => self.parse_unary_op().map(Expression::UnaryOp),
+            Kind::Plus => self
+                .parse_unary_op(PlusOrMinus::Plus)
+                .map(Expression::UnaryOp),
+            Kind::Minus => self
+                .parse_unary_op(PlusOrMinus::Minus)
+                .map(Expression::UnaryOp),
             Kind::True | Kind::False => Some(Expression::Boolean(self.parse_bool())),
             _ => {
                 self.errors.push(format!(
@@ -213,13 +218,9 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn parse_unary_op(&mut self) -> Option<UnaryOp> {
+    fn parse_unary_op(&mut self, operation: PlusOrMinus) -> Option<UnaryOp> {
         assert!(self.token.kind() == Kind::Plus || self.token.kind() == Kind::Minus);
-        let sign = if self.token.kind() == Kind::Plus {
-            PlusOrMinus::Plus
-        } else {
-            PlusOrMinus::Minus
-        };
+
         self.read_token(); // consume `+` or `-`
         let operand = match self.token.kind() {
             Kind::Integer => self.parse_integer().map(UnaryTarget::Integer),
@@ -233,7 +234,7 @@ impl<'a> Parser<'a> {
                 None
             }
         };
-        operand.map(|target| UnaryOp { sign, target })
+        operand.map(|target| UnaryOp { operation, target })
     }
 
     fn parse_bool(&mut self) -> bool {
