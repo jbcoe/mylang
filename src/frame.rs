@@ -1,4 +1,4 @@
-use crate::ast::{Expression, Function, Statement};
+use crate::ast::{Expression, Function, OpName, Statement, UnaryOp};
 use std::{collections::HashMap, rc::Rc};
 
 pub enum Value<'a> {
@@ -47,11 +47,11 @@ impl<'a> Frame<'a> {
                     match **value {
                         Value::Boolean(_) => panic!("Cannot call a boolean"),
                         Value::Float(_) => panic!("Cannot call a float"),
-                        Value::Integer(_) => panic!("Cannot call an int"),
+                        Value::Integer(_) => panic!("Cannot call an integer"),
                         Value::String(_) => panic!("Cannot call a string"),
                         Value::Function(function) => {
                             if function.arguments.len() != call.arguments.len() {
-                                panic!("Mismatch in argument count for function {}", call.name);
+                                panic!("Mismatch in argument count for function {}. Expected {} arguments but got {}", call.name, function.arguments.len(), call.arguments.len());
                             }
                             let mut function_frame = Frame::new();
                             for (arg_name, arg_expression) in
@@ -74,7 +74,7 @@ impl<'a> Frame<'a> {
                     panic!("Unknown identifier {:?}", expression)
                 }
             }
-            Expression::UnaryOp(_) => todo!(),
+            Expression::UnaryOp(op) => self.evaluate_unary_op(op),
         }
     }
 
@@ -91,6 +91,23 @@ impl<'a> Frame<'a> {
                 // TODO: Print _value to the console if we're in a REPL.
                 None
             }
+        }
+    }
+
+    fn evaluate_unary_op(&mut self, op: &'a UnaryOp) -> Rc<Value<'a>> {
+        let target = self.evaluate_expression(&op.target);
+        match *target {
+            Value::Boolean(_) => panic!("Cannot apply a unary operation to a Boolean"),
+            Value::Float(f) => match op.operation {
+                OpName::Plus => Rc::new(Value::Float(f)),
+                OpName::Minus => Rc::new(Value::Float(-f)),
+            },
+            Value::Function(_) => panic!("Cannot apply a unary operation to a function definition"),
+            Value::Integer(i) => match op.operation {
+                OpName::Plus => Rc::new(Value::Integer(i)),
+                OpName::Minus => Rc::new(Value::Integer(-i)),
+            },
+            Value::String(_) => panic!("Cannot apply a unary operation to a String"),
         }
     }
 }

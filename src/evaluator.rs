@@ -58,6 +58,12 @@ mod tests {
     }
 
     evaluator_test_case! {
+        name: return_unary_plus_integer,
+        input: "return +42;",
+        return_value: 42,
+    }
+
+    evaluator_test_case! {
         name: let_string_no_return,
         input: r#"let a = "Hello";"#,
         return_value: 0,
@@ -70,6 +76,12 @@ mod tests {
     }
 
     evaluator_test_case! {
+        name: let_unary_minus_float_no_return,
+        input: "let a = -3.14159;",
+        return_value: 0,
+    }
+
+    evaluator_test_case! {
         name: let_integer_no_return,
         input: "let a = 42;",
         return_value: 0,
@@ -78,16 +90,24 @@ mod tests {
     evaluator_test_case! {
         name: let_integer_return_identifier,
         input: r#"
-            let a = 42; 
+            let a = 42;
             return a;"#,
         return_value: 42,
     }
 
     evaluator_test_case! {
+        name: let_integer_return_unary_minus_identifier,
+        input: r#"
+            let a = 42;
+            return -a;"#,
+        return_value: -42,
+    }
+
+    evaluator_test_case! {
         name: let_function_no_return,
         input: r#"
-            let a = func ( x, y ) { 
-                return x; 
+            let a = func ( x, y ) {
+                return x;
             };"#,
         return_value: 0,
     }
@@ -96,7 +116,7 @@ mod tests {
         name: let_function_return_invocation_with_identifiers,
         input: r#"
             # Define a function.
-            let first = func (a, b) { 
+            let first = func (a, b) {
                 return a; # indenting is non-syntactic.
             };
             let x = 1;
@@ -109,8 +129,8 @@ mod tests {
     evaluator_test_case! {
         name: let_function_return_invocation_with_literals,
         input: r#"
-            let first = func (a, b) { 
-                return a; 
+            let first = func (a, b) {
+                return a;
             };
             return first(101, 2);"#,
         return_value: 101,
@@ -119,9 +139,9 @@ mod tests {
     evaluator_test_case! {
         name: assorted_let_with_return_integer,
         input: r#"
-            let a = 42; 
-            let b = "Hello"; 
-            let c = 3.14159; 
+            let a = 42;
+            let b = "Hello";
+            let c = 3.14159;
             return 7;"#,
         return_value: 7,
     }
@@ -129,7 +149,7 @@ mod tests {
     evaluator_test_case! {
         name: assorted_let_with_return_identifier,
         input: r#"
-            let a = 42; 
+            let a = 42;
             a;"#,
         return_value: 0, // not 42
     }

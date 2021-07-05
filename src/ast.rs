@@ -5,22 +5,15 @@ pub struct Call {
 }
 
 #[derive(Debug)]
-pub enum PlusOrMinus {
+pub enum OpName {
     Plus,
     Minus,
 }
 
 #[derive(Debug)]
-pub enum UnaryTarget {
-    Integer(i32),
-    Float(f64),
-    Identifier(String),
-}
-
-#[derive(Debug)]
 pub struct UnaryOp {
-    pub operation: PlusOrMinus,
-    pub target: UnaryTarget,
+    pub operation: OpName,
+    pub target: Box<Expression>,
 }
 
 #[derive(Debug)]
