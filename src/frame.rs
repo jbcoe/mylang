@@ -85,9 +85,7 @@ impl<'a> Frame<'a> {
                 self.values.insert(let_statement.identifier.clone(), value);
                 None
             }
-            Statement::Return(return_statement) => {
-                Some(self.evaluate_expression(&return_statement))
-            }
+            Statement::Return(return_statement) => Some(self.evaluate_expression(return_statement)),
             Statement::Expression(expression) => {
                 let _value = self.evaluate_expression(expression);
                 // TODO: Print _value to the console if we're in a REPL.
