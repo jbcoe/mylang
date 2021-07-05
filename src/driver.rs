@@ -164,7 +164,7 @@ mod tests {
     use super::*;
 
     lazy_static! {
-        static ref OPTS: Opt = Opt::from_iter(vec!["mylang"]);
+        static ref OPTS: Opt = Opt::from_iter(vec!["mylang", "-t"]);
         static ref DRIVER: Driver<'static> = Driver::new(&OPTS);
     }
 
