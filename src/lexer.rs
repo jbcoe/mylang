@@ -307,7 +307,7 @@ impl<'a> Lexer<'a> {
             // as they form the beginning of the next token.
             self.read_number_cleanup_junk(start)
         } else {
-            self.text_token(start, Kind::FloatingPoint)
+            self.text_token(start, Kind::Float)
         }
     }
 
@@ -621,7 +621,7 @@ mod tests {
     lexer_test_case! {
         name: float,
         input: "3.14",
-        expected_tokens: vec![("3.14", Kind::FloatingPoint)],
+        expected_tokens: vec![("3.14", Kind::Float)],
     }
 
     lexer_test_case! {
@@ -639,37 +639,37 @@ mod tests {
     lexer_test_case! {
         name: float_with_trailing_dot,
         input: "3.",
-        expected_tokens: vec![("3.", Kind::FloatingPoint)],
+        expected_tokens: vec![("3.", Kind::Float)],
     }
 
     lexer_test_case! {
         name: float_with_leading_dot,
         input: ".14",
-        expected_tokens: vec![(".14", Kind::FloatingPoint)],
+        expected_tokens: vec![(".14", Kind::Float)],
     }
 
     lexer_test_case! {
         name: float_with_exponent,
         input: "3e8",
-        expected_tokens: vec![("3e8", Kind::FloatingPoint)],
+        expected_tokens: vec![("3e8", Kind::Float)],
     }
 
     lexer_test_case! {
         name: float_with_exponent_and_dot,
         input: "0.314e1",
-        expected_tokens: vec![("0.314e1", Kind::FloatingPoint)],
+        expected_tokens: vec![("0.314e1", Kind::Float)],
     }
 
     lexer_test_case! {
         name: float_with_negative_exponent_and_dot,
         input: "9.1e-31",
-        expected_tokens: vec![("9.1e-31", Kind::FloatingPoint)],
+        expected_tokens: vec![("9.1e-31", Kind::Float)],
     }
 
     lexer_test_case! {
         name: float_with_positive_exponent_and_dot,
         input: "6.02e+23",
-        expected_tokens: vec![("6.02e+23", Kind::FloatingPoint)],
+        expected_tokens: vec![("6.02e+23", Kind::Float)],
     }
 
     lexer_test_case! {
@@ -702,7 +702,7 @@ mod tests {
         expected_tokens: vec![
             ("123f", Kind::Unknown),
             ("+", Kind::Plus),
-            ("4.2e-3", Kind::FloatingPoint),
+            ("4.2e-3", Kind::Float),
         ],
     }
 
@@ -716,9 +716,9 @@ mod tests {
         name: bad_float_with_dot_and_exponent_with_float,
         input: "1.23e-4+3.2e-5",
         expected_tokens: vec![
-            ("1.23e-4", Kind::FloatingPoint),
+            ("1.23e-4", Kind::Float),
             ("+", Kind::Plus),
-            ("3.2e-5", Kind::FloatingPoint),
+            ("3.2e-5", Kind::Float),
         ],
     }
 

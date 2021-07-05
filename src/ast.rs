@@ -5,16 +5,22 @@ pub struct Call {
 }
 
 #[derive(Debug)]
-pub enum UnaryPlus {
+pub enum PlusOrMinus {
+    Plus,
+    Minus,
+}
+
+#[derive(Debug)]
+pub enum UnaryTarget {
     Integer(i32),
-    FloatingPoint(f64),
+    Float(f64),
     Identifier(String),
 }
+
 #[derive(Debug)]
-pub enum UnaryMinus {
-    Integer(i32),
-    FloatingPoint(f64),
-    Identifier(String),
+pub struct UnaryOp {
+    pub sign: PlusOrMinus,
+    pub target: UnaryTarget,
 }
 
 #[derive(Debug)]
@@ -26,14 +32,13 @@ pub struct Function {
 #[derive(Debug)]
 pub enum Expression {
     Boolean(bool),
-    FloatingPoint(f64),
+    Float(f64),
     Function(Function),
     Call(Call),
     Identifier(String),
     Integer(i32),
     StringLiteral(String),
-    UnaryMinus(UnaryMinus),
-    UnaryPlus(UnaryPlus),
+    UnaryOp(UnaryOp),
 }
 #[derive(Debug)]
 pub struct Let {
