@@ -31,12 +31,14 @@ pub struct Opt {
     file: Option<PathBuf>,
 }
 
-/// process first filepath in Files, or stdin if empty
+/// process the input filename, or standard input if empty
 ///
 /// # Errors
 ///
-/// Will return Err if files couldn't be opened, or found
-/// or if they could not be lexed, parsed or evaluated
+/// Returns the result of running the evaluator on the text
+///
+/// Returns Err if the input (file) couldn't be opened, or found
+/// or if it could not be lexed, parsed or evaluated
 pub fn real_main(opt: &Opt) -> Result<i32> {
     let stdout = io::stdout();
     let mut outio = stdout.lock();
