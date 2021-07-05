@@ -2,7 +2,7 @@ use crate::ast::AbstractSyntaxTree;
 use crate::evaluator::Evaluator;
 use crate::lexer::Lexer;
 use crate::parser::Parser;
-use crate::token::Kind;
+use crate::token::{Kind, Token};
 
 use anyhow::{Context, Result};
 use std::{
@@ -18,7 +18,7 @@ use structopt::StructOpt;
 #[derive(StructOpt, Debug)]
 #[structopt(name = "mylang")]
 pub struct Opt {
-    /// Use alternate parser
+    /// Use alternate parser (not yet implemented)
     #[structopt(short, long)]
     alternate: bool,
 
@@ -26,62 +26,98 @@ pub struct Opt {
     #[structopt(short, long)]
     parse_only: bool,
 
+    /// Write out tokens
+    #[structopt(short, long)]
+    tokens: bool,
+
     /// Filename to process. Omit to process standard input
     #[structopt(name = "FILE", parse(from_os_str))]
     file: Option<PathBuf>,
 }
 
-/// process the input filename, or standard input if empty
-///
-/// # Errors
-///
-/// Returns the result of running the evaluator on the text
-///
-/// Returns Err if the input (file) couldn't be opened, or found
-/// or if it could not be lexed, parsed or evaluated
-pub fn real_main(opt: &Opt) -> Result<i32> {
-    let stdout = io::stdout();
-    let mut outio = stdout.lock();
+pub struct Driver<'a> {
+    opt: &'a Opt,
+}
 
-    match &opt.file {
-        Some(filepath) => {
-            let file = File::open(&filepath)
-                .with_context(|| format!("Failed to open file at {}", filepath.display()))?;
-            process_stream(file, &mut outio, opt)
-                .with_context(|| format!("while reading {}", filepath.display()))
-        }
-        None => process_stream(io::stdin(), &mut outio, opt).with_context(|| "while reading stdin"),
+/// A Driver for all phases from tokenisation through to evaluation
+impl<'a> Driver<'a> {
+    #[must_use]
+    pub const fn new(opt: &'a Opt) -> Self {
+        Driver { opt }
     }
-}
 
-/// process an input stream from inio, reading its text and writing the
-/// processed results to outio
-fn process_stream<R, W>(mut inio: R, outio: W, opt: &Opt) -> Result<i32>
-where
-    R: Read,
-    W: Write,
-{
-    let mut text = String::new();
-    inio.read_to_string(&mut text)?;
+    /// process the input filename, or standard input if empty
+    ///
+    /// # Errors
+    ///
+    /// Returns the result of running the evaluator on the text
+    ///
+    /// Returns Err if the input (file) couldn't be opened, or found
+    /// or if it could not be lexed, parsed or evaluated
+    pub fn main(&self) -> Result<i32> {
+        let stdout = io::stdout();
+        let mut outio = stdout.lock();
 
-    process_text(outio, &text, opt)
-}
+        match &self.opt.file {
+            Some(filepath) => {
+                let file = File::open(&filepath)
+                    .with_context(|| format!("Failed to open file at {}", filepath.display()))?;
+                self.process_stream(file, &mut outio)
+                    .with_context(|| format!("while reading {}", filepath.display()))
+            }
+            None => self
+                .process_stream(io::stdin(), &mut outio)
+                .with_context(|| "while reading stdin"),
+        }
+    }
 
-/// process an input text, writing a printable form of all tokens except
-/// whitespace, one token per line onto out. Line numbers and columns are
-/// written. Any AST errors are written
-fn process_text<W: Write>(mut out: W, text: &str, options: &Opt) -> Result<i32> {
-    let ast = if options.alternate {
-        alternate_lex_parse(&mut out, text)
-    } else {
-        lex_and_parse(&mut out, text)?
-    };
-    let result = if options.parse_only {
-        0
-    } else {
-        evaluate(out, &ast)?
-    };
-    Ok(result)
+    /// process an input stream from inio, reading its text and writing the
+    /// processed results to outio
+    fn process_stream<R, W>(&self, mut inio: R, outio: W) -> Result<i32>
+    where
+        R: Read,
+        W: Write,
+    {
+        let mut text = String::new();
+        inio.read_to_string(&mut text)?;
+
+        self.process_text(outio, &text)
+    }
+
+    /// process an input text, writing a printable form of all tokens except
+    /// whitespace, one token per line onto out. Line numbers and columns are
+    /// written. Any AST errors are written
+    fn process_text<W: Write>(&self, mut out: W, text: &str) -> Result<i32> {
+        let ast = if self.opt.alternate {
+            alternate_lex_parse(&mut out, text)
+        } else {
+            self.lex_and_parse(&mut out, text)?
+        };
+        let result = if self.opt.parse_only {
+            0
+        } else {
+            evaluate(out, &ast)?
+        };
+        Ok(result)
+    }
+
+    fn lex_and_parse<W: Write>(
+        &self,
+        mut out: W,
+        text: &str,
+    ) -> Result<AbstractSyntaxTree, anyhow::Error> {
+        let lexer = Lexer::new(text);
+        let tokens = lexer.tokens();
+        if self.opt.tokens {
+            write_tokens(&mut out, &tokens, text)?;
+        }
+        let parser = Parser::new(tokens);
+        let ast = parser.ast();
+        for err in ast.errors() {
+            writeln!(out, "{}", err)?;
+        }
+        Ok(ast)
+    }
 }
 
 fn evaluate<W: Write>(mut out: W, ast: &AbstractSyntaxTree) -> Result<i32, anyhow::Error> {
@@ -97,10 +133,8 @@ fn alternate_lex_parse<W: Write>(mut _out: W, _text: &str) -> AbstractSyntaxTree
     AbstractSyntaxTree::new(vec![], vec![])
 }
 
-fn lex_and_parse<W: Write>(mut out: W, text: &str) -> Result<AbstractSyntaxTree, anyhow::Error> {
-    let lexer = Lexer::new(text);
-    let tokens = lexer.tokens();
-    for token in &tokens {
+fn write_tokens<W: Write>(mut out: W, tokens: &[Token], text: &str) -> Result<(), anyhow::Error> {
+    for token in tokens {
         if token.kind() == Kind::Whitespace {
             continue;
         }
@@ -119,12 +153,7 @@ fn lex_and_parse<W: Write>(mut out: W, text: &str) -> Result<AbstractSyntaxTree,
             token = token,
         )?;
     }
-    let parser = Parser::new(tokens);
-    let ast = parser.ast();
-    for err in ast.errors() {
-        writeln!(out, "{}", err)?;
-    }
-    Ok(ast)
+    Ok(())
 }
 
 #[cfg(test)]
@@ -136,25 +165,27 @@ mod tests {
 
     lazy_static! {
         static ref OPTS: Opt = Opt::from_iter(vec!["mylang"]);
+        static ref DRIVER: Driver<'static> = Driver::new(&OPTS);
     }
 
     #[test]
     #[should_panic(expected = "stream did not contain valid UTF-8")]
     fn invalid_utf8_input_causes_a_panic() {
         let invalid_utf8: &[u8] = &[0x44, 0xEF];
-        process_stream(invalid_utf8, io::sink(), &OPTS).unwrap();
+        DRIVER.process_stream(invalid_utf8, io::sink()).unwrap();
     }
 
     #[test]
     #[should_panic(expected = "Failed to open file at /dev/null/madeupfile")]
     fn unopenable_file_causes_a_panic() {
         let opts: Opt = Opt::from_iter(vec!["mylang", "/dev/null/madeupfile"]);
-        real_main(&opts).unwrap();
+        let driver = Driver::new(&opts);
+        driver.main().unwrap();
     }
 
     #[test]
     fn valid_utf8_input_doesnt_panic() {
         let valid_utf8: &[u8] = b"let meow; meow";
-        process_stream(valid_utf8, io::sink(), &OPTS).unwrap();
+        DRIVER.process_stream(valid_utf8, io::sink()).unwrap();
     }
 }
