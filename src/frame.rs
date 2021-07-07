@@ -1,25 +1,25 @@
 use crate::ast::{Expression, Function, OpName, Statement, UnaryOp};
 use std::{collections::HashMap, rc::Rc};
 
-pub enum Value<'a> {
+pub(crate) enum Value<'a> {
     Boolean(bool),
     Float(f64),
     Function(&'a Function),
     Integer(i32),
     String(String),
 }
-pub struct Frame<'a> {
+pub(crate) struct Frame<'a> {
     values: HashMap<String, Rc<Value<'a>>>,
 }
 
 impl<'a> Frame<'a> {
-    pub fn new() -> Self {
+    pub(crate) fn new() -> Self {
         Self {
             values: HashMap::new(),
         }
     }
 
-    pub fn evaluate_body(&mut self, body: &'a [Statement]) -> Option<Rc<Value<'a>>> {
+    pub(crate) fn evaluate_body(&mut self, body: &'a [Statement]) -> Option<Rc<Value<'a>>> {
         for statement in body {
             if let Some(v) = self.evaluate_statement(statement) {
                 return Some(v);

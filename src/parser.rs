@@ -2,7 +2,7 @@ use crate::{
     ast::{AbstractSyntaxTree, Call, Expression, Function, Let, OpName, Statement, UnaryOp},
     token::{Kind, Token},
 };
-pub struct Parser<'a> {
+pub(crate) struct Parser<'a> {
     tokens: Vec<Token<'a>>,
     position: usize,
     read_position: usize,
@@ -13,7 +13,7 @@ pub struct Parser<'a> {
 impl<'a> Parser<'a> {
     /// Create a new Parser from a Vec<Token>, probably from a Lexer
     #[must_use]
-    pub fn new(input: Vec<Token>) -> Parser {
+    pub(crate) fn new(input: Vec<Token>) -> Parser {
         let mut tokens = vec![];
         for token in input {
             match token.kind() {
@@ -33,7 +33,7 @@ impl<'a> Parser<'a> {
 
     // Consumes the parser.
     #[must_use]
-    pub fn ast(mut self) -> AbstractSyntaxTree {
+    pub(crate) fn ast(mut self) -> AbstractSyntaxTree {
         let mut statements = vec![];
         self.read_token();
         while let Some(stmt) = self.parse_next() {
