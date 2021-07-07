@@ -99,12 +99,12 @@ impl<'a> Frame<'a> {
         match *target {
             Value::Boolean(_) => panic!("Cannot apply a unary operation to a Boolean"),
             Value::Float(f) => match op.operation {
-                OpName::Plus => Rc::new(Value::Float(f)),
+                OpName::Plus => Rc::clone(&target),
                 OpName::Minus => Rc::new(Value::Float(-f)),
             },
             Value::Function(_) => panic!("Cannot apply a unary operation to a function definition"),
             Value::Integer(i) => match op.operation {
-                OpName::Plus => Rc::new(Value::Integer(i)),
+                OpName::Plus => Rc::clone(&target),
                 OpName::Minus => Rc::new(Value::Integer(-i)),
             },
             Value::String(_) => panic!("Cannot apply a unary operation to a String"),
