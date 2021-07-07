@@ -8,6 +8,15 @@ pub struct Call {
 pub enum OpName {
     Plus,
     Minus,
+    Multiply,
+    Divide,
+}
+
+#[derive(Debug)]
+pub struct BinaryOp {
+    pub(crate) operation: OpName,
+    pub(crate) left_hand_side: Box<Expression>,
+    pub(crate) right_hand_side: Box<Expression>,
 }
 
 #[derive(Debug)]
@@ -32,6 +41,7 @@ pub enum Expression {
     Integer(i32),
     StringLiteral(String),
     UnaryOp(UnaryOp),
+    BinaryOp(BinaryOp),
 }
 #[derive(Debug)]
 pub struct Let {

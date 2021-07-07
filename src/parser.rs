@@ -1,5 +1,7 @@
 use crate::{
-    ast::{AbstractSyntaxTree, Call, Expression, Function, Let, OpName, Statement, UnaryOp},
+    ast::{
+        AbstractSyntaxTree, BinaryOp, Call, Expression, Function, Let, OpName, Statement, UnaryOp,
+    },
     token::{Kind, Token},
 };
 pub struct Parser<'a> {
@@ -144,6 +146,79 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_expression(&mut self) -> Option<Expression> {
+        let start = self.position;
+        if let Some(subexpression) = self.parse_subexpression() {
+            match self.token.kind() {
+                Kind::Plus => {
+                    self.read_token(); // consume binary op.
+                    if let Some(rhs) = self.parse_expression() {
+                        Some(Expression::BinaryOp(BinaryOp {
+                            left_hand_side: Box::new(subexpression),
+                            right_hand_side: Box::new(rhs),
+                            operation: OpName::Plus,
+                        }))
+                    } else {
+                        self.reset(start);
+                        None
+                    }
+                }
+                Kind::Minus => {
+                    self.read_token(); // consume binary op.
+                    if let Some(rhs) = self.parse_expression() {
+                        Some(Expression::BinaryOp(BinaryOp {
+                            left_hand_side: Box::new(subexpression),
+                            right_hand_side: Box::new(rhs),
+                            operation: OpName::Minus,
+                        }))
+                    } else {
+                        self.reset(start);
+                        None
+                    }
+                }
+                Kind::Divide => {
+                    self.read_token(); // consume binary op.
+                    if let Some(rhs) = self.parse_expression() {
+                        Some(Expression::BinaryOp(BinaryOp {
+                            left_hand_side: Box::new(subexpression),
+                            right_hand_side: Box::new(rhs),
+                            operation: OpName::Divide,
+                        }))
+                    } else {
+                        self.reset(start);
+                        None
+                    }
+                }
+                Kind::Star => {
+                    self.read_token(); // consume binary op.
+                    if let Some(rhs) = self.parse_expression() {
+                        Some(Expression::BinaryOp(BinaryOp {
+                            left_hand_side: Box::new(subexpression),
+                            right_hand_side: Box::new(rhs),
+                            operation: OpName::Multiply,
+                        }))
+                    } else {
+                        self.reset(start);
+                        None
+                    }
+                }
+                Kind::SemiColon
+                | Kind::Comma
+                | Kind::LeftParen
+                | Kind::RightParen
+                | Kind::LeftBrace
+                | Kind::RightBrace => Some(subexpression),
+                _ => {
+                    self.reset(start);
+                    None
+                }
+            }
+        } else {
+            self.reset(start);
+            None
+        }
+    }
+
+    fn parse_subexpression(&mut self) -> Option<Expression> {
         match self.token.kind() {
             Kind::Identifier => match self.parse_call() {
                 Some(function_call) => Some(Expression::Call(function_call)),
@@ -554,6 +629,42 @@ mod tests {
         ParseLetStatementTest {
             input: "let max = largest (a, b);",
             identifier: "max",
+            mutable: false,
+        }
+    ];
+
+    parse_let_statement_test_case![
+        let_binary_add,
+        ParseLetStatementTest {
+            input: "let x = a + b;",
+            identifier: "x",
+            mutable: false,
+        }
+    ];
+
+    parse_let_statement_test_case![
+        let_binary_subtract,
+        ParseLetStatementTest {
+            input: "let x = a - b;",
+            identifier: "x",
+            mutable: false,
+        }
+    ];
+
+    parse_let_statement_test_case![
+        let_binary_multiply,
+        ParseLetStatementTest {
+            input: "let x = a * b;",
+            identifier: "x",
+            mutable: false,
+        }
+    ];
+
+    parse_let_statement_test_case![
+        let_binary_divide,
+        ParseLetStatementTest {
+            input: "let x = a / b;",
+            identifier: "x",
             mutable: false,
         }
     ];

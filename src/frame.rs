@@ -75,6 +75,7 @@ impl<'a> Frame<'a> {
                 }
             }
             Expression::UnaryOp(op) => self.evaluate_unary_op(op),
+            Expression::BinaryOp(op) => panic!("Binary op is currently unsupported {:?}", op),
         }
     }
 
@@ -101,11 +102,13 @@ impl<'a> Frame<'a> {
             Value::Float(f) => match op.operation {
                 OpName::Plus => Rc::new(Value::Float(f)),
                 OpName::Minus => Rc::new(Value::Float(-f)),
+                OpName::Multiply | OpName::Divide => panic!("Bad unary operation"),
             },
             Value::Function(_) => panic!("Cannot apply a unary operation to a function definition"),
             Value::Integer(i) => match op.operation {
                 OpName::Plus => Rc::new(Value::Integer(i)),
                 OpName::Minus => Rc::new(Value::Integer(-i)),
+                OpName::Multiply | OpName::Divide => panic!("Bad unary operation"),
             },
             Value::String(_) => panic!("Cannot apply a unary operation to a String"),
         }
