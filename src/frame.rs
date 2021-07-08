@@ -1,6 +1,7 @@
 use crate::ast::{Expression, Function, OpName, Statement, UnaryOp};
 use std::{collections::HashMap, rc::Rc};
 
+#[derive(Debug)]
 pub(crate) enum Value<'a> {
     Boolean(bool),
     Float(f64),
@@ -97,17 +98,26 @@ impl<'a> Frame<'a> {
     fn evaluate_unary_op(&mut self, op: &'a UnaryOp) -> Rc<Value<'a>> {
         let target = self.evaluate_expression(&op.target);
         match *target {
-            Value::Boolean(_) => panic!("Cannot apply a unary operation to a Boolean"),
+            Value::Boolean(_) => panic!(
+                "Cannot apply unary operation {:#?} to the Boolean value {:#?}",
+                op.operation, *target
+            ),
             Value::Float(f) => match op.operation {
                 OpName::Plus => Rc::clone(&target),
                 OpName::Minus => Rc::new(Value::Float(-f)),
             },
-            Value::Function(_) => panic!("Cannot apply a unary operation to a function definition"),
+            Value::Function(_) => panic!(
+                "Cannot apply unary operation {:#?} to a function definition",
+                op.operation
+            ),
             Value::Integer(i) => match op.operation {
                 OpName::Plus => Rc::clone(&target),
                 OpName::Minus => Rc::new(Value::Integer(-i)),
             },
-            Value::String(_) => panic!("Cannot apply a unary operation to a String"),
+            Value::String(_) => panic!(
+                "Cannot apply unary operation {:#?} to the String value \"{:#?}\"",
+                op.operation, *target
+            ),
         }
     }
 }
