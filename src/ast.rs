@@ -1,29 +1,29 @@
 #[derive(Debug)]
-pub(crate) struct Call {
+pub struct Call {
     pub(crate) name: String,
     pub(crate) arguments: Vec<Expression>,
 }
 
 #[derive(Debug)]
-pub(crate) enum OpName {
+pub enum OpName {
     Plus,
     Minus,
 }
 
 #[derive(Debug)]
-pub(crate) struct UnaryOp {
+pub struct UnaryOp {
     pub(crate) operation: OpName,
     pub(crate) target: Box<Expression>,
 }
 
 #[derive(Debug)]
-pub(crate) struct Function {
+pub struct Function {
     pub(crate) arguments: Vec<String>,
     pub(crate) body: Vec<Statement>,
 }
 
 #[derive(Debug)]
-pub(crate) enum Expression {
+pub enum Expression {
     Boolean(bool),
     Float(f64),
     Function(Function),
@@ -34,21 +34,21 @@ pub(crate) enum Expression {
     UnaryOp(UnaryOp),
 }
 #[derive(Debug)]
-pub(crate) struct Let {
+pub struct Let {
     pub(crate) mutable: bool,
     pub(crate) identifier: String,
     pub(crate) expression: Box<Expression>,
 }
 
 #[derive(Debug)]
-pub(crate) enum Statement {
+pub enum Statement {
     Expression(Expression),
     Let(Let),
     Return(Box<Expression>),
 }
 
 #[derive(Debug)]
-pub(crate) struct AbstractSyntaxTree {
+pub struct AbstractSyntaxTree {
     statements: Vec<Statement>,
     errors: Vec<String>,
 }

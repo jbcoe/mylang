@@ -2,14 +2,14 @@ use crate::ast::{Expression, Function, OpName, Statement, UnaryOp};
 use std::{collections::HashMap, rc::Rc};
 
 #[derive(Debug)]
-pub(crate) enum Value<'a> {
+pub enum Value<'a> {
     Boolean(bool),
     Float(f64),
     Function(&'a Function),
     Integer(i32),
     String(String),
 }
-pub(crate) struct Frame<'a> {
+pub struct Frame<'a> {
     values: HashMap<String, Rc<Value<'a>>>,
 }
 
