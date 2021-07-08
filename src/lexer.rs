@@ -1,7 +1,7 @@
 use crate::token::{Kind, Token};
 use std::{str, vec::Vec};
 
-pub(crate) struct Lexer<'a> {
+pub struct Lexer<'a> {
     input: &'a [u8],
     position: usize,
     read_position: usize,

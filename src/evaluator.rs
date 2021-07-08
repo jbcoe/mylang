@@ -1,7 +1,7 @@
 use crate::ast::AbstractSyntaxTree;
 use crate::frame::{Frame, Value};
 
-pub(crate) struct Evaluator<'a> {
+pub struct Evaluator<'a> {
     global: Frame<'a>,
     errors: Vec<String>,
 }
