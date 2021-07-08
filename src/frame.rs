@@ -97,26 +97,22 @@ impl<'a> Frame<'a> {
 
     fn evaluate_unary_op(&mut self, op: &'a UnaryOp) -> Rc<Value<'a>> {
         let target = self.evaluate_expression(&op.target);
-        match *target {
-            Value::Boolean(_) => panic!(
-                "Cannot apply unary operation {:#?} to the Boolean value {:#?}",
-                op.operation, *target
+        match (&*target, &op.operation) {
+            (Value::Boolean(b), op) => panic!(
+                "Cannot apply unary operation {:#?} to the Boolean value {:?}",
+                op, b
             ),
-            Value::Float(f) => match op.operation {
-                OpName::Plus => Rc::clone(&target),
-                OpName::Minus => Rc::new(Value::Float(-f)),
-            },
-            Value::Function(_) => panic!(
+            (Value::Float(_), OpName::Plus) => Rc::clone(&target),
+            (Value::Float(f), OpName::Minus) => Rc::new(Value::Float(-f)),
+            (Value::Function(_), op) => panic!(
                 "Cannot apply unary operation {:#?} to a function definition",
-                op.operation
+                op
             ),
-            Value::Integer(i) => match op.operation {
-                OpName::Plus => Rc::clone(&target),
-                OpName::Minus => Rc::new(Value::Integer(-i)),
-            },
-            Value::String(_) => panic!(
-                "Cannot apply unary operation {:#?} to the String value \"{:#?}\"",
-                op.operation, *target
+            (Value::Integer(_), OpName::Plus) => Rc::clone(&target),
+            (Value::Integer(i), OpName::Minus) => Rc::new(Value::Integer(-i)),
+            (Value::String(s), op) => panic!(
+                "Cannot apply unary operation {:#?} to the String value {}",
+                op, s
             ),
         }
     }
