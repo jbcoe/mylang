@@ -2,7 +2,7 @@ use crate::{
     ast::{AbstractSyntaxTree, Call, Expression, Function, Let, OpName, Statement, UnaryOp},
     token::{Kind, Token},
 };
-pub(crate) struct Parser<'a> {
+pub struct Parser<'a> {
     tokens: Vec<Token<'a>>,
     position: usize,
     read_position: usize,

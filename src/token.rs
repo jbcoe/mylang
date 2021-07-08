@@ -1,7 +1,7 @@
 use std::fmt;
 
 #[derive(Debug, Eq, PartialEq, Copy, Clone)]
-pub(crate) enum Kind {
+pub enum Kind {
     Colon,
     Comma,
     Comment,
@@ -41,7 +41,7 @@ pub(crate) enum Kind {
 }
 
 #[derive(Clone, Copy)]
-pub(crate) struct Token<'a> {
+pub struct Token<'a> {
     text: &'a [u8],
     offset: usize,
     kind: Kind,
