@@ -99,7 +99,7 @@ impl<'a> Frame<'a> {
         let target = self.evaluate_expression(&op.target);
         match (&*target, &op.operation) {
             (Value::Boolean(b), op) => panic!(
-                "Cannot apply unary operation {:#?} to the Boolean value {:?}",
+                "Cannot apply unary operation {:#?} to the Boolean value {}",
                 op, b
             ),
             (Value::Float(_), OpName::Plus) => Rc::clone(&target),
