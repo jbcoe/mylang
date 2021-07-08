@@ -1,29 +1,29 @@
 #[derive(Debug)]
-pub struct Call {
-    pub name: String,
-    pub arguments: Vec<Expression>,
+pub(crate) struct Call {
+    pub(crate) name: String,
+    pub(crate) arguments: Vec<Expression>,
 }
 
 #[derive(Debug)]
-pub enum OpName {
+pub(crate) enum OpName {
     Plus,
     Minus,
 }
 
 #[derive(Debug)]
-pub struct UnaryOp {
-    pub operation: OpName,
-    pub target: Box<Expression>,
+pub(crate) struct UnaryOp {
+    pub(crate) operation: OpName,
+    pub(crate) target: Box<Expression>,
 }
 
 #[derive(Debug)]
-pub struct Function {
-    pub arguments: Vec<String>,
-    pub body: Vec<Statement>,
+pub(crate) struct Function {
+    pub(crate) arguments: Vec<String>,
+    pub(crate) body: Vec<Statement>,
 }
 
 #[derive(Debug)]
-pub enum Expression {
+pub(crate) enum Expression {
     Boolean(bool),
     Float(f64),
     Function(Function),
@@ -34,33 +34,33 @@ pub enum Expression {
     UnaryOp(UnaryOp),
 }
 #[derive(Debug)]
-pub struct Let {
-    pub mutable: bool,
-    pub identifier: String,
-    pub expression: Box<Expression>,
+pub(crate) struct Let {
+    pub(crate) mutable: bool,
+    pub(crate) identifier: String,
+    pub(crate) expression: Box<Expression>,
 }
 
 #[derive(Debug)]
-pub enum Statement {
+pub(crate) enum Statement {
     Expression(Expression),
     Let(Let),
     Return(Box<Expression>),
 }
 
 #[derive(Debug)]
-pub struct AbstractSyntaxTree {
+pub(crate) struct AbstractSyntaxTree {
     statements: Vec<Statement>,
     errors: Vec<String>,
 }
 
 impl AbstractSyntaxTree {
-    pub fn new(statements: Vec<Statement>, errors: Vec<String>) -> Self {
+    pub(crate) fn new(statements: Vec<Statement>, errors: Vec<String>) -> Self {
         Self { statements, errors }
     }
-    pub const fn errors(&self) -> &Vec<String> {
+    pub(crate) const fn errors(&self) -> &Vec<String> {
         &self.errors
     }
-    pub const fn statements(&self) -> &Vec<Statement> {
+    pub(crate) const fn statements(&self) -> &Vec<Statement> {
         &self.statements
     }
 }

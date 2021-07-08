@@ -1,7 +1,7 @@
 use crate::token::{Kind, Token};
 use std::{str, vec::Vec};
 
-pub struct Lexer<'a> {
+pub(crate) struct Lexer<'a> {
     input: &'a [u8],
     position: usize,
     read_position: usize,
@@ -10,7 +10,7 @@ pub struct Lexer<'a> {
 
 impl<'a> Lexer<'a> {
     #[must_use]
-    pub fn new(input: &'a str) -> Lexer {
+    pub(crate) fn new(input: &'a str) -> Lexer {
         let mut lexer = Lexer {
             input: input.as_bytes(),
             position: 0,
@@ -55,7 +55,7 @@ impl<'a> Lexer<'a> {
     #[must_use]
     /// Consumes the lexer, producing a Vec of lexed Tokens
 
-    pub fn tokens(mut self) -> Vec<Token<'a>> {
+    pub(crate) fn tokens(mut self) -> Vec<Token<'a>> {
         let mut tokens = vec![];
         loop {
             let t = self.next_token();
@@ -67,7 +67,7 @@ impl<'a> Lexer<'a> {
         tokens
     }
 
-    pub fn next_token(&mut self) -> Token<'a> {
+    pub(crate) fn next_token(&mut self) -> Token<'a> {
         let c = char::from(self.byte);
         let token = match c {
             '\0' => Token::end_of_file(self.read_position),
