@@ -1,3 +1,5 @@
+use std::rc::Rc;
+
 #[derive(Debug)]
 pub struct Call {
     pub(crate) name: String,
@@ -26,7 +28,7 @@ pub struct Function {
 pub enum Expression {
     Boolean(bool),
     Float(f64),
-    Function(Function),
+    Function(Rc<Function>),
     Call(Call),
     Identifier(String),
     Integer(i32),
