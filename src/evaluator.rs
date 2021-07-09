@@ -1,41 +1,54 @@
 use crate::ast::AbstractSyntaxTree;
 use crate::frame::{Frame, Value};
+use thiserror::Error;
 
 pub struct Evaluator {
     global: Frame,
-    errors: Vec<String>,
+}
+
+#[derive(Error, Debug, PartialEq)]
+pub enum Error {
+    #[error("Illegal non-i32 return type `{0}` of value `{1}` at global scope")]
+    NonPermitted(String, String),
 }
 
 impl<'a> Evaluator {
     pub(crate) fn new() -> Self {
         Self {
             global: Frame::new(),
-            errors: vec![],
         }
     }
 
-    pub(crate) const fn errors(&self) -> &Vec<String> {
-        &self.errors
-    }
-
-    pub(crate) fn evaluate(&mut self, ast: &AbstractSyntaxTree) -> i32 {
+    pub(crate) fn evaluate(&mut self, ast: &AbstractSyntaxTree) -> Result<i32, Error> {
         // Evaluate statements at global scope until one of them returns.
         if let Some(rc) = self.global.evaluate_body(ast.statements()) {
-            match *rc {
-                Value::Integer(i) => i,
-                _ => panic!("Non-integer return type at global scope"),
+            match &*rc {
+                Value::Integer(i) => Ok(*i),
+                Value::Boolean(b) => {
+                    Err(Error::NonPermitted("Boolean".to_string(), format!("{}", b)))
+                }
+                Value::Float(f) => Err(Error::NonPermitted("Float".to_string(), format!("{}", f))),
+                Value::Function(_) => Err(Error::NonPermitted(
+                    "Function".to_string(),
+                    "unknown".to_string(),
+                )),
+                Value::String(s) => Err(Error::NonPermitted("String".to_string(), s.clone())),
             }
         } else {
-            0
+            Ok(0)
         }
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::{evaluator::Evaluator, lexer::Lexer, parser::Parser};
+    use crate::{
+        evaluator::{Error, Evaluator},
+        lexer::Lexer,
+        parser::Parser,
+    };
 
-    macro_rules! evaluator_test_case {
+    macro_rules! positive_evaluator_test_case {
         (name: $test_name:ident, input: $input:expr, return_value: $return_value:expr,) => {
             #[test]
             fn $test_name() {
@@ -46,48 +59,48 @@ mod tests {
 
                 assert!(errors.is_empty(), "Expected no errors, got {:?}", errors);
                 let mut evaluator = Evaluator::new();
-                assert_eq!(evaluator.evaluate(&ast), $return_value);
+                assert_eq!(evaluator.evaluate(&ast).unwrap(), $return_value);
             }
         };
     }
 
-    evaluator_test_case! {
+    positive_evaluator_test_case! {
         name: return_integer,
         input: "return 42;",
         return_value: 42,
     }
 
-    evaluator_test_case! {
+    positive_evaluator_test_case! {
         name: return_unary_plus_integer,
         input: "return +42;",
         return_value: 42,
     }
 
-    evaluator_test_case! {
+    positive_evaluator_test_case! {
         name: let_string_no_return,
         input: r#"let a = "Hello";"#,
         return_value: 0,
     }
 
-    evaluator_test_case! {
+    positive_evaluator_test_case! {
         name: let_float_no_return,
         input: "let a = 3.14159;",
         return_value: 0,
     }
 
-    evaluator_test_case! {
+    positive_evaluator_test_case! {
         name: let_unary_minus_float_no_return,
         input: "let a = -3.14159;",
         return_value: 0,
     }
 
-    evaluator_test_case! {
+    positive_evaluator_test_case! {
         name: let_integer_no_return,
         input: "let a = 42;",
         return_value: 0,
     }
 
-    evaluator_test_case! {
+    positive_evaluator_test_case! {
         name: let_integer_return_identifier,
         input: r#"
             let a = 42;
@@ -95,7 +108,7 @@ mod tests {
         return_value: 42,
     }
 
-    evaluator_test_case! {
+    positive_evaluator_test_case! {
         name: let_integer_return_unary_minus_identifier,
         input: r#"
             let a = 42;
@@ -103,7 +116,7 @@ mod tests {
         return_value: -42,
     }
 
-    evaluator_test_case! {
+    positive_evaluator_test_case! {
         name: let_function_no_return,
         input: r#"
             let a = func ( x, y ) {
@@ -112,7 +125,7 @@ mod tests {
         return_value: 0,
     }
 
-    evaluator_test_case! {
+    positive_evaluator_test_case! {
         name: let_function_return_invocation_with_identifiers,
         input: r#"
             # Define a function.
@@ -126,7 +139,7 @@ mod tests {
         return_value: 1,
     }
 
-    evaluator_test_case! {
+    positive_evaluator_test_case! {
         name: let_function_return_invocation_with_literals,
         input: r#"
             let first = func (a, b) {
@@ -136,7 +149,7 @@ mod tests {
         return_value: 101,
     }
 
-    evaluator_test_case! {
+    positive_evaluator_test_case! {
         name: assorted_let_with_return_integer,
         input: r#"
             let a = 42;
@@ -146,11 +159,33 @@ mod tests {
         return_value: 7,
     }
 
-    evaluator_test_case! {
+    positive_evaluator_test_case! {
         name: assorted_let_with_return_identifier,
         input: r#"
             let a = 42;
             a;"#,
         return_value: 0, // not 42
+    }
+
+    macro_rules! negative_evaluator_test_case {
+        (name: $test_name:ident, input: $input:expr, return_value: $return_value:expr,) => {
+            #[test]
+            fn $test_name() {
+                let tokens = Lexer::new($input).tokens();
+                let parser = Parser::new(tokens);
+                let ast = parser.ast();
+                let errors = ast.errors();
+
+                assert!(errors.is_empty(), "Expected no errors, got {:?}", errors);
+                let mut evaluator = Evaluator::new();
+                assert_eq!(evaluator.evaluate(&ast).unwrap_err(), $return_value);
+            }
+        };
+    }
+
+    negative_evaluator_test_case! {
+        name: return_float,
+        input: "return 3.14;",
+        return_value: Error::NonPermitted("Float".to_string(), "3.14".to_string()),
     }
 }
