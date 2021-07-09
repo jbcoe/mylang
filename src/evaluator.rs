@@ -1,14 +1,14 @@
 use crate::ast::AbstractSyntaxTree;
 use crate::frame::{Frame, Value};
 
-pub struct Evaluator<'a> {
-    global: Frame<'a>,
+pub struct Evaluator {
+    global: Frame,
     errors: Vec<String>,
 }
 
-impl<'a> Evaluator<'a> {
+impl<'a> Evaluator {
     pub(crate) fn new() -> Self {
-        Evaluator {
+        Self {
             global: Frame::new(),
             errors: vec![],
         }
@@ -18,7 +18,7 @@ impl<'a> Evaluator<'a> {
         &self.errors
     }
 
-    pub(crate) fn evaluate(&mut self, ast: &'a AbstractSyntaxTree) -> i32 {
+    pub(crate) fn evaluate(&mut self, ast: &AbstractSyntaxTree) -> i32 {
         // Evaluate statements at global scope until one of them returns.
         if let Some(rc) = self.global.evaluate_body(ast.statements()) {
             match *rc {
