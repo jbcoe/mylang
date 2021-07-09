@@ -544,6 +544,24 @@ Errors: {:?}"#,
         ],
 
     }
+    parser_error_test_case! {
+        name: let_missing_expression,
+        input: "let x = ;",
+        expected_errors: &[
+            r#"Parse error when parsing expression Token { text: ";", kind: SemiColon }"#,
+            r#"expected expression, got Token { text: ";", kind: SemiColon }"#,
+            r#"Parse error when parsing let-statement Token { text: "let", kind: Let }"#
+        ],
+    }
+
+    parser_error_test_case! {
+        name: let_missing_semicolon,
+        input: "let x = 123,",
+        expected_errors: &[
+            r#"expected ';', got Token { text: ",", kind: Comma }"#,
+            r#"Parse error when parsing let-statement Token { text: "let", kind: Let }"#
+        ],
+    }
 
     parser_error_test_case! {
         name: return_statement_with_missing_semicolon,
