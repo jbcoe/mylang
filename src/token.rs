@@ -48,11 +48,11 @@ pub struct Token<'a> {
 }
 
 impl<'a> Token<'a> {
-    pub const fn new(text: &'a [u8], offset: usize, kind: Kind) -> Token<'a> {
+    pub(crate) const fn new(text: &'a [u8], offset: usize, kind: Kind) -> Token<'a> {
         Token { text, offset, kind }
     }
 
-    pub const fn end_of_file(offset: usize) -> Token<'static> {
+    pub(crate) const fn end_of_file(offset: usize) -> Token<'static> {
         Token {
             text: &[],
             offset,
@@ -60,15 +60,15 @@ impl<'a> Token<'a> {
         }
     }
 
-    pub const fn kind(&self) -> Kind {
+    pub(crate) const fn kind(&self) -> Kind {
         self.kind
     }
 
-    pub fn text(&self) -> String {
+    pub(crate) fn text(&self) -> String {
         String::from_utf8(self.text.to_vec()).unwrap()
     }
 
-    pub const fn offset(&self) -> usize {
+    pub(crate) const fn offset(&self) -> usize {
         self.offset
     }
 }

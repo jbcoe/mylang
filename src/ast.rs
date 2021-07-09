@@ -1,7 +1,9 @@
+use std::rc::Rc;
+
 #[derive(Debug)]
 pub struct Call {
-    pub name: String,
-    pub arguments: Vec<Expression>,
+    pub(crate) name: String,
+    pub(crate) arguments: Vec<Expression>,
 }
 
 #[derive(Debug)]
@@ -21,21 +23,21 @@ pub struct BinaryOp {
 
 #[derive(Debug)]
 pub struct UnaryOp {
-    pub operation: OpName,
-    pub target: Box<Expression>,
+    pub(crate) operation: OpName,
+    pub(crate) target: Box<Expression>,
 }
 
 #[derive(Debug)]
 pub struct Function {
-    pub arguments: Vec<String>,
-    pub body: Vec<Statement>,
+    pub(crate) arguments: Vec<String>,
+    pub(crate) body: Vec<Statement>,
 }
 
 #[derive(Debug)]
 pub enum Expression {
     Boolean(bool),
     Float(f64),
-    Function(Function),
+    Function(Rc<Function>),
     Call(Call),
     Identifier(String),
     Integer(i32),
@@ -45,9 +47,9 @@ pub enum Expression {
 }
 #[derive(Debug)]
 pub struct Let {
-    pub mutable: bool,
-    pub identifier: String,
-    pub expression: Box<Expression>,
+    pub(crate) mutable: bool,
+    pub(crate) identifier: String,
+    pub(crate) expression: Box<Expression>,
 }
 
 #[derive(Debug)]
@@ -64,13 +66,13 @@ pub struct AbstractSyntaxTree {
 }
 
 impl AbstractSyntaxTree {
-    pub fn new(statements: Vec<Statement>, errors: Vec<String>) -> Self {
+    pub(crate) fn new(statements: Vec<Statement>, errors: Vec<String>) -> Self {
         Self { statements, errors }
     }
-    pub const fn errors(&self) -> &Vec<String> {
+    pub(crate) const fn errors(&self) -> &Vec<String> {
         &self.errors
     }
-    pub const fn statements(&self) -> &Vec<Statement> {
+    pub(crate) const fn statements(&self) -> &Vec<Statement> {
         &self.statements
     }
 }

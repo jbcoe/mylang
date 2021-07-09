@@ -1,3 +1,5 @@
+use std::rc::Rc;
+
 use crate::{
     ast::{
         AbstractSyntaxTree, BinaryOp, Call, Expression, Function, Let, OpName, Statement, UnaryOp,
@@ -15,7 +17,7 @@ pub struct Parser<'a> {
 impl<'a> Parser<'a> {
     /// Create a new Parser from a Vec<Token>, probably from a Lexer
     #[must_use]
-    pub fn new(input: Vec<Token>) -> Parser {
+    pub(crate) fn new(input: Vec<Token>) -> Parser {
         let mut tokens = vec![];
         for token in input {
             match token.kind() {
@@ -35,7 +37,7 @@ impl<'a> Parser<'a> {
 
     // Consumes the parser.
     #[must_use]
-    pub fn ast(mut self) -> AbstractSyntaxTree {
+    pub(crate) fn ast(mut self) -> AbstractSyntaxTree {
         let mut statements = vec![];
         self.read_token();
         while let Some(stmt) = self.parse_next() {
@@ -349,7 +351,7 @@ impl<'a> Parser<'a> {
     //     statement*
     //   };"
     // Indenting is not checked.
-    fn parse_function(&mut self) -> Option<Function> {
+    fn parse_function(&mut self) -> Option<Rc<Function>> {
         assert!(self.token.kind() == Kind::Function);
         let start = self.position;
         self.read_token(); // consume "fn"
@@ -414,7 +416,7 @@ impl<'a> Parser<'a> {
         assert_eq!(self.token.kind(), Kind::RightBrace);
         self.read_token(); // consume "}"
 
-        Some(Function { arguments, body })
+        Some(Rc::new(Function { arguments, body }))
     }
 
     fn parse_expression_statement(&mut self) -> Option<Expression> {
