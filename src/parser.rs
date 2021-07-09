@@ -524,8 +524,7 @@ mod tests {
                 for error in $expected_errors {
                     assert!(
                         &errors.contains(&String::from(*error)),
-                        r#"Expected parse error "{}" not encountered while parsing "{}"
-Errors: {:?}"#,
+                        "Expected parse error \"{}\" not encountered while parsing \"{}\"\nErrors: \"{:?}\"",
                         &error,
                         $input,
                         &errors,
