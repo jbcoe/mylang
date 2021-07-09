@@ -155,8 +155,8 @@ impl<'a> Parser<'a> {
                     self.read_token(); // consume binary op.
                     if let Some(rhs) = self.parse_expression() {
                         Some(Expression::BinaryOp(BinaryOp {
-                            left_hand_side: Box::new(subexpression),
-                            right_hand_side: Box::new(rhs),
+                            left: Box::new(subexpression),
+                            right: Box::new(rhs),
                             operation: OpName::Plus,
                         }))
                     } else {
@@ -168,8 +168,8 @@ impl<'a> Parser<'a> {
                     self.read_token(); // consume binary op.
                     if let Some(rhs) = self.parse_expression() {
                         Some(Expression::BinaryOp(BinaryOp {
-                            left_hand_side: Box::new(subexpression),
-                            right_hand_side: Box::new(rhs),
+                            left: Box::new(subexpression),
+                            right: Box::new(rhs),
                             operation: OpName::Minus,
                         }))
                     } else {
@@ -181,8 +181,8 @@ impl<'a> Parser<'a> {
                     self.read_token(); // consume binary op.
                     if let Some(rhs) = self.parse_expression() {
                         Some(Expression::BinaryOp(BinaryOp {
-                            left_hand_side: Box::new(subexpression),
-                            right_hand_side: Box::new(rhs),
+                            left: Box::new(subexpression),
+                            right: Box::new(rhs),
                             operation: OpName::Divide,
                         }))
                     } else {
@@ -194,8 +194,8 @@ impl<'a> Parser<'a> {
                     self.read_token(); // consume binary op.
                     if let Some(rhs) = self.parse_expression() {
                         Some(Expression::BinaryOp(BinaryOp {
-                            left_hand_side: Box::new(subexpression),
-                            right_hand_side: Box::new(rhs),
+                            left: Box::new(subexpression),
+                            right: Box::new(rhs),
                             operation: OpName::Multiply,
                         }))
                     } else {

@@ -17,8 +17,8 @@ pub enum OpName {
 #[derive(Debug)]
 pub struct BinaryOp {
     pub(crate) operation: OpName,
-    pub(crate) left_hand_side: Box<Expression>,
-    pub(crate) right_hand_side: Box<Expression>,
+    pub(crate) left: Box<Expression>,
+    pub(crate) right: Box<Expression>,
 }
 
 #[derive(Debug)]
