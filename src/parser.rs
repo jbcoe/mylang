@@ -474,71 +474,95 @@ impl<'a> Parser<'a> {
 
 #[cfg(test)]
 mod tests {
-
-    use std::cmp::Ordering;
-
     use super::*;
     use crate::lexer::Lexer;
 
-    #[derive(Debug)]
-    struct ParserErrorTestCase {
-        input: &'static str,
-        expected_errors: Vec<&'static str>,
+    #[test]
+    fn test_read_beyond_eof_returns_eof() {
+        let tokens = Lexer::new("let x = 5;").tokens();
+        let mut parser = Parser::new(tokens);
+
+        // read file content
+        parser.read_token();
+        assert!(parser.token.text() == "let");
+        parser.read_token();
+        assert!(parser.token.text() == "x");
+        parser.read_token();
+        assert!(parser.token.text() == "=");
+        parser.read_token();
+        assert!(parser.token.text() == "5");
+        parser.read_token();
+        assert!(parser.token.text() == ";");
+        parser.read_token();
+        assert!(parser.token.text() == "");
+        assert!(parser.token.kind() == Kind::EndOfFile);
+
+        // read beyond end of file
+        parser.read_token();
+        assert!(parser.token.kind() == Kind::EndOfFile);
+    }
+
+    #[test]
+    fn test_reset_beyond_eof_returns_eof() {
+        let tokens = Lexer::new("let x = 5;").tokens();
+        let mut parser = Parser::new(tokens);
+
+        // reset beyond end of tokens.
+        parser.reset(10);
+        assert!(parser.token.kind() == Kind::EndOfFile);
     }
 
     macro_rules! parser_error_test_case {
-        ($test_name:ident, $test_case:expr) => {
+        (name: $test_name:ident, input: $input:expr, expected_errors: $expected_errors:expr,) => {
             #[test]
             fn $test_name() {
-                let tokens = Lexer::new($test_case.input).tokens();
+                let tokens = Lexer::new($input).tokens();
                 let parser = Parser::new(tokens);
                 let ast = parser.ast();
                 let errors = ast.errors();
 
-                for (expected, actual) in $test_case.expected_errors.iter().zip(errors.iter()) {
-                    assert_eq!(
-                        expected, actual,
-                        "Parse error mismatch while parsing {}",
-                        $test_case.input
+                for error in $expected_errors {
+                    assert!(
+                        &errors.contains(&String::from(*error)),
+                        r#"Expected parse error "{}" not encountered while parsing "{}"
+Errors: {:?}"#,
+                        &error,
+                        $input,
+                        &errors,
                     );
-                }
-
-                match $test_case.expected_errors.len().cmp(&errors.len()) {
-                    Ordering::Greater => {
-                        for expected in &$test_case.expected_errors[errors.len()..] {
-                            assert_eq!(
-                                *expected, "",
-                                "Expected parse error not encountered while parsing {}",
-                                $test_case.input
-                            );
-                        }
-                    }
-                    Ordering::Less => {
-                        for error in &errors[$test_case.expected_errors.len()..] {
-                            assert_eq!(
-                                error, "",
-                                "Unexpected parse error encountered while parsing {}",
-                                $test_case.input
-                            );
-                        }
-                    }
-                    Ordering::Equal => {}
                 }
             }
         };
     }
 
-    parser_error_test_case![
-        let_assigns_to_an_integer,
-        // Error cases
-        ParserErrorTestCase {
-            input: "let 123 = x;",
-            expected_errors: vec![
-                r#"expected identifier, got Token { text: "123", kind: Integer }"#,
-                r#"Parse error when parsing let-statement Token { text: "let", kind: Let }"#,
-            ],
-        }
-    ];
+    parser_error_test_case! {
+        name: let_assigns_to_an_integer,
+        input: "let 123 = x;",
+        expected_errors: &[
+            r#"expected identifier, got Token { text: "123", kind: Integer }"#,
+            r#"Parse error when parsing let-statement Token { text: "let", kind: Let }"#,
+        ],
+
+    }
+
+    parser_error_test_case! {
+        name: return_statement_with_missing_semicolon,
+        input: "return 123",
+        expected_errors: &[
+            r#"expected expression, got Token { text: "123", kind: Integer }"#,
+            r#"Parse error when parsing return-statement Token { text: "return", kind: Return }"#,
+        ],
+    }
+
+    parser_error_test_case! {
+        name: return_statement_with_missing_expression,
+        input: "return ;",
+        expected_errors: &[
+            r#"Parse error when parsing expression Token { text: ";", kind: SemiColon }"#,
+            r#"expected expression, got Token { text: ";", kind: SemiColon }"#,
+            r#"Parse error when parsing return-statement Token { text: "return", kind: Return }"#,
+        ],
+    }
 
     #[derive(Debug)]
     struct ParseLetStatementTest {
