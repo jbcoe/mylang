@@ -1,3 +1,5 @@
+use std::rc::Rc;
+
 use crate::{
     ast::{AbstractSyntaxTree, Call, Expression, Function, Let, OpName, Statement, UnaryOp},
     token::{Kind, Token},
@@ -274,7 +276,7 @@ impl<'a> Parser<'a> {
     //     statement*
     //   };"
     // Indenting is not checked.
-    fn parse_function(&mut self) -> Option<Function> {
+    fn parse_function(&mut self) -> Option<Rc<Function>> {
         assert!(self.token.kind() == Kind::Function);
         let start = self.position;
         self.read_token(); // consume "fn"
@@ -339,7 +341,7 @@ impl<'a> Parser<'a> {
         assert_eq!(self.token.kind(), Kind::RightBrace);
         self.read_token(); // consume "}"
 
-        Some(Function { arguments, body })
+        Some(Rc::new(Function { arguments, body }))
     }
 
     fn parse_expression_statement(&mut self) -> Option<Expression> {

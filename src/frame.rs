@@ -2,25 +2,26 @@ use crate::ast::{Expression, Function, OpName, Statement, UnaryOp};
 use std::{collections::HashMap, rc::Rc};
 
 #[derive(Debug)]
-pub enum Value<'a> {
+pub enum Value {
     Boolean(bool),
     Float(f64),
-    Function(&'a Function),
+    Function(Rc<Function>),
     Integer(i32),
     String(String),
 }
-pub struct Frame<'a> {
-    values: HashMap<String, Rc<Value<'a>>>,
+
+pub struct Frame {
+    values: HashMap<String, Rc<Value>>,
 }
 
-impl<'a> Frame<'a> {
+impl Frame {
     pub(crate) fn new() -> Self {
         Self {
             values: HashMap::new(),
         }
     }
 
-    pub(crate) fn evaluate_body(&mut self, body: &'a [Statement]) -> Option<Rc<Value<'a>>> {
+    pub(crate) fn evaluate_body(&mut self, body: &[Statement]) -> Option<Rc<Value>> {
         for statement in body {
             if let Some(v) = self.evaluate_statement(statement) {
                 return Some(v);
@@ -29,11 +30,11 @@ impl<'a> Frame<'a> {
         None
     }
 
-    fn evaluate_expression(&mut self, expression: &'a Expression) -> Rc<Value<'a>> {
+    fn evaluate_expression(&self, expression: &Expression) -> Rc<Value> {
         match expression {
             Expression::Boolean(b) => Rc::new(Value::Boolean(*b)),
             Expression::Float(f) => Rc::new(Value::Float(*f)),
-            Expression::Function(function) => Rc::new(Value::Function(function)),
+            Expression::Function(function) => Rc::new(Value::Function(function.clone())),
             Expression::Integer(i) => Rc::new(Value::Integer(*i)),
             Expression::StringLiteral(s) => Rc::new(Value::String(s.clone())),
             Expression::Identifier(identifier) => {
@@ -45,7 +46,7 @@ impl<'a> Frame<'a> {
             }
             Expression::Call(call) => {
                 if let Some(value) = self.values.get(&call.name) {
-                    match **value {
+                    match &**value {
                         Value::Boolean(_) => panic!("Cannot call a boolean"),
                         Value::Float(_) => panic!("Cannot call a float"),
                         Value::Integer(_) => panic!("Cannot call an integer"),
@@ -54,7 +55,7 @@ impl<'a> Frame<'a> {
                             if function.arguments.len() != call.arguments.len() {
                                 panic!("Mismatch in argument count for function {}. Expected {} arguments but got {}", call.name, function.arguments.len(), call.arguments.len());
                             }
-                            let mut function_frame = Frame::new();
+                            let mut function_frame = Self::new();
                             for (arg_name, arg_expression) in
                                 function.arguments.iter().zip(call.arguments.iter())
                             {
@@ -79,7 +80,7 @@ impl<'a> Frame<'a> {
         }
     }
 
-    fn evaluate_statement(&mut self, statement: &'a Statement) -> Option<Rc<Value<'a>>> {
+    fn evaluate_statement(&mut self, statement: &Statement) -> Option<Rc<Value>> {
         match &statement {
             Statement::Let(let_statement) => {
                 let value = self.evaluate_expression(&let_statement.expression);
@@ -95,7 +96,7 @@ impl<'a> Frame<'a> {
         }
     }
 
-    fn evaluate_unary_op(&mut self, op: &'a UnaryOp) -> Rc<Value<'a>> {
+    fn evaluate_unary_op(&self, op: &UnaryOp) -> Rc<Value> {
         let target = self.evaluate_expression(&op.target);
         match (&*target, &op.operation) {
             (Value::Boolean(b), op) => panic!(
