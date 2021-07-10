@@ -3,24 +3,21 @@ use crate::ast::{Expression, OpName};
 pub trait ExpressionMatcher {
     fn matches(&self, expression: &Expression) -> bool;
 }
-pub(crate) struct AnyExpressionMatcher {}
+pub struct AnyExpressionMatcher {}
 
 impl ExpressionMatcher for AnyExpressionMatcher {
     fn matches(&self, _: &Expression) -> bool {
         true
     }
 }
-pub(crate) struct AnyIdentifierMatcher {}
+pub struct AnyIdentifierMatcher {}
 
 impl ExpressionMatcher for AnyIdentifierMatcher {
     fn matches(&self, expression: &Expression) -> bool {
-        match expression {
-            Expression::Identifier(_) => true,
-            _ => false,
-        }
+        matches!(expression, Expression::Identifier(_))
     }
 }
-pub(crate) struct IdentifierMatcher {
+pub struct IdentifierMatcher {
     pub(crate) identifier: String,
 }
 
@@ -33,17 +30,14 @@ impl ExpressionMatcher for IdentifierMatcher {
     }
 }
 
-pub(crate) struct AnyBinaryOperatorExpressionMatcher {}
+pub struct AnyBinaryOperatorExpressionMatcher {}
 
 impl ExpressionMatcher for AnyBinaryOperatorExpressionMatcher {
     fn matches(&self, expression: &Expression) -> bool {
-        match expression {
-            Expression::BinaryOp(_) => true,
-            _ => false,
-        }
+        matches!(expression, Expression::BinaryOp(_))
     }
 }
-pub(crate) struct BinaryOperatorExpressionMatcher {
+pub struct BinaryOperatorExpressionMatcher {
     pub(crate) left: Box<dyn ExpressionMatcher>,
     pub(crate) right: Box<dyn ExpressionMatcher>,
     pub(crate) operator: OpName,
@@ -63,11 +57,9 @@ impl ExpressionMatcher for BinaryOperatorExpressionMatcher {
                 if !self.right.matches(&binary_op.right) {
                     return false;
                 }
-                return true;
+                true
             }
-            _ => {
-                return false;
-            }
+            _ => false,
         }
     }
 }
