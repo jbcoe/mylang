@@ -162,6 +162,25 @@ mod tests {
         return_value: 0, // not 42
     }
 
+    evaluator_test_case! {
+        name: return_deeply_nested_function_call,
+        input: r#"
+            let f = func () {
+                let f = func(){ 
+                    let f = func(){ 
+                        let f = func(){ 
+                            return 42; 
+                        }; 
+                        return f();
+                    }; 
+                    return f();
+                }; 
+                return f();
+            };
+            return f();"#,
+        return_value: 42,
+    }
+
     macro_rules! evaluator_error_test_case {
         (name: $test_name:ident, input: $input:expr, err_value: $err_value:expr,) => {
             #[test]
@@ -225,5 +244,28 @@ mod tests {
                 value:"Boolean(true)".to_string()
             }
         },
+   }
+
+     evaluator_error_test_case! {
+        name: call_int_err,
+        input: r#"let x = 5; return x();"#,
+        err_value: Error::Evaluation{source:EvaluationError::NonCallableType("Integer(5)".to_string())},
+    }
+
+    evaluator_error_test_case! {
+        name: call_float_err,
+        input: r#"let x = 3.14159; return x();"#,
+        err_value: Error::Evaluation{source:EvaluationError::NonCallableType("Float(3.14159)".to_string())},
+    }
+
+    evaluator_error_test_case! {
+        name: call_string_err,
+        input: r#"let x = "hello"; return x();"#,
+        err_value: Error::Evaluation{source:EvaluationError::NonCallableType("String(\"hello\")".to_string())},
+    }
+    evaluator_error_test_case! {
+        name: call_bool_err,
+        input: r#"let x = True; return x();"#,
+        err_value: Error::Evaluation{source:EvaluationError::NonCallableType("Boolean(true)".to_string())},
     }
 }

@@ -477,45 +477,39 @@ mod tests {
     use super::*;
     use crate::lexer::Lexer;
 
-    #[derive(Debug)]
-    struct ParserErrorTestCase {
-        input: &'static str,
-        expected_errors: Vec<&'static str>,
-    }
-
     macro_rules! parser_error_test_case {
-        ($test_name:ident, $test_case:expr) => {
+        (name: $test_name:ident, input: $input:expr, expected_errors: $expected_errors:expr,) => {
             #[test]
             fn $test_name() {
-                let tokens = Lexer::new($test_case.input).tokens();
+                let tokens = Lexer::new($input).tokens();
                 let parser = Parser::new(tokens);
                 let ast = parser.ast();
                 let errors = ast.errors();
 
-                for (expected, actual) in $test_case.expected_errors.iter().zip(errors.iter()) {
+                for (expected, actual) in $expected_errors.iter().zip(errors.iter()) {
                     assert_eq!(
                         expected, actual,
                         "Parse error mismatch while parsing {}",
-                        $test_case.input
+                        $input
                     );
                 }
 
-                match $test_case.expected_errors.len().cmp(&errors.len()) {
+                match $expected_errors.len().cmp(&errors.len()) {
                     Ordering::Greater => {
-                        for expected in &$test_case.expected_errors[errors.len()..] {
+                        for expected in &$expected_errors[errors.len()..] {
                             assert_eq!(
                                 *expected, "",
                                 "Expected parse error not encountered while parsing {}",
-                                $test_case.input
+                                $input
                             );
                         }
                     }
                     Ordering::Less => {
-                        for error in &errors[$test_case.expected_errors.len()..] {
+                        for error in &errors[$expected_errors.len()..] {
                             assert_eq!(
                                 error, "",
                                 "Unexpected parse error encountered while parsing {}",
-                                $test_case.input
+                                $input
                             );
                         }
                     }
@@ -525,30 +519,20 @@ mod tests {
         };
     }
 
-    parser_error_test_case![
-        let_assigns_to_an_integer,
-        // Error cases
-        ParserErrorTestCase {
-            input: "let 123 = x;",
-            expected_errors: vec![
-                r#"expected identifier, got Token { text: "123", kind: Integer }"#,
-                r#"Parse error when parsing let-statement Token { text: "let", kind: Let }"#,
-            ],
-        }
-    ];
-
-    #[derive(Debug)]
-    struct ParseLetStatementTest {
-        input: &'static str,
-        identifier: &'static str,
-        mutable: bool,
+    parser_error_test_case! {
+        name: let_assigns_to_an_integer,
+        input: "let 123 = x;",
+        expected_errors: &[
+            r#"expected identifier, got Token { text: "123", kind: Integer }"#,
+            r#"Parse error when parsing let-statement Token { text: "let", kind: Let }"#,
+        ],
     }
 
     macro_rules! parse_let_statement_test_case {
-        ($test_name:ident, $test_case:expr) => {
+        (name: $test_name:ident, input: $input:expr, identifier: $identifier:expr, mutable: $mutable:literal,) => {
             #[test]
             fn $test_name() {
-                let tokens = Lexer::new($test_case.input).tokens();
+                let tokens = Lexer::new($input).tokens();
                 let parser = Parser::new(tokens);
                 let ast = parser.ast();
                 let errors = ast.errors();
@@ -557,8 +541,8 @@ mod tests {
                 assert_eq!(ast.statements().len(), 1);
                 match &ast.statements()[0] {
                     Statement::Let(let_statement) => {
-                        assert_eq!(let_statement.identifier, $test_case.identifier);
-                        assert_eq!(let_statement.mutable, $test_case.mutable);
+                        assert_eq!(let_statement.identifier, $identifier);
+                        assert!(let_statement.mutable == $mutable);
                         // TODO: Check some property of the expression.
                     }
                     Statement::Expression(_) | Statement::Return(_) => {
@@ -569,114 +553,88 @@ mod tests {
         };
     }
 
-    parse_let_statement_test_case![
-        let_identifier,
-        ParseLetStatementTest {
-            input: "let x = a;",
-            identifier: "x",
-            mutable: false,
-        }
-    ];
+    parse_let_statement_test_case! {
+        name: let_identifier,
+        input: "let x = a;",
+        identifier: "x",
+        mutable: false,
+    }
 
-    parse_let_statement_test_case![
-        let_mutable_float,
-        ParseLetStatementTest {
-            input: "let mut minus_pi = -3.14159;",
-            identifier: "minus_pi",
-            mutable: true,
-        }
-    ];
+    parse_let_statement_test_case! {
+        name: let_mutable_float,
+        input: "let mut minus_pi = -3.14159;",
+        identifier: "minus_pi",
+        mutable: true,
+    }
 
-    parse_let_statement_test_case![
-        let_string,
-        ParseLetStatementTest {
-            input: r#"let x = "Hello";"#,
-            identifier: "x",
-            mutable: false,
-        }
-    ];
+    parse_let_statement_test_case! {
+        name: let_string,
+        input: r#"let x = "Hello";"#,
+        identifier: "x",
+        mutable: false,
+    }
 
-    parse_let_statement_test_case![
-        let_true,
-        ParseLetStatementTest {
-            input: r"let x = True;",
-            identifier: "x",
-            mutable: false,
-        }
-    ];
+    parse_let_statement_test_case! {
+        name: let_true,
+        input: r"let x = True;",
+        identifier: "x",
+        mutable: false,
+    }
 
-    parse_let_statement_test_case![
-        let_false,
-        ParseLetStatementTest {
-            input: r"let x = False;",
-            identifier: "x",
-            mutable: false,
-        }
-    ];
+    parse_let_statement_test_case! {
+        name: let_false,
+        input: r"let x = False;",
+        identifier: "x",
+        mutable: false,
+    }
 
-    parse_let_statement_test_case![
-        let_function,
-        ParseLetStatementTest {
-            input: "let first = func (a, b) { return a; };",
-            identifier: "first",
-            mutable: false,
-        }
-    ];
+    parse_let_statement_test_case! {
+        name: let_function,
+        input: "let first = func (a, b) { return a; };",
+        identifier: "first",
+        mutable: false,
+    }
 
-    parse_let_statement_test_case![
-        let_function_call,
-        ParseLetStatementTest {
-            input: "let max = largest (a, b);",
-            identifier: "max",
-            mutable: false,
-        }
-    ];
+    parse_let_statement_test_case! {
+        name: let_function_call,
+        input: "let max = largest (a, b);",
+        identifier: "max",
+        mutable: false,
+    }
 
-    parse_let_statement_test_case![
-        let_binary_add,
-        ParseLetStatementTest {
-            input: "let x = a + b;",
-            identifier: "x",
-            mutable: false,
-        }
-    ];
+    parse_let_statement_test_case! {
+        name: let_binary_add,
+        input: "let x = a + b;",
+        identifier: "x",
+        mutable: false,
+    }
 
-    parse_let_statement_test_case![
-        let_binary_subtract,
-        ParseLetStatementTest {
-            input: "let x = a - b;",
-            identifier: "x",
-            mutable: false,
-        }
-    ];
+    parse_let_statement_test_case! {
+        name: let_binary_subtract,
+        input: "let x = a - b;",
+        identifier: "x",
+        mutable: false,
+    }
 
-    parse_let_statement_test_case![
-        let_binary_multiply,
-        ParseLetStatementTest {
-            input: "let x = a * b;",
-            identifier: "x",
-            mutable: false,
-        }
-    ];
+    parse_let_statement_test_case! {
+        name: let_binary_multiply,
+        input: "let x = a * b;",
+        identifier: "x",
+        mutable: false,
+    }
 
-    parse_let_statement_test_case![
-        let_binary_divide,
-        ParseLetStatementTest {
-            input: "let x = a / b;",
-            identifier: "x",
-            mutable: false,
-        }
-    ];
-
-    struct ParseReturnStatementTest {
-        input: &'static str,
+    parse_let_statement_test_case! {
+        name: let_binary_divide,
+        input: "let x = a / b;",
+        identifier: "x",
+        mutable: false,
     }
 
     macro_rules! parse_return_statement_test_case {
-        ($test_name:ident, $test_case:expr) => {
+        (name: $test_name:ident, input: $input:expr,) => {
             #[test]
             fn $test_name() {
-                let tokens = Lexer::new($test_case.input).tokens();
+                let tokens = Lexer::new($input).tokens();
                 let parser = Parser::new(tokens);
                 let ast = parser.ast();
                 let errors = ast.errors();
@@ -695,17 +653,13 @@ mod tests {
         };
     }
 
-    parse_return_statement_test_case![
-        return_integer,
-        ParseReturnStatementTest {
-            input: "return 42;",
-        }
-    ];
+    parse_return_statement_test_case! {
+        name: return_integer,
+        input: "return 42;",
+    }
 
-    parse_return_statement_test_case![
-        return_string_literal,
-        ParseReturnStatementTest {
-            input: r#"return "the solution";"#,
-        }
-    ];
+    parse_return_statement_test_case! {
+        name: return_string_literal,
+        input: r#"return "the solution";"#,
+    }
 }
