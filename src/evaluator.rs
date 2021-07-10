@@ -161,6 +161,25 @@ mod tests {
         return_value: 0, // not 42
     }
 
+    evaluator_test_case! {
+        name: return_deeply_nested_function_call,
+        input: r#"
+            let f = func () {
+                let f = func(){ 
+                    let f = func(){ 
+                        let f = func(){ 
+                            return 42; 
+                        }; 
+                        return f();
+                    }; 
+                    return f();
+                }; 
+                return f();
+            };
+            return f();"#,
+        return_value: 42,
+    }
+
     macro_rules! evaluator_error_test_case {
         (name: $test_name:ident, input: $input:expr, err_value: $err_value:expr,) => {
             #[test]
