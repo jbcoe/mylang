@@ -38,6 +38,7 @@ impl<'a> Evaluator {
 mod tests {
     use crate::{
         evaluator::{Error, Evaluator},
+        frame::EvaluationError,
         lexer::Lexer,
         parser::Parser,
     };
@@ -202,5 +203,27 @@ mod tests {
         name: return_string_err,
         input: r#"return "meow";"#,
         err_value: Error::NonPermitted(r#"String("meow")"#.to_string()),
+    }
+
+    evaluator_error_test_case! {
+        name: unary_op_on_string,
+        input: r#"let x = -"Hello";"#,
+        err_value: Error::Evaluation{
+            source:EvaluationError::IllegalUnaryOperation{
+                opname: "Minus".to_string(),
+                value:"String(\"Hello\")".to_string()
+            }
+        },
+    }
+
+    evaluator_error_test_case! {
+        name: unary_op_on_bool,
+        input: r#"let x = -True;"#,
+        err_value: Error::Evaluation{
+            source:EvaluationError::IllegalUnaryOperation{
+                opname: "Minus".to_string(),
+                value:"Boolean(true)".to_string()
+            }
+        },
     }
 }
