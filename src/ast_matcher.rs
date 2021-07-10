@@ -48,16 +48,12 @@ impl ExpressionMatcher for BinaryOperatorExpressionMatcher {
         match expression {
             Expression::BinaryOp(binary_op) => {
                 if binary_op.operation != self.operator {
-                    return false;
+                    false
+                } else if self.left.matches(&binary_op.left) {
+                    self.right.matches(&binary_op.right)
+                } else {
+                    false
                 }
-                if !self.left.matches(&binary_op.left) {
-                    return false;
-                }
-
-                if !self.right.matches(&binary_op.right) {
-                    return false;
-                }
-                true
             }
             _ => false,
         }
