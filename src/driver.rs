@@ -15,6 +15,11 @@ use structopt::StructOpt;
 
 /// A lexer, parser, interpreter, JIT and AOT compiler and
 /// runtime written in Rust for a new (simple) language
+///
+/// The input file (or standard input, if none supplied)
+/// will be parsed and evaluated. Any Integer result
+/// returned at global scope will be returned as the process'
+/// exit code
 #[derive(StructOpt, Debug)]
 #[structopt(name = "mylang")]
 pub struct Opt {

@@ -1,15 +1,19 @@
 use crate::ast::AbstractSyntaxTree;
-use crate::frame::{Frame, Value};
+use crate::frame::{EvaluationError, Frame, Value};
 use thiserror::Error;
-
 pub struct Evaluator {
     global: Frame,
 }
 
 #[derive(Error, Debug, PartialEq)]
 pub enum Error {
-    #[error("Illegal non-i32 return type `{0}` of value `{1}` at global scope")]
-    NonPermitted(String, String),
+    #[error("Illegal non-i32 return type {0} at global scope")]
+    NonPermitted(String),
+    #[error("{source:?}")]
+    Evaluation {
+        #[from]
+        source: EvaluationError,
+    },
 }
 
 impl<'a> Evaluator {
@@ -19,24 +23,14 @@ impl<'a> Evaluator {
         }
     }
 
+    /// Evaluate the ast's statements at global scope until one of them returns
     pub(crate) fn evaluate(&mut self, ast: &AbstractSyntaxTree) -> Result<i32, Error> {
-        // Evaluate statements at global scope until one of them returns.
-        if let Some(rc) = self.global.evaluate_body(ast.statements()) {
-            match &*rc {
-                Value::Integer(i) => Ok(*i),
-                Value::Boolean(b) => {
-                    Err(Error::NonPermitted("Boolean".to_string(), format!("{}", b)))
-                }
-                Value::Float(f) => Err(Error::NonPermitted("Float".to_string(), format!("{}", f))),
-                Value::Function(_) => Err(Error::NonPermitted(
-                    "Function".to_string(),
-                    "unknown".to_string(),
-                )),
-                Value::String(s) => Err(Error::NonPermitted("String".to_string(), s.clone())),
+        (self.global.evaluate_body(ast.statements())?).map_or(Ok(0), |value| match &*value {
+            Value::Integer(i) => Ok(*i),
+            Value::Boolean(_) | Value::Float(_) | Value::Function(_) | Value::String(_) => {
+                Err(Error::NonPermitted((*value).to_string()))
             }
-        } else {
-            Ok(0)
-        }
+        })
     }
 }
 
@@ -186,13 +180,13 @@ mod tests {
     evaluator_error_test_case! {
         name: return_boolean_err,
         input: "return True;",
-        err_value: Error::NonPermitted("Boolean".to_string(), "true".to_string()),
+        err_value: Error::NonPermitted("Boolean(true)".to_string()),
     }
 
     evaluator_error_test_case! {
         name: return_float_err,
         input: "return 3.14;",
-        err_value: Error::NonPermitted("Float".to_string(), "3.14".to_string()),
+        err_value: Error::NonPermitted("Float(3.14)".to_string()),
     }
 
     evaluator_error_test_case! {
@@ -201,12 +195,12 @@ mod tests {
             return func (a, b) {
                 return a;
             };"#,
-        err_value: Error::NonPermitted("Function".to_string(), "unknown".to_string()),
+        err_value: Error::NonPermitted("Function()".to_string()),
     }
 
     evaluator_error_test_case! {
         name: return_string_err,
         input: r#"return "meow";"#,
-        err_value: Error::NonPermitted("String".to_string(), r#""meow""#.to_string()),
+        err_value: Error::NonPermitted(r#"String("meow")"#.to_string()),
     }
 }
