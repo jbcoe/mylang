@@ -225,25 +225,56 @@ mod tests {
     }
 
     evaluator_error_test_case! {
+        name: unary_op_on_string,
+        input: r#"let x = -"Hello";"#,
+        err_value: Error::Evaluation{
+            source: EvaluationError::IllegalUnaryOperation{
+                opname: "Minus".to_string(),
+                value:"String(\"Hello\")".to_string()
+            }
+        },
+    }
+
+    evaluator_error_test_case! {
+         name: unary_op_on_bool,
+         input: r#"let x = -True;"#,
+         err_value: Error::Evaluation{
+             source: EvaluationError::IllegalUnaryOperation{
+                 opname: "Minus".to_string(),
+                 value:"Boolean(true)".to_string()
+             }
+         },
+    }
+
+    evaluator_error_test_case! {
         name: call_int_err,
         input: r#"let x = 5; return x();"#,
-        err_value: Error::Evaluation{source:EvaluationError::NonCallableType("Integer(5)".to_string())},
+        err_value: Error::Evaluation{
+            source: EvaluationError::NonCallableType("Integer(5)".to_string())
+        },
     }
 
     evaluator_error_test_case! {
         name: call_float_err,
         input: r#"let x = 3.14159; return x();"#,
-        err_value: Error::Evaluation{source:EvaluationError::NonCallableType("Float(3.14159)".to_string())},
+        err_value: Error::Evaluation{
+            source: EvaluationError::NonCallableType("Float(3.14159)".to_string())
+        },
     }
 
     evaluator_error_test_case! {
         name: call_string_err,
         input: r#"let x = "hello"; return x();"#,
-        err_value: Error::Evaluation{source:EvaluationError::NonCallableType("String(\"hello\")".to_string())},
+        err_value: Error::Evaluation{
+            source: EvaluationError::NonCallableType("String(\"hello\")".to_string())
+        },
     }
+
     evaluator_error_test_case! {
         name: call_bool_err,
         input: r#"let x = True; return x();"#,
-        err_value: Error::Evaluation{source:EvaluationError::NonCallableType("Boolean(true)".to_string())},
+        err_value: Error::Evaluation{
+            source: EvaluationError::NonCallableType("Boolean(true)".to_string())
+        },
     }
 }
