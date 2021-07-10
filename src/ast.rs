@@ -1,12 +1,12 @@
-use std::rc::Rc;
+use std::{fmt, rc::Rc};
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct Call {
     pub(crate) name: String,
     pub(crate) arguments: Vec<Expression>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum OpName {
     Plus,
     Minus,
@@ -14,26 +14,37 @@ pub enum OpName {
     Divide,
 }
 
-#[derive(Debug)]
+impl fmt::Display for OpName {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            OpName::Plus => write!(f, "Plus"),
+            OpName::Minus => write!(f, "Minus"),
+            OpName::Multiply => write!(f, "Multiply"),
+            OpName::Divide => write!(f, "Divide"),
+        }
+    }
+}
+
+#[derive(Debug, PartialEq)]
 pub struct BinaryOp {
     pub(crate) operation: OpName,
     pub(crate) left: Box<Expression>,
     pub(crate) right: Box<Expression>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct UnaryOp {
     pub(crate) operation: OpName,
     pub(crate) target: Box<Expression>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct Function {
     pub(crate) arguments: Vec<String>,
     pub(crate) body: Vec<Statement>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum Expression {
     Boolean(bool),
     Float(f64),
@@ -45,14 +56,14 @@ pub enum Expression {
     UnaryOp(UnaryOp),
     BinaryOp(BinaryOp),
 }
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct Let {
     pub(crate) mutable: bool,
     pub(crate) identifier: String,
     pub(crate) expression: Box<Expression>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum Statement {
     Expression(Expression),
     Let(Let),
