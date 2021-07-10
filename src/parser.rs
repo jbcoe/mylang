@@ -4,6 +4,7 @@ use crate::{
     ast::{
         AbstractSyntaxTree, BinaryOp, Call, Expression, Function, Let, OpName, Statement, UnaryOp,
     },
+    ast_matcher::*,
     token::{Kind, Token},
 };
 pub struct Parser<'a> {
@@ -661,5 +662,39 @@ mod tests {
     parse_return_statement_test_case! {
         name: return_string_literal,
         input: r#"return "the solution";"#,
+    }
+
+    macro_rules! parse_binary_operator_expression_test_case {
+        (name: $test_name:ident, input: $input:expr, matcher: $matcher:expr,) => {
+            #[test]
+            fn $test_name() {
+                let tokens = Lexer::new($input).tokens();
+                let parser = Parser::new(tokens);
+                let ast = parser.ast();
+                let errors = ast.errors();
+
+                assert!(errors.is_empty(), "Expected no errors, got {:?}", errors);
+                assert_eq!(ast.statements().len(), 1);
+
+                match &ast.statements()[0] {
+                    Statement::Expression(expr) => {
+                        assert!($matcher.matches(&expr));
+                    }
+                    Statement::Let(_) | Statement::Return(_) => {
+                        panic!("Expected an expression statement")
+                    }
+                }
+            }
+        };
+    }
+
+    parse_binary_operator_expression_test_case! {
+        name: add_expression,
+        input: "x + y;",
+        matcher: BinaryOperatorExpressionMatcher{
+            left: Box::new(IdentifierMatcher{identifier: "x".to_string()}),
+            right: Box::new(IdentifierMatcher{identifier: "y".to_string()}),
+            operator: OpName::Plus,
+        },
     }
 }
