@@ -38,6 +38,7 @@ impl<'a> Evaluator {
 mod tests {
     use crate::{
         evaluator::{Error, Evaluator},
+        frame::EvaluationError,
         lexer::Lexer,
         parser::Parser,
     };
@@ -202,5 +203,28 @@ mod tests {
         name: return_string_err,
         input: r#"return "meow";"#,
         err_value: Error::NonPermitted(r#"String("meow")"#.to_string()),
+    }
+
+    evaluator_error_test_case! {
+        name: call_int_err,
+        input: r#"let x = 5; return x();"#,
+        err_value: Error::Evaluation{source:EvaluationError::NonCallableType("Integer(5)".to_string())},
+    }
+
+    evaluator_error_test_case! {
+        name: call_float_err,
+        input: r#"let x = 3.14159; return x();"#,
+        err_value: Error::Evaluation{source:EvaluationError::NonCallableType("Float(3.14159)".to_string())},
+    }
+
+    evaluator_error_test_case! {
+        name: call_string_err,
+        input: r#"let x = "hello"; return x();"#,
+        err_value: Error::Evaluation{source:EvaluationError::NonCallableType("String(\"hello\")".to_string())},
+    }
+    evaluator_error_test_case! {
+        name: call_bool_err,
+        input: r#"let x = True; return x();"#,
+        err_value: Error::Evaluation{source:EvaluationError::NonCallableType("Boolean(true)".to_string())},
     }
 }
