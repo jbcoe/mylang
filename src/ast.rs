@@ -17,10 +17,10 @@ pub enum OpName {
 impl fmt::Display for OpName {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            OpName::Plus => write!(f, "Plus"),
-            OpName::Minus => write!(f, "Minus"),
-            OpName::Multiply => write!(f, "Multiply"),
-            OpName::Divide => write!(f, "Divide"),
+            OpName::Plus => write!(f, "+"),
+            OpName::Minus => write!(f, "-"),
+            OpName::Multiply => write!(f, "*"),
+            OpName::Divide => write!(f, "/"),
         }
     }
 }
