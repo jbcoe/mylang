@@ -96,7 +96,7 @@ impl<'a> Driver<'a> {
         let result = if self.opt.parse_only {
             0
         } else {
-            evaluate(out, &ast)?
+            Evaluator::new().evaluate(&ast)?
         };
         Ok(result)
     }
@@ -118,15 +118,6 @@ impl<'a> Driver<'a> {
         }
         Ok(ast)
     }
-}
-
-fn evaluate<W: Write>(mut out: W, ast: &AbstractSyntaxTree) -> Result<i32, anyhow::Error> {
-    let mut evaluator = Evaluator::new();
-    let result = evaluator.evaluate(ast);
-    for err in evaluator.errors() {
-        writeln!(out, "{}", err)?;
-    }
-    Ok(result)
 }
 
 fn alternate_lex_parse<W: Write>(mut _out: W, _text: &str) -> AbstractSyntaxTree {
