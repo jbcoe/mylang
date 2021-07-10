@@ -236,17 +236,17 @@ mod tests {
     }
 
     evaluator_error_test_case! {
-        name: unary_op_on_bool,
-        input: r#"let x = -True;"#,
-        err_value: Error::Evaluation{
-            source:EvaluationError::IllegalUnaryOperation{
-                opname: "Minus".to_string(),
-                value:"Boolean(true)".to_string()
-            }
-        },
-   }
+         name: unary_op_on_bool,
+         input: r#"let x = -True;"#,
+         err_value: Error::Evaluation{
+             source:EvaluationError::IllegalUnaryOperation{
+                 opname: "Minus".to_string(),
+                 value:"Boolean(true)".to_string()
+             }
+         },
+    }
 
-     evaluator_error_test_case! {
+    evaluator_error_test_case! {
         name: call_int_err,
         input: r#"let x = 5; return x();"#,
         err_value: Error::Evaluation{source:EvaluationError::NonCallableType("Integer(5)".to_string())},
