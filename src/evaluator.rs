@@ -48,7 +48,7 @@ mod tests {
         parser::Parser,
     };
 
-    macro_rules! positive_evaluator_test_case {
+    macro_rules! evaluator_test_case {
         (name: $test_name:ident, input: $input:expr, return_value: $return_value:expr,) => {
             #[test]
             fn $test_name() {
@@ -64,43 +64,43 @@ mod tests {
         };
     }
 
-    positive_evaluator_test_case! {
+    evaluator_test_case! {
         name: return_integer,
         input: "return 42;",
         return_value: 42,
     }
 
-    positive_evaluator_test_case! {
+    evaluator_test_case! {
         name: return_unary_plus_integer,
         input: "return +42;",
         return_value: 42,
     }
 
-    positive_evaluator_test_case! {
+    evaluator_test_case! {
         name: let_string_no_return,
         input: r#"let a = "Hello";"#,
         return_value: 0,
     }
 
-    positive_evaluator_test_case! {
+    evaluator_test_case! {
         name: let_float_no_return,
         input: "let a = 3.14159;",
         return_value: 0,
     }
 
-    positive_evaluator_test_case! {
+    evaluator_test_case! {
         name: let_unary_minus_float_no_return,
         input: "let a = -3.14159;",
         return_value: 0,
     }
 
-    positive_evaluator_test_case! {
+    evaluator_test_case! {
         name: let_integer_no_return,
         input: "let a = 42;",
         return_value: 0,
     }
 
-    positive_evaluator_test_case! {
+    evaluator_test_case! {
         name: let_integer_return_identifier,
         input: r#"
             let a = 42;
@@ -108,7 +108,7 @@ mod tests {
         return_value: 42,
     }
 
-    positive_evaluator_test_case! {
+    evaluator_test_case! {
         name: let_integer_return_unary_minus_identifier,
         input: r#"
             let a = 42;
@@ -116,7 +116,7 @@ mod tests {
         return_value: -42,
     }
 
-    positive_evaluator_test_case! {
+    evaluator_test_case! {
         name: let_function_no_return,
         input: r#"
             let a = func ( x, y ) {
@@ -125,7 +125,7 @@ mod tests {
         return_value: 0,
     }
 
-    positive_evaluator_test_case! {
+    evaluator_test_case! {
         name: let_function_return_invocation_with_identifiers,
         input: r#"
             # Define a function.
@@ -139,7 +139,7 @@ mod tests {
         return_value: 1,
     }
 
-    positive_evaluator_test_case! {
+    evaluator_test_case! {
         name: let_function_return_invocation_with_literals,
         input: r#"
             let first = func (a, b) {
@@ -149,7 +149,7 @@ mod tests {
         return_value: 101,
     }
 
-    positive_evaluator_test_case! {
+    evaluator_test_case! {
         name: assorted_let_with_return_integer,
         input: r#"
             let a = 42;
@@ -159,7 +159,7 @@ mod tests {
         return_value: 7,
     }
 
-    positive_evaluator_test_case! {
+    evaluator_test_case! {
         name: assorted_let_with_return_identifier,
         input: r#"
             let a = 42;
@@ -167,8 +167,8 @@ mod tests {
         return_value: 0, // not 42
     }
 
-    macro_rules! negative_evaluator_test_case {
-        (name: $test_name:ident, input: $input:expr, return_value: $return_value:expr,) => {
+    macro_rules! evaluator_error_test_case {
+        (name: $test_name:ident, input: $input:expr, err_value: $err_value:expr,) => {
             #[test]
             fn $test_name() {
                 let tokens = Lexer::new($input).tokens();
@@ -178,14 +178,14 @@ mod tests {
 
                 assert!(errors.is_empty(), "Expected no errors, got {:?}", errors);
                 let mut evaluator = Evaluator::new();
-                assert_eq!(evaluator.evaluate(&ast).unwrap_err(), $return_value);
+                assert_eq!(evaluator.evaluate(&ast).unwrap_err(), $err_value);
             }
         };
     }
 
-    negative_evaluator_test_case! {
-        name: return_float,
+    evaluator_error_test_case! {
+        name: return_float_err,
         input: "return 3.14;",
-        return_value: Error::NonPermitted("Float".to_string(), "3.14".to_string()),
+        err_value: Error::NonPermitted("Float".to_string(), "3.14".to_string()),
     }
 }
