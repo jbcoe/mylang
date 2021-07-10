@@ -15,7 +15,7 @@ pub struct Parser<'a> {
 }
 
 impl<'a> Parser<'a> {
-    /// Create a new Parser from a Vec<Token>, probably from a Lexer
+    /// Creates a new Parser from a Vec<Token>, probably from a Lexer
     #[must_use]
     pub(crate) fn new(input: Vec<Token>) -> Parser {
         let mut tokens = vec![];
@@ -35,6 +35,7 @@ impl<'a> Parser<'a> {
         }
     }
 
+    /// Creates an Abstract Syntax Tree from the parser.
     // Consumes the parser.
     #[must_use]
     pub(crate) fn ast(mut self) -> AbstractSyntaxTree {
@@ -46,6 +47,7 @@ impl<'a> Parser<'a> {
         AbstractSyntaxTree::new(statements, self.errors)
     }
 
+    /// Resets the read position updating the `token` field.
     fn reset(&mut self, position: usize) {
         self.position = position;
         self.read_position = position + 1;
@@ -56,6 +58,7 @@ impl<'a> Parser<'a> {
         }
     }
 
+    /// Reads the next token updating the `token` field.
     fn read_token(&mut self) {
         if self.read_position >= self.tokens.len() {
             self.token = Token::end_of_file(self.read_position);
@@ -66,6 +69,9 @@ impl<'a> Parser<'a> {
         }
     }
 
+    /// Tries to parse a return statement.
+    // Matches:
+    //   `return expression;`
     fn parse_return(&mut self) -> Option<Statement> {
         assert!(self.token.kind() == Kind::Return);
         let start = self.position;
@@ -90,9 +96,10 @@ impl<'a> Parser<'a> {
         }
     }
 
+    /// Tries to parse a 'let' statement.
     // Matches:
-    //   "let identifier = expression;"
-    //   "let mut identifier = expression;"
+    //   `let identifier = expression;`
+    //   `let mut identifier = expression;`
     fn parse_let(&mut self) -> Option<Let> {
         assert!(self.token.kind() == Kind::Let);
         let start = self.position;
@@ -147,22 +154,22 @@ impl<'a> Parser<'a> {
         }
     }
 
+    /// Tries to parse an expression.
     fn parse_expression(&mut self) -> Option<Expression> {
         let start = self.position;
 
-        if let Some(subexpression) = self.parse_subexpression() {
-            let boxed = Box::new(subexpression);
+        if let Some(subexpr) = self.parse_subexpression() {
             match self.token.kind() {
-                Kind::Plus => self.binary_parse(start, boxed, OpName::Plus),
-                Kind::Minus => self.binary_parse(start, boxed, OpName::Minus),
-                Kind::Divide => self.binary_parse(start, boxed, OpName::Divide),
-                Kind::Star => self.binary_parse(start, boxed, OpName::Multiply),
+                Kind::Plus => self.parse_binary_expression(start, subexpr, OpName::Plus),
+                Kind::Minus => self.parse_binary_expression(start, subexpr, OpName::Minus),
+                Kind::Divide => self.parse_binary_expression(start, subexpr, OpName::Divide),
+                Kind::Star => self.parse_binary_expression(start, subexpr, OpName::Multiply),
                 Kind::SemiColon
                 | Kind::Comma
                 | Kind::LeftParen
                 | Kind::RightParen
                 | Kind::LeftBrace
-                | Kind::RightBrace => Some(*boxed),
+                | Kind::RightBrace => Some(subexpr),
                 _ => {
                     self.reset(start);
                     None
@@ -174,10 +181,11 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn binary_parse(
+    /// Tries to parse a binary subexrpression.
+    fn parse_binary_expression(
         &mut self,
         start: usize,
-        left: Box<Expression>,
+        left: Expression,
         operation: OpName,
     ) -> Option<Expression> {
         self.read_token();
@@ -186,16 +194,17 @@ impl<'a> Parser<'a> {
                 self.reset(start);
                 None
             },
-            |rhs| {
+            |right| {
                 Some(Expression::BinaryOp(BinaryOp {
-                    left,
-                    right: Box::new(rhs),
+                    left: Box::new(left),
+                    right: Box::new(right),
                     operation,
                 }))
             },
         )
     }
 
+    /// Tries to parse a subexpression.
     fn parse_subexpression(&mut self) -> Option<Expression> {
         match self.token.kind() {
             Kind::Identifier => match self.parse_call() {
@@ -219,6 +228,7 @@ impl<'a> Parser<'a> {
         }
     }
 
+    /// Tries to parse a call expression.
     fn parse_call(&mut self) -> Option<Call> {
         assert!(self.token.kind() == Kind::Identifier);
         let start = self.position;
@@ -264,6 +274,7 @@ impl<'a> Parser<'a> {
         }
     }
 
+    /// Tries to parse a unary operation expression.
     fn parse_unary_op(&mut self, operation: OpName) -> Option<UnaryOp> {
         assert!(self.token.kind() == Kind::Plus || self.token.kind() == Kind::Minus);
 
@@ -275,6 +286,7 @@ impl<'a> Parser<'a> {
         })
     }
 
+    /// Tries to parse a boolean expression.
     fn parse_bool(&mut self) -> bool {
         assert!(self.token.kind() == Kind::True || self.token.kind() == Kind::False);
         let result = self.token.kind() == Kind::True;
@@ -282,6 +294,7 @@ impl<'a> Parser<'a> {
         result
     }
 
+    /// Tries to parse an integer expression.
     fn parse_integer(&mut self) -> Option<i32> {
         assert!(self.token.kind() == Kind::Integer);
 
@@ -298,6 +311,7 @@ impl<'a> Parser<'a> {
         }
     }
 
+    /// Tries to parse a float expression.
     fn parse_float(&mut self) -> Option<f64> {
         assert!(self.token.kind() == Kind::Float);
         match self.token.kind() {
@@ -313,6 +327,7 @@ impl<'a> Parser<'a> {
         }
     }
 
+    /// Tries to parse a string-literal expression.
     // Matches: "name;"
     // Can be used on Strings or Identifiers
     fn parse_string(&mut self) -> String {
@@ -322,6 +337,7 @@ impl<'a> Parser<'a> {
         name
     }
 
+    /// Tries to parse a function expression.
     // Matches:
     //   "func ( identifier* ) {
     //     statement*
@@ -395,10 +411,14 @@ impl<'a> Parser<'a> {
         Some(Rc::new(Function { arguments, body }))
     }
 
+    /// Tries to parse an expression statement.
+    // Matches:
+    //  expression
     fn parse_expression_statement(&mut self) -> Option<Expression> {
         self.parse_expression()
     }
 
+    /// Tries to parse a statement.
     fn parse_statement(&mut self) -> Option<Statement> {
         match self.token.kind() {
             Kind::Let => {
@@ -440,6 +460,7 @@ impl<'a> Parser<'a> {
         }
     }
 
+    /// Tries to parse a top-level statement.
     fn parse_next(&mut self) -> Option<Statement> {
         match self.token.kind() {
             Kind::EndOfFile => None,

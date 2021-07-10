@@ -19,8 +19,8 @@ impl<'a> Evaluator {
         }
     }
 
+    /// Evaluates statements at global scope until one of them returns.
     pub(crate) fn evaluate(&mut self, ast: &AbstractSyntaxTree) -> Result<i32, Error> {
-        // Evaluate statements at global scope until one of them returns.
         if let Some(rc) = self.global.evaluate_body(ast.statements()) {
             match &*rc {
                 Value::Integer(i) => Ok(*i),
