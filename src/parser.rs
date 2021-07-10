@@ -149,66 +149,20 @@ impl<'a> Parser<'a> {
 
     fn parse_expression(&mut self) -> Option<Expression> {
         let start = self.position;
+
         if let Some(subexpression) = self.parse_subexpression() {
+            let boxed = Box::new(subexpression);
             match self.token.kind() {
-                Kind::Plus => {
-                    self.read_token(); // consume binary op.
-                    if let Some(rhs) = self.parse_expression() {
-                        Some(Expression::BinaryOp(BinaryOp {
-                            left: Box::new(subexpression),
-                            right: Box::new(rhs),
-                            operation: OpName::Plus,
-                        }))
-                    } else {
-                        self.reset(start);
-                        None
-                    }
-                }
-                Kind::Minus => {
-                    self.read_token(); // consume binary op.
-                    if let Some(rhs) = self.parse_expression() {
-                        Some(Expression::BinaryOp(BinaryOp {
-                            left: Box::new(subexpression),
-                            right: Box::new(rhs),
-                            operation: OpName::Minus,
-                        }))
-                    } else {
-                        self.reset(start);
-                        None
-                    }
-                }
-                Kind::Divide => {
-                    self.read_token(); // consume binary op.
-                    if let Some(rhs) = self.parse_expression() {
-                        Some(Expression::BinaryOp(BinaryOp {
-                            left: Box::new(subexpression),
-                            right: Box::new(rhs),
-                            operation: OpName::Divide,
-                        }))
-                    } else {
-                        self.reset(start);
-                        None
-                    }
-                }
-                Kind::Star => {
-                    self.read_token(); // consume binary op.
-                    if let Some(rhs) = self.parse_expression() {
-                        Some(Expression::BinaryOp(BinaryOp {
-                            left: Box::new(subexpression),
-                            right: Box::new(rhs),
-                            operation: OpName::Multiply,
-                        }))
-                    } else {
-                        self.reset(start);
-                        None
-                    }
-                }
+                Kind::Plus => self.binary_parse(start, boxed, OpName::Plus),
+                Kind::Minus => self.binary_parse(start, boxed, OpName::Minus),
+                Kind::Divide => self.binary_parse(start, boxed, OpName::Divide),
+                Kind::Star => self.binary_parse(start, boxed, OpName::Multiply),
                 Kind::SemiColon
                 | Kind::Comma
                 | Kind::LeftParen
                 | Kind::RightParen
                 | Kind::LeftBrace
-                | Kind::RightBrace => Some(subexpression),
+                | Kind::RightBrace => Some(*boxed),
                 _ => {
                     self.reset(start);
                     None
@@ -218,6 +172,28 @@ impl<'a> Parser<'a> {
             self.reset(start);
             None
         }
+    }
+
+    fn binary_parse(
+        &mut self,
+        start: usize,
+        left: Box<Expression>,
+        operation: OpName,
+    ) -> Option<Expression> {
+        self.read_token();
+        self.parse_expression().map_or_else(
+            || {
+                self.reset(start);
+                None
+            },
+            |rhs| {
+                Some(Expression::BinaryOp(BinaryOp {
+                    left,
+                    right: Box::new(rhs),
+                    operation,
+                }))
+            },
+        )
     }
 
     fn parse_subexpression(&mut self) -> Option<Expression> {
