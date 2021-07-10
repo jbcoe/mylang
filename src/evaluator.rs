@@ -32,7 +32,7 @@ impl<'a> Evaluator {
                     "Function".to_string(),
                     "unknown".to_string(),
                 )),
-                Value::String(s) => Err(Error::NonPermitted("String".to_string(), s.clone())),
+                Value::String(s) => Err(Error::NonPermitted("String".to_string(), s.to_string())),
             }
         } else {
             Ok(0)

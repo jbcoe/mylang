@@ -213,7 +213,7 @@ impl<'a> Parser<'a> {
             },
             Kind::Integer => self.parse_integer().map(Expression::Integer),
             Kind::Float => self.parse_float().map(Expression::Float),
-            Kind::String => Some(Expression::StringLiteral(self.parse_string())),
+            Kind::String => Some(Expression::StringLiteral(Rc::new(self.parse_string()))),
             Kind::Function => self.parse_function().map(Expression::Function),
             Kind::Plus => self.parse_unary_op(OpName::Plus).map(Expression::UnaryOp),
             Kind::Minus => self.parse_unary_op(OpName::Minus).map(Expression::UnaryOp),
