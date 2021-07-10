@@ -41,7 +41,7 @@ pub enum Expression {
     Call(Call),
     Identifier(String),
     Integer(i32),
-    StringLiteral(String),
+    StringLiteral(Rc<String>),
     UnaryOp(UnaryOp),
     BinaryOp(BinaryOp),
 }

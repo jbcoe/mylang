@@ -7,7 +7,7 @@ pub enum Value {
     Float(f64),
     Function(Rc<Function>),
     Integer(i32),
-    String(String),
+    String(Rc<String>),
 }
 
 pub struct Frame {
@@ -36,7 +36,7 @@ impl Frame {
             Expression::Float(f) => Rc::new(Value::Float(*f)),
             Expression::Function(function) => Rc::new(Value::Function(function.clone())),
             Expression::Integer(i) => Rc::new(Value::Integer(*i)),
-            Expression::StringLiteral(s) => Rc::new(Value::String(s.clone())),
+            Expression::StringLiteral(s) => Rc::new(Value::String(Rc::clone(s))),
             Expression::Identifier(identifier) => {
                 if let Some(value) = self.values.get(identifier) {
                     Rc::clone(value)
