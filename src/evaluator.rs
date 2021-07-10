@@ -184,8 +184,29 @@ mod tests {
     }
 
     evaluator_error_test_case! {
+        name: return_boolean_err,
+        input: "return True;",
+        err_value: Error::NonPermitted("Boolean".to_string(), "true".to_string()),
+    }
+
+    evaluator_error_test_case! {
         name: return_float_err,
         input: "return 3.14;",
         err_value: Error::NonPermitted("Float".to_string(), "3.14".to_string()),
+    }
+
+    evaluator_error_test_case! {
+        name: return_function_err,
+        input: r#"
+            return func (a, b) {
+                return a;
+            };"#,
+        err_value: Error::NonPermitted("Function".to_string(), "unknown".to_string()),
+    }
+
+    evaluator_error_test_case! {
+        name: return_string_err,
+        input: r#"return "meow";"#,
+        err_value: Error::NonPermitted("String".to_string(), r#""meow""#.to_string()),
     }
 }
