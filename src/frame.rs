@@ -8,7 +8,7 @@ pub enum Value {
     Float(f64),
     Function(Rc<Function>),
     Integer(i32),
-    String(String),
+    String(Rc<String>),
 }
 
 impl fmt::Display for Value {
