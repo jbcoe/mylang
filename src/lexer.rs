@@ -352,7 +352,7 @@ mod tests {
             #[test]
             fn $test_name() {
                 let mut lexer = Lexer::new($input);
-                for expected_token in &$expected_tokens {
+                for expected_token in $expected_tokens {
                     let mut t = lexer.next_token();
                     while t.kind() == Kind::Whitespace {
                         t = lexer.next_token();
@@ -367,7 +367,7 @@ mod tests {
             #[test]
             fn $test_name() {
                 let mut lexer = Lexer::new($input);
-                for expected_token in &$expected_tokens {
+                for expected_token in $expected_tokens {
                     let t = lexer.next_token();
                     assert_eq!(t.text(), expected_token.0);
                     assert_eq!(t.kind(), expected_token.1);
@@ -380,7 +380,7 @@ mod tests {
     lexer_test_case! {
         name: let_statement_with_string,
         input: r#"let myPet = "Timmy the dog";"#,
-        expected_tokens: vec![
+        expected_tokens: &[
             ("let", Kind::Let),
             (" ", Kind::Whitespace),
             ("myPet", Kind::Identifier),
@@ -396,7 +396,7 @@ mod tests {
     lexer_test_case! {
         name: let_statement_with_bad_identifier,
         input: "let myPet  =  10dog01 ;",
-        expected_tokens: vec![
+        expected_tokens: &[
             ("let", Kind::Let),
             (" ", Kind::Whitespace),
             ("myPet", Kind::Identifier),
@@ -413,7 +413,7 @@ mod tests {
     lexer_test_case! {
         name: let_statement_with_unfinished_string,
         input: r#"let mut myPet = "string with unbalanced quotes"#,
-        expected_tokens: vec![
+        expected_tokens: &[
             ("let", Kind::Let),
             (" ", Kind::Whitespace),
             ("mut", Kind::Mut),
@@ -430,7 +430,7 @@ mod tests {
     lexer_test_case! {
         name: let_statement_with_integer,
         input: "let myNumber = 1001;",
-        expected_tokens: vec![
+        expected_tokens: &[
             ("let", Kind::Let),
             (" ", Kind::Whitespace),
             ("myNumber", Kind::Identifier),
@@ -446,7 +446,7 @@ mod tests {
     lexer_test_case! {
         name: let_statement_with_identifier,
         input: "let myValue = anotherValue;",
-        expected_tokens: vec![
+        expected_tokens: &[
             ("let", Kind::Let),
             (" ", Kind::Whitespace),
             ("myValue", Kind::Identifier),
@@ -462,7 +462,7 @@ mod tests {
     lexer_test_case! {
     name: let_statement_with_identifier_containing_number,
     input: "let value = value0;",
-        expected_tokens: vec![
+        expected_tokens: &[
             ("let", Kind::Let),
             (" ", Kind::Whitespace),
             ("value", Kind::Identifier),
@@ -478,7 +478,7 @@ mod tests {
     lexer_test_case! {
         name: let_statement_with_function_definition,
         input: "let add = func (lhs, rhs) { return lhs + rhs; };",
-        expected_tokens: vec![
+        expected_tokens: &[
             ("let", Kind::Let),
             ("add", Kind::Identifier),
             ("=", Kind::EqualSign),
@@ -502,7 +502,7 @@ mod tests {
     lexer_test_case! {
         name: greater_than,
         input: "a > b;",
-        expected_tokens: vec![
+        expected_tokens: &[
             ("a", Kind::Identifier),
             (">", Kind::Greater),
             ("b", Kind::Identifier),
@@ -513,7 +513,7 @@ mod tests {
     lexer_test_case! {
         name: less_than,
         input: "a < b;",
-        expected_tokens: vec![
+        expected_tokens: &[
             ("a", Kind::Identifier),
             ("<", Kind::Less),
             ("b", Kind::Identifier),
@@ -524,7 +524,7 @@ mod tests {
     lexer_test_case! {
         name: greater_than_or_equal,
         input: "a >= b;",
-        expected_tokens: vec![
+        expected_tokens: &[
             ("a", Kind::Identifier),
             (">=", Kind::GreaterOrEqual),
             ("b", Kind::Identifier),
@@ -535,7 +535,7 @@ mod tests {
     lexer_test_case! {
         name: less_than_or_equal,
         input: "a <= b;",
-        expected_tokens: vec![
+        expected_tokens: &[
             ("a", Kind::Identifier),
             ("<=", Kind::LessOrEqual),
             ("b", Kind::Identifier),
@@ -546,7 +546,7 @@ mod tests {
     lexer_test_case! {
         name: equal_to,
         input: "a == b;",
-        expected_tokens: vec![
+        expected_tokens: &[
             ("a", Kind::Identifier),
             ("==", Kind::DoubleEquals),
             ("b", Kind::Identifier),
@@ -557,7 +557,7 @@ mod tests {
     lexer_test_case! {
         name: not_equal_to,
         input: "a != b;",
-        expected_tokens: vec![
+        expected_tokens: &[
             ("a", Kind::Identifier),
             ("!=", Kind::NotEquals),
             ("b", Kind::Identifier),
@@ -568,7 +568,7 @@ mod tests {
     lexer_test_case! {
         name: unary_not,
         input: "let a = !b;",
-        expected_tokens: vec![
+        expected_tokens: &[
             ("let", Kind::Let),
             ("a", Kind::Identifier),
             ("=", Kind::EqualSign),
@@ -581,7 +581,7 @@ mod tests {
     lexer_test_case! {
         name: star,
         input: "let x = 3 * 4;",
-        expected_tokens: vec![
+        expected_tokens: &[
             ("let", Kind::Let),
             ("x", Kind::Identifier),
             ("=", Kind::EqualSign),
@@ -595,7 +595,7 @@ mod tests {
     lexer_test_case! {
         name: divide,
         input: "let x = 4 / 2;",
-        expected_tokens: vec![
+        expected_tokens: &[
             ("let", Kind::Let),
             ("x", Kind::Identifier),
             ("=", Kind::EqualSign),
@@ -609,97 +609,97 @@ mod tests {
     lexer_test_case! {
         name: digit,
         input: "3",
-        expected_tokens: vec![("3", Kind::Integer)],
+        expected_tokens: &[("3", Kind::Integer)],
     }
 
     lexer_test_case! {
         name: integer,
         input: "314",
-        expected_tokens: vec![("314", Kind::Integer)],
+        expected_tokens: &[("314", Kind::Integer)],
     }
 
     lexer_test_case! {
         name: float,
         input: "3.14",
-        expected_tokens: vec![("3.14", Kind::Float)],
+        expected_tokens: &[("3.14", Kind::Float)],
     }
 
     lexer_test_case! {
         name: boolean_true,
         input: "True",
-        expected_tokens: vec![("True", Kind::True)],
+        expected_tokens: &[("True", Kind::True)],
     }
 
     lexer_test_case! {
         name: boolean_false,
         input: "False",
-        expected_tokens: vec![("False", Kind::False)],
+        expected_tokens: &[("False", Kind::False)],
     }
 
     lexer_test_case! {
         name: float_with_trailing_dot,
         input: "3.",
-        expected_tokens: vec![("3.", Kind::Float)],
+        expected_tokens: &[("3.", Kind::Float)],
     }
 
     lexer_test_case! {
         name: float_with_leading_dot,
         input: ".14",
-        expected_tokens: vec![(".14", Kind::Float)],
+        expected_tokens: &[(".14", Kind::Float)],
     }
 
     lexer_test_case! {
         name: float_with_exponent,
         input: "3e8",
-        expected_tokens: vec![("3e8", Kind::Float)],
+        expected_tokens: &[("3e8", Kind::Float)],
     }
 
     lexer_test_case! {
         name: float_with_exponent_and_dot,
         input: "0.314e1",
-        expected_tokens: vec![("0.314e1", Kind::Float)],
+        expected_tokens: &[("0.314e1", Kind::Float)],
     }
 
     lexer_test_case! {
         name: float_with_negative_exponent_and_dot,
         input: "9.1e-31",
-        expected_tokens: vec![("9.1e-31", Kind::Float)],
+        expected_tokens: &[("9.1e-31", Kind::Float)],
     }
 
     lexer_test_case! {
         name: float_with_positive_exponent_and_dot,
         input: "6.02e+23",
-        expected_tokens: vec![("6.02e+23", Kind::Float)],
+        expected_tokens: &[("6.02e+23", Kind::Float)],
     }
 
     lexer_test_case! {
         name: bad_float_with_exponent_and_no_following_number,
         input: "2e",
-        expected_tokens: vec![("2e", Kind::Unknown)],
+        expected_tokens: &[("2e", Kind::Unknown)],
     }
 
     lexer_test_case! {
         name: bad_float_with_dot_and_exponent_and_no_following_number,
         input: "2.e",
-        expected_tokens: vec![("2.e", Kind::Unknown)],
+        expected_tokens: &[("2.e", Kind::Unknown)],
     }
 
     lexer_test_case! {
         name: bad_float_with_dot_and_f_exponent_and_no_following_number,
         input: "2.4f",
-        expected_tokens: vec![("2.4f", Kind::Unknown)],
+        expected_tokens: &[("2.4f", Kind::Unknown)],
     }
 
     lexer_test_case! {
         name: bad_float_with_dot_and_exponent_and_trailing_letter,
         input: "2.4e3a",
-        expected_tokens: vec![("2.4e3a", Kind::Unknown)],
+        expected_tokens: &[("2.4e3a", Kind::Unknown)],
     }
 
     lexer_test_case! {
         name: bad_float_with_confused_exponent,
         input: "123f+4.2e-3",
-        expected_tokens: vec![
+        expected_tokens: &[
             ("123f", Kind::Unknown),
             ("+", Kind::Plus),
             ("4.2e-3", Kind::Float),
@@ -709,13 +709,13 @@ mod tests {
     lexer_test_case! {
         name: bad_float_with_dot_and_exponent_with_dot,
         input: "1.23e-4.56",
-        expected_tokens: vec![("1.23e-4.56", Kind::Unknown)],
+        expected_tokens: &[("1.23e-4.56", Kind::Unknown)],
     }
 
     lexer_test_case! {
         name: bad_float_with_dot_and_exponent_with_float,
         input: "1.23e-4+3.2e-5",
-        expected_tokens: vec![
+        expected_tokens: &[
             ("1.23e-4", Kind::Float),
             ("+", Kind::Plus),
             ("3.2e-5", Kind::Float),
@@ -725,13 +725,13 @@ mod tests {
     lexer_test_case! {
         name: bad_float_with_dot_and_exponent_with_negative_float,
         input: "1.23e-4e-3.2",
-        expected_tokens: vec![("1.23e-4e-3.2", Kind::Unknown)],
+        expected_tokens: &[("1.23e-4e-3.2", Kind::Unknown)],
     }
 
     lexer_test_case! {
         name: let_with_dot_and_parens,
         input: "let x = self.x();",
-        expected_tokens: vec![
+        expected_tokens: &[
             ("let", Kind::Let),
             ("x", Kind::Identifier),
             ("=", Kind::EqualSign),
@@ -747,7 +747,7 @@ mod tests {
     lexer_test_case! {
     name: braces_and_colon,
     input: "{a: 3}",
-    expected_tokens: vec![
+    expected_tokens: &[
         ("{", Kind::LeftBrace),
         ("a", Kind::Identifier),
         (":", Kind::Colon),
@@ -759,7 +759,7 @@ mod tests {
     lexer_test_case! {
         name: square_bracket_and_comma,
         input: "[1, 2, 3]",
-        expected_tokens: vec![
+        expected_tokens: &[
             ("[", Kind::LeftSqBracket),
             ("1", Kind::Integer),
             (",", Kind::Comma),
@@ -773,19 +773,19 @@ mod tests {
     lexer_test_case! {
         name: at_sigil,
         input: "@123",
-        expected_tokens: vec![("@123", Kind::Unknown)],
+        expected_tokens: &[("@123", Kind::Unknown)],
     }
 
     lexer_test_case! {
         name: line_comment,
         input: "# comment",
-        expected_tokens: vec![("# comment", Kind::Comment)],
+        expected_tokens: &[("# comment", Kind::Comment)],
     }
 
     lexer_test_case! {
         name: end_of_line_comment,
         input: "a; # comment",
-        expected_tokens: vec![
+        expected_tokens: &[
             ("a", Kind::Identifier),
             (";", Kind::SemiColon),
             ("# comment", Kind::Comment),
