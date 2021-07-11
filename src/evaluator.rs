@@ -23,7 +23,7 @@ impl<'a> Evaluator {
         }
     }
 
-    /// Evaluate the ast's statements at global scope until one of them returns
+    /// Evaluates the ast's statements at global scope until one of them returns
     pub(crate) fn evaluate(&mut self, ast: &AbstractSyntaxTree) -> Result<i32, Error> {
         (self.global.evaluate_body(ast.statements())?).map_or(Ok(0), |value| match &*value {
             Value::Integer(i) => Ok(*i),
