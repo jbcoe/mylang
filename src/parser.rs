@@ -527,7 +527,7 @@ mod tests {
             r#"Parse error when parsing let-statement Token { text: "let", kind: Let }"#,
         ],
     }
-    
+
     parser_error_test_case! {
         name: return_a_keyword,
         input: "return let;",
