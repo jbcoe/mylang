@@ -155,7 +155,7 @@ pub struct ReturnStatementMatcher {
 impl StatementMatcher for ReturnStatementMatcher {
     fn matches(&self, statement: &Statement) -> bool {
         match statement {
-            Statement::Return(expression) => self.expression.matches(&expression),
+            Statement::Return(expression) => self.expression.matches(expression),
             _ => false,
         }
     }

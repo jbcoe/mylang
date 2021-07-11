@@ -73,7 +73,7 @@ impl<'a> Parser<'a> {
     // Matches:
     //   `return expression;`
     fn parse_return(&mut self) -> Option<Statement> {
-        assert!(self.token.kind() == Kind::Return);
+        assert_eq!(self.token.kind(), Kind::Return);
         let start = self.position;
         self.read_token(); // consume return
         match self.parse_expression() {
@@ -101,7 +101,7 @@ impl<'a> Parser<'a> {
     //   `let identifier = expression;`
     //   `let mut identifier = expression;`
     fn parse_let(&mut self) -> Option<Let> {
-        assert!(self.token.kind() == Kind::Let);
+        assert_eq!(self.token.kind(), Kind::Let);
         let start = self.position;
         self.read_token(); // consume let
 
@@ -230,7 +230,7 @@ impl<'a> Parser<'a> {
 
     /// Tries to parse a call expression.
     fn parse_call(&mut self) -> Option<Call> {
-        assert!(self.token.kind() == Kind::Identifier);
+        assert_eq!(self.token.kind(), Kind::Identifier);
         let start = self.position;
         let name = self.token.text();
         self.read_token(); // consume identifier.
@@ -296,7 +296,7 @@ impl<'a> Parser<'a> {
 
     /// Tries to parse an integer expression.
     fn parse_integer(&mut self) -> Option<i32> {
-        assert!(self.token.kind() == Kind::Integer);
+        assert_eq!(self.token.kind(), Kind::Integer);
 
         match self.token.kind() {
             Kind::Integer => {
@@ -313,7 +313,7 @@ impl<'a> Parser<'a> {
 
     /// Tries to parse a float expression.
     fn parse_float(&mut self) -> Option<f64> {
-        assert!(self.token.kind() == Kind::Float);
+        assert_eq!(self.token.kind(), Kind::Float);
         match self.token.kind() {
             Kind::Float => {
                 if let Ok(value) = self.token.text().parse::<f64>() {
@@ -344,7 +344,7 @@ impl<'a> Parser<'a> {
     //   };"
     // Indenting is not checked.
     fn parse_function(&mut self) -> Option<Rc<Function>> {
-        assert!(self.token.kind() == Kind::Function);
+        assert_eq!(self.token.kind(), Kind::Function);
         let start = self.position;
         self.read_token(); // consume "fn"
 
@@ -376,7 +376,7 @@ impl<'a> Parser<'a> {
             }
         }
 
-        assert!(self.token.kind() == Kind::RightParen);
+        assert_eq!(self.token.kind(), Kind::RightParen);
         self.read_token(); // consume ')'
 
         if self.token.kind() != Kind::LeftBrace {
@@ -475,7 +475,14 @@ mod tests {
     use std::cmp::Ordering;
 
     use super::*;
-    use crate::{ast_matcher::*, lexer::Lexer};
+    use crate::{
+        ast_matcher::{
+            AnyFunctionMatcher, BinaryOperatorExpressionMatcher, BooleanMatcher, CallMatcher,
+            ExpressionMatcher, FloatMatcher, IdentifierMatcher, IntegerMatcher,
+            LetStatementMatcher, ReturnStatementMatcher, StatementMatcher, StringMatcher,
+        },
+        lexer::Lexer,
+    };
 
     macro_rules! parser_error_test_case {
         (name: $test_name:ident, input: $input:expr, expected_errors: $expected_errors:expr,) => {
