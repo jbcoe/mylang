@@ -1,10 +1,10 @@
 mod ast;
-#[cfg(test)]
-mod ast_matcher;
 pub mod driver;
 mod evaluator;
 mod frame;
 mod lexer;
+#[cfg(test)]
+mod matcher;
 mod parser;
 mod token;
 
