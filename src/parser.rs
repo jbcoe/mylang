@@ -527,6 +527,16 @@ mod tests {
             r#"Parse error when parsing let-statement Token { text: "let", kind: Let }"#,
         ],
     }
+    
+    parser_error_test_case! {
+        name: return_a_keyword,
+        input: "return let;",
+        expected_errors: &[
+            r#"Parse error when parsing expression Token { text: "let", kind: Let }"#,
+            r#"expected expression, got Token { text: "let", kind: Let }"#,
+            r#"Parse error when parsing return-statement Token { text: "return", kind: Return }"#,
+        ],
+    }
 
     macro_rules! parse_statement_matcher_test_case {
         (name: $test_name:ident, input: $input:expr, matcher: $matcher:expr,) => {
