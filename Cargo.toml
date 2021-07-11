@@ -3,7 +3,8 @@ name = "mylang"
 version = "0.1.0"
 authors = [
         "Jonathan B Coe <jonathanbcoe@gmail.com>",
-        "Philip Craig <philip@pobox.com>"]
+        "Philip Craig <philip@pobox.com>",
+        "Andrew Bennieston"]
 edition = "2018"
 
 [[bin]]

@@ -166,15 +166,15 @@ mod tests {
         name: return_deeply_nested_function_call,
         input: r#"
             let f = func () {
-                let f = func(){ 
-                    let f = func(){ 
-                        let f = func(){ 
-                            return 42; 
-                        }; 
+                let f = func(){
+                    let f = func(){
+                        let f = func(){
+                            return 42;
+                        };
                         return f();
-                    }; 
+                    };
                     return f();
-                }; 
+                };
                 return f();
             };
             return f();"#,
@@ -229,7 +229,7 @@ mod tests {
         input: r#"let x = -"Hello";"#,
         err_value: Error::Evaluation{
             source: EvaluationError::IllegalUnaryOperation{
-                opname: "Minus".to_string(),
+                opname: "-".to_string(),
                 value:"String(\"Hello\")".to_string()
             }
         },
@@ -240,7 +240,7 @@ mod tests {
          input: r#"let x = -True;"#,
          err_value: Error::Evaluation{
              source: EvaluationError::IllegalUnaryOperation{
-                 opname: "Minus".to_string(),
+                 opname: "-".to_string(),
                  value:"Boolean(true)".to_string()
              }
          },
