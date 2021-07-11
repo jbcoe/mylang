@@ -475,10 +475,7 @@ mod tests {
     use std::cmp::Ordering;
 
     use super::*;
-    use crate::{
-        ast_matcher::{BinaryOperatorExpressionMatcher, ExpressionMatcher, IdentifierMatcher},
-        lexer::Lexer,
-    };
+    use crate::{ast_matcher::*, lexer::Lexer};
 
     macro_rules! parser_error_test_case {
         (name: $test_name:ident, input: $input:expr, expected_errors: $expected_errors:expr,) => {
@@ -531,8 +528,8 @@ mod tests {
         ],
     }
 
-    macro_rules! parse_let_statement_test_case {
-        (name: $test_name:ident, input: $input:expr, identifier: $identifier:expr, mutable: $mutable:literal,) => {
+    macro_rules! parse_statement_matcher_test_case {
+        (name: $test_name:ident, input: $input:expr, matcher: $matcher:expr,) => {
             #[test]
             fn $test_name() {
                 let tokens = Lexer::new($input).tokens();
@@ -542,131 +539,166 @@ mod tests {
 
                 assert!(errors.is_empty(), "Expected no errors, got {:?}", errors);
                 assert_eq!(ast.statements().len(), 1);
-                match &ast.statements()[0] {
-                    Statement::Let(let_statement) => {
-                        assert_eq!(let_statement.identifier, $identifier);
-                        assert!(let_statement.mutable == $mutable);
-                        // TODO: Check some property of the expression.
-                    }
-                    Statement::Expression(_) | Statement::Return(_) => {
-                        panic!("Expected a let statement")
-                    }
-                }
+                assert!(
+                    $matcher.matches(&ast.statements()[0]),
+                    "Failed to match {}",
+                    $input
+                );
             }
         };
     }
 
-    parse_let_statement_test_case! {
+    parse_statement_matcher_test_case! {
         name: let_identifier,
         input: "let x = a;",
-        identifier: "x",
-        mutable: false,
+        matcher: LetStatementMatcher{
+            identifier: "x".to_string(),
+            mutable: false,
+            expression: Box::new(IdentifierMatcher{identifier:"a".to_string()})
+        },
     }
 
-    parse_let_statement_test_case! {
+    parse_statement_matcher_test_case! {
         name: let_mutable_float,
-        input: "let mut minus_pi = -3.14159;",
-        identifier: "minus_pi",
-        mutable: true,
+        input: "let mut x = 8.24;",
+        matcher: LetStatementMatcher{
+            identifier: "x".to_string(),
+            mutable: true,
+            expression: Box::new(FloatMatcher{value:8.24})
+        },
     }
 
-    parse_let_statement_test_case! {
+    parse_statement_matcher_test_case! {
         name: let_string,
         input: r#"let x = "Hello";"#,
-        identifier: "x",
-        mutable: false,
+        matcher: LetStatementMatcher{
+            identifier: "x".to_string(),
+            mutable: false,
+            expression: Box::new(StringMatcher{value:"\"Hello\"".to_string()})
+        },
     }
 
-    parse_let_statement_test_case! {
+    parse_statement_matcher_test_case! {
         name: let_true,
         input: r"let x = True;",
-        identifier: "x",
-        mutable: false,
+        matcher: LetStatementMatcher{
+            identifier: "x".to_string(),
+            mutable: false,
+            expression: Box::new(BooleanMatcher{value:true})
+        },
     }
 
-    parse_let_statement_test_case! {
+    parse_statement_matcher_test_case! {
         name: let_false,
         input: r"let x = False;",
-        identifier: "x",
-        mutable: false,
+        matcher: LetStatementMatcher{
+            identifier: "x".to_string(),
+            mutable: false,
+            expression: Box::new(BooleanMatcher{value: false})
+        },
     }
 
-    parse_let_statement_test_case! {
+    parse_statement_matcher_test_case! {
         name: let_function,
         input: "let first = func (a, b) { return a; };",
-        identifier: "first",
-        mutable: false,
+        matcher: LetStatementMatcher{
+            identifier: "first".to_string(),
+            mutable: false,
+            // TODO: Match the function params and body.
+            expression: Box::new(AnyFunctionMatcher{})
+        },
     }
 
-    parse_let_statement_test_case! {
+    parse_statement_matcher_test_case! {
         name: let_function_call,
         input: "let max = largest (a, b);",
-        identifier: "max",
-        mutable: false,
+        matcher: LetStatementMatcher{
+            identifier: "max".to_string(),
+            mutable: false,
+            expression: Box::new(CallMatcher{
+                name: "largest".to_string(),
+                arguments: vec![
+                    Box::new(IdentifierMatcher{identifier: "a".to_string()}),
+                    Box::new(IdentifierMatcher{identifier: "b".to_string()})
+                ]
+            })
+        },
     }
 
-    parse_let_statement_test_case! {
+    parse_statement_matcher_test_case! {
         name: let_binary_add,
         input: "let x = a + b;",
-        identifier: "x",
-        mutable: false,
+        matcher: LetStatementMatcher{
+            identifier: "x".to_string(),
+            mutable: false,
+            expression: Box::new(BinaryOperatorExpressionMatcher{
+                left: Box::new(IdentifierMatcher{identifier: "a".to_string()}),
+                right: Box::new(IdentifierMatcher{identifier: "b".to_string()}),
+                operator: OpName::Plus,
+            })
+        },
     }
 
-    parse_let_statement_test_case! {
+    parse_statement_matcher_test_case! {
         name: let_binary_subtract,
         input: "let x = a - b;",
-        identifier: "x",
-        mutable: false,
+        matcher: LetStatementMatcher{
+            identifier: "x".to_string(),
+            mutable: false,
+            expression: Box::new(BinaryOperatorExpressionMatcher{
+                left: Box::new(IdentifierMatcher{identifier: "a".to_string()}),
+                right: Box::new(IdentifierMatcher{identifier: "b".to_string()}),
+                operator: OpName::Minus,
+            })
+        },
     }
 
-    parse_let_statement_test_case! {
+    parse_statement_matcher_test_case! {
         name: let_binary_multiply,
         input: "let x = a * b;",
-        identifier: "x",
-        mutable: false,
+        matcher: LetStatementMatcher{
+            identifier: "x".to_string(),
+            mutable: false,
+            expression: Box::new(BinaryOperatorExpressionMatcher{
+                left: Box::new(IdentifierMatcher{identifier: "a".to_string()}),
+                right: Box::new(IdentifierMatcher{identifier: "b".to_string()}),
+                operator: OpName::Multiply,
+            })
+        },
     }
 
-    parse_let_statement_test_case! {
+    parse_statement_matcher_test_case! {
         name: let_binary_divide,
         input: "let x = a / b;",
-        identifier: "x",
-        mutable: false,
+        matcher: LetStatementMatcher{
+            identifier: "x".to_string(),
+            mutable: false,
+            expression: Box::new(BinaryOperatorExpressionMatcher{
+                left: Box::new(IdentifierMatcher{identifier: "a".to_string()}),
+                right: Box::new(IdentifierMatcher{identifier: "b".to_string()}),
+                operator: OpName::Divide,
+            })
+        },
     }
 
-    macro_rules! parse_return_statement_test_case {
-        (name: $test_name:ident, input: $input:expr,) => {
-            #[test]
-            fn $test_name() {
-                let tokens = Lexer::new($input).tokens();
-                let parser = Parser::new(tokens);
-                let ast = parser.ast();
-                let errors = ast.errors();
-
-                assert!(errors.is_empty(), "Expected no errors, got {:?}", errors);
-                assert_eq!(ast.statements().len(), 1);
-                match &ast.statements()[0] {
-                    Statement::Return(_) => {
-                        // TODO: Check some property of the expression.
-                    }
-                    Statement::Expression(_) | Statement::Let(_) => {
-                        panic!("Expected a return statement.")
-                    }
-                }
-            }
-        };
-    }
-
-    parse_return_statement_test_case! {
+    // RETURN
+    parse_statement_matcher_test_case! {
         name: return_integer,
         input: "return 42;",
+        matcher: ReturnStatementMatcher{
+            expression: Box::new(IntegerMatcher{value: 42})
+        },
     }
 
-    parse_return_statement_test_case! {
+    parse_statement_matcher_test_case! {
         name: return_string_literal,
         input: r#"return "the solution";"#,
+        matcher: ReturnStatementMatcher{
+            expression: Box::new(StringMatcher{value: "\"the solution\"".to_string()})
+        },
     }
 
-    macro_rules! parse_binary_operator_expression_test_case {
+    macro_rules! parse_expression_matcher_test_case {
         (name: $test_name:ident, input: $input:expr, matcher: $matcher:expr,) => {
             #[test]
             fn $test_name() {
@@ -690,7 +722,7 @@ mod tests {
         };
     }
 
-    parse_binary_operator_expression_test_case! {
+    parse_expression_matcher_test_case! {
         name: add_expression,
         input: "x + y;",
         matcher: BinaryOperatorExpressionMatcher{
