@@ -1,3 +1,8 @@
+// allow "Matcher" on the end of trait names even though
+// this module is called matcher
+
+#![allow(clippy::module_name_repetitions)]
+
 use crate::ast::{Expression, OpName, Statement};
 
 pub trait ExpressionMatcher {
