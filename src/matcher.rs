@@ -14,6 +14,20 @@ pub trait StatementMatcher {
     fn matches(&self, statement: &Statement) -> bool;
 }
 
+pub struct AnyStatementMatcher {}
+
+macro_rules! match_statement {
+    () => {
+        Box::new(AnyStatementMatcher {})
+    };
+}
+
+impl StatementMatcher for AnyStatementMatcher {
+    fn matches(&self, _: &Statement) -> bool {
+        true
+    }
+}
+
 pub struct FloatMatcher {
     pub(crate) value: f64,
 }
@@ -335,7 +349,7 @@ pub struct FullFunctionBodyMatcher {
 
 macro_rules! match_full_function {
     ($matcher:expr) => {
-        Box::new(FullFunctionBodyMatcher { matcher: $matcher })
+        Box::new(FullFunctionBodyMatcher { matchers: $matcher })
     };
 }
 
@@ -518,5 +532,19 @@ mod tests {
         name: any_binary_op_matcher,
         input: r#"return a + b;"#,
         matcher: match_descend!(match_binary_op!()),
+    }
+
+    matcher_test_case! {
+        name: function_body_matcher,
+        input: r#"func(){
+            let x = 5; 
+            let y = 7; 
+            return 0;
+        };"#,
+        matcher: match_descend!(match_full_function!(vec![
+            match_statement!(),
+            match_statement!(),
+            match_statement!()
+        ])),
     }
 }
