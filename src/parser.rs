@@ -571,7 +571,7 @@ mod tests {
         matcher: LetStatementMatcher{
             identifier: "x".to_string(),
             mutable: false,
-            expression: Box::new(IdentifierMatcher{identifier:"a".to_string()})
+            matcher: Box::new(IdentifierMatcher{identifier:"a".to_string()})
         },
     }
 
@@ -581,7 +581,7 @@ mod tests {
         matcher: LetStatementMatcher{
             identifier: "x".to_string(),
             mutable: true,
-            expression: Box::new(FloatMatcher{value:8.24})
+            matcher: Box::new(FloatMatcher{value:8.24})
         },
     }
 
@@ -591,7 +591,7 @@ mod tests {
         matcher: LetStatementMatcher{
             identifier: "x".to_string(),
             mutable: false,
-            expression: Box::new(StringMatcher{value:"\"Hello\"".to_string()})
+            matcher: Box::new(StringMatcher{value:"\"Hello\"".to_string()})
         },
     }
 
@@ -601,7 +601,7 @@ mod tests {
         matcher: LetStatementMatcher{
             identifier: "x".to_string(),
             mutable: false,
-            expression: Box::new(BooleanMatcher{value:true})
+            matcher: Box::new(BooleanMatcher{value:true})
         },
     }
 
@@ -611,7 +611,7 @@ mod tests {
         matcher: LetStatementMatcher{
             identifier: "x".to_string(),
             mutable: false,
-            expression: Box::new(BooleanMatcher{value: false})
+            matcher: Box::new(BooleanMatcher{value: false})
         },
     }
 
@@ -622,7 +622,7 @@ mod tests {
             identifier: "first".to_string(),
             mutable: false,
             // TODO: Match the function params and body.
-            expression: Box::new(AnyFunctionMatcher{})
+            matcher: Box::new(AnyFunctionMatcher{})
         },
     }
 
@@ -632,9 +632,9 @@ mod tests {
         matcher: LetStatementMatcher{
             identifier: "max".to_string(),
             mutable: false,
-            expression: Box::new(CallMatcher{
+            matcher: Box::new(CallMatcher{
                 name: "largest".to_string(),
-                arguments: vec![
+                matchers: vec![
                     Box::new(IdentifierMatcher{identifier: "a".to_string()}),
                     Box::new(IdentifierMatcher{identifier: "b".to_string()})
                 ]
@@ -648,7 +648,7 @@ mod tests {
         matcher: LetStatementMatcher{
             identifier: "x".to_string(),
             mutable: false,
-            expression: Box::new(BinaryOperatorExpressionMatcher{
+            matcher: Box::new(BinaryOperatorExpressionMatcher{
                 left: Box::new(IdentifierMatcher{identifier: "a".to_string()}),
                 right: Box::new(IdentifierMatcher{identifier: "b".to_string()}),
                 operator: OpName::Plus,
@@ -662,7 +662,7 @@ mod tests {
         matcher: LetStatementMatcher{
             identifier: "x".to_string(),
             mutable: false,
-            expression: Box::new(BinaryOperatorExpressionMatcher{
+            matcher: Box::new(BinaryOperatorExpressionMatcher{
                 left: Box::new(IdentifierMatcher{identifier: "a".to_string()}),
                 right: Box::new(IdentifierMatcher{identifier: "b".to_string()}),
                 operator: OpName::Minus,
@@ -676,7 +676,7 @@ mod tests {
         matcher: LetStatementMatcher{
             identifier: "x".to_string(),
             mutable: false,
-            expression: Box::new(BinaryOperatorExpressionMatcher{
+            matcher: Box::new(BinaryOperatorExpressionMatcher{
                 left: Box::new(IdentifierMatcher{identifier: "a".to_string()}),
                 right: Box::new(IdentifierMatcher{identifier: "b".to_string()}),
                 operator: OpName::Multiply,
@@ -690,7 +690,7 @@ mod tests {
         matcher: LetStatementMatcher{
             identifier: "x".to_string(),
             mutable: false,
-            expression: Box::new(BinaryOperatorExpressionMatcher{
+            matcher: Box::new(BinaryOperatorExpressionMatcher{
                 left: Box::new(IdentifierMatcher{identifier: "a".to_string()}),
                 right: Box::new(IdentifierMatcher{identifier: "b".to_string()}),
                 operator: OpName::Divide,
@@ -703,7 +703,7 @@ mod tests {
         name: return_integer,
         input: "return 42;",
         matcher: ReturnStatementMatcher{
-            expression: Box::new(IntegerMatcher{value: 42})
+            matcher: Box::new(IntegerMatcher{value: 42})
         },
     }
 
@@ -711,7 +711,7 @@ mod tests {
         name: return_string_literal,
         input: r#"return "the solution";"#,
         matcher: ReturnStatementMatcher{
-            expression: Box::new(StringMatcher{value: "\"the solution\"".to_string()})
+            matcher: Box::new(StringMatcher{value: "\"the solution\"".to_string()})
         },
     }
 
