@@ -476,12 +476,12 @@ mod tests {
 
     use super::*;
     use crate::{
-        ast_matcher::{
+        lexer::Lexer,
+        matcher::{
             AnyFunctionMatcher, BinaryOperatorExpressionMatcher, BooleanMatcher, CallMatcher,
             ExpressionMatcher, FloatMatcher, IdentifierMatcher, IntegerMatcher,
             LetStatementMatcher, ReturnStatementMatcher, StatementMatcher, StringMatcher,
         },
-        lexer::Lexer,
     };
 
     macro_rules! parser_error_test_case {
