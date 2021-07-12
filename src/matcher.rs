@@ -40,10 +40,7 @@ impl ExpressionMatcher for FloatMatcher {
 
 impl ExpressionMatcher for AnyFloatMatcher {
     fn matches(&self, expression: &Expression) -> bool {
-        match expression {
-            Expression::Float(_) => true,
-            _ => false,
-        }
+        matches!(expression, Expression::Float(_))
     }
 }
 
@@ -73,10 +70,7 @@ impl ExpressionMatcher for IntegerMatcher {
 
 impl ExpressionMatcher for AnyIntegerMatcher {
     fn matches(&self, expression: &Expression) -> bool {
-        match expression {
-            Expression::Integer(_) => true,
-            _ => false,
-        }
+        matches!(expression, Expression::Integer(_))
     }
 }
 
@@ -105,10 +99,7 @@ impl ExpressionMatcher for BooleanMatcher {
 
 impl ExpressionMatcher for AnyBooleanMatcher {
     fn matches(&self, expression: &Expression) -> bool {
-        match expression {
-            Expression::Boolean(_) => true,
-            _ => false,
-        }
+        matches!(expression, Expression::Boolean(_))
     }
 }
 
@@ -138,10 +129,7 @@ impl ExpressionMatcher for StringMatcher {
 
 impl ExpressionMatcher for AnyStringMatcher {
     fn matches(&self, expression: &Expression) -> bool {
-        match expression {
-            Expression::StringLiteral(_) => true,
-            _ => false,
-        }
+        matches!(expression, Expression::StringLiteral(_))
     }
 }
 pub struct IdentifierMatcher {
@@ -222,12 +210,6 @@ impl ExpressionMatcher for CallMatcher {
 
 pub struct AnyBinaryOperatorExpressionMatcher {}
 
-impl ExpressionMatcher for AnyBinaryOperatorExpressionMatcher {
-    fn matches(&self, expression: &Expression) -> bool {
-        matches!(expression, Expression::BinaryOp(_))
-    }
-}
-
 pub struct BinaryOperatorExpressionMatcher {
     pub(crate) left: Box<dyn ExpressionMatcher>,
     pub(crate) right: Box<dyn ExpressionMatcher>,
@@ -245,6 +227,12 @@ macro_rules! match_binary_op {
     () => {
         Box::new(AnyBinaryOperatorExpressionMatcher {})
     };
+}
+
+impl ExpressionMatcher for AnyBinaryOperatorExpressionMatcher {
+    fn matches(&self, expression: &Expression) -> bool {
+        matches!(expression, Expression::BinaryOp(_))
+    }
 }
 
 impl ExpressionMatcher for BinaryOperatorExpressionMatcher {
@@ -285,6 +273,8 @@ pub struct LetStatementMatcher {
     pub(crate) matcher: Box<dyn ExpressionMatcher>,
 }
 
+pub struct AnyLetStatementMatcher {}
+
 macro_rules! match_let_stmt {
     ($identifier:expr, $mutable:expr, $matcher:expr) => {
         Box::new(LetStatementMatcher {
@@ -311,22 +301,9 @@ impl StatementMatcher for LetStatementMatcher {
     }
 }
 
-pub struct AnyLetStatementMatcher {
-    pub(crate) matcher: Box<dyn ExpressionMatcher>,
-}
-
-macro_rules! match_any_let_stmt {
-    () => {
-        Box::new(AnyLetStatementMatcher)
-    };
-}
-
 impl StatementMatcher for AnyLetStatementMatcher {
     fn matches(&self, statement: &Statement) -> bool {
-        match &statement {
-            Statement::Let(let_statement) => self.matcher.matches(&let_statement.expression),
-            _ => false,
-        }
+        matches!(statement, Statement::Let(_))
     }
 }
 
@@ -334,13 +311,31 @@ pub struct PartialFunctionBodyMatcher {
     pub(crate) matcher: Box<dyn StatementMatcher>,
 }
 
+macro_rules! match_function {
+    ($matcher:expr) => {
+        Box::new(PartialFunctionBodyMatcher { matcher: $matcher })
+    };
+}
+
+impl ExpressionMatcher for PartialFunctionBodyMatcher {
+    fn matches(&self, expression: &Expression) -> bool {
+        match expression {
+            Expression::Function(function) => function
+                .body
+                .iter()
+                .any(|statement| self.matcher.matches(&statement)),
+            _ => false,
+        }
+    }
+}
+
 pub struct FullFunctionBodyMatcher {
     pub(crate) matchers: Vec<Box<dyn StatementMatcher>>,
 }
 
-macro_rules! match_function {
+macro_rules! match_full_function {
     ($matcher:expr) => {
-        Box::new(PartialFunctionBodyMatcher { matcher: $matcher })
+        Box::new(FullFunctionBodyMatcher { matcher: $matcher })
     };
 }
 
@@ -352,18 +347,6 @@ impl ExpressionMatcher for FullFunctionBodyMatcher {
                 .iter()
                 .zip(&function.body)
                 .all(|(matcher, statement)| matcher.matches(&statement)),
-            _ => false,
-        }
-    }
-}
-
-impl ExpressionMatcher for PartialFunctionBodyMatcher {
-    fn matches(&self, expression: &Expression) -> bool {
-        match expression {
-            Expression::Function(function) => function
-                .body
-                .iter()
-                .any(|statement| self.matcher.matches(&statement)),
             _ => false,
         }
     }
