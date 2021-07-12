@@ -2,7 +2,6 @@
 // this module is called matcher
 
 #![allow(clippy::module_name_repetitions)]
-#![allow(unused_macros)]
 
 use crate::ast::{Expression, OpName, Statement};
 
@@ -180,12 +179,6 @@ impl ExpressionMatcher for AnyIdentifierMatcher {
 
 pub struct AnyFunctionMatcher {}
 
-macro_rules! match_function {
-    () => {
-        Box::new(AnyFunctionMatcher {})
-    };
-}
-
 impl ExpressionMatcher for AnyFunctionMatcher {
     fn matches(&self, expression: &Expression) -> bool {
         matches!(expression, Expression::Function(_))
@@ -197,7 +190,7 @@ pub struct CallMatcher {
     pub(crate) matchers: Vec<Box<dyn ExpressionMatcher>>,
 }
 macro_rules! match_call {
-    ($name:expr, $matchers:expr, $operator:expr) => {
+    ($name:expr, $matchers:expr) => {
         Box::new(CallMatcher {
             name: $name,
             matchers: $matchers,
@@ -266,9 +259,14 @@ pub struct ReturnStatementMatcher {
     pub(crate) matcher: Box<dyn ExpressionMatcher>,
 }
 
+pub struct AnyReturnStatementMatcher {}
+
 macro_rules! match_return_stmt {
     ($matcher:expr) => {
         Box::new(ReturnStatementMatcher { matcher: $matcher })
+    };
+    () => {
+        Box::new(AnyReturnStatementMatcher {})
     };
 }
 
@@ -281,6 +279,11 @@ impl StatementMatcher for ReturnStatementMatcher {
     }
 }
 
+impl StatementMatcher for AnyReturnStatementMatcher {
+    fn matches(&self, statement: &Statement) -> bool {
+        matches!(statement, Statement::Return(_))
+    }
+}
 pub struct LetStatementMatcher {
     pub(crate) identifier: String,
     pub(crate) mutable: bool,
@@ -298,7 +301,7 @@ macro_rules! match_let_stmt {
         })
     };
     () => {
-        Box::new(AnyLetStatementMatcher)
+        Box::new(AnyLetStatementMatcher {})
     };
 }
 
@@ -329,6 +332,9 @@ macro_rules! match_function {
     ($matcher:expr) => {
         Box::new(PartialFunctionBodyMatcher { matcher: $matcher })
     };
+    () => {
+        Box::new(AnyFunctionMatcher {})
+    };
 }
 
 impl ExpressionMatcher for PartialFunctionBodyMatcher {
@@ -347,6 +353,7 @@ pub struct FullFunctionBodyMatcher {
     pub(crate) matchers: Vec<Box<dyn StatementMatcher>>,
 }
 
+// TODO(jbcoe): Unify this with `match_function`
 macro_rules! match_full_function {
     ($matcher:expr) => {
         Box::new(FullFunctionBodyMatcher { matchers: $matcher })
@@ -546,5 +553,61 @@ mod tests {
             match_statement!(),
             match_statement!()
         ])),
+    }
+
+    matcher_test_case! {
+        name: partial_function_body_matcher,
+        input: r#"func(){
+            let x = 5; 
+            let y = 7; 
+            return 0;
+        };"#,
+        matcher: match_descend!(match_function!(match_statement!())),
+    }
+
+    matcher_test_case! {
+        name: any_function_matcher,
+        input: r#"func(){
+            let x = 5; 
+            let y = 7; 
+            return 0;
+        };"#,
+        matcher: match_descend!(match_function!()),
+    }
+
+    matcher_test_case! {
+        name: any_let_statement_matcher,
+        input: "let x = 5;",
+        matcher: match_let_stmt!(),
+    }
+
+    matcher_test_case! {
+        name: let_statement_matcher,
+        input: "let x = 5;",
+        matcher: match_let_stmt!("x".to_string(), false, match_integer!()),
+    }
+
+    matcher_test_case! {
+        name: any_return_statement_matcher,
+        input: "return 5;",
+        matcher: match_return_stmt!(),
+    }
+
+    matcher_test_case! {
+        name: return_statement_matcher,
+        input: "return 5;",
+        matcher: match_return_stmt!(),
+    }
+
+    matcher_test_case! {
+        name: call_matcher,
+        input: "f(x, y);",
+        matcher: match_descend!(match_call!(
+            "f".to_string(),
+            vec![
+                match_identifier!("x".to_string()),
+                match_identifier!("y".to_string())
+            ]
+        )),
     }
 }
