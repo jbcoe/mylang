@@ -343,7 +343,7 @@ impl ExpressionMatcher for PartialFunctionBodyMatcher {
             Expression::Function(function) => function
                 .body
                 .iter()
-                .any(|statement| self.matcher.matches(&statement)),
+                .any(|statement| self.matcher.matches(statement)),
             _ => false,
         }
     }
@@ -367,7 +367,7 @@ impl ExpressionMatcher for FullFunctionBodyMatcher {
                 .matchers
                 .iter()
                 .zip(&function.body)
-                .all(|(matcher, statement)| matcher.matches(&statement)),
+                .all(|(matcher, statement)| matcher.matches(statement)),
             _ => false,
         }
     }
@@ -409,11 +409,11 @@ impl ExpressionMatcher for DescendingExpressionMatcher {
                 Expression::Call(call) => call
                     .arguments
                     .iter()
-                    .any(|argument| self.matcher.matches(&argument)),
+                    .any(|argument| self.matcher.matches(argument)),
                 Expression::Function(function) => function
                     .body
                     .iter()
-                    .any(|statement| StatementMatcher::matches(self, &statement)),
+                    .any(|statement| StatementMatcher::matches(self, statement)),
                 Expression::UnaryOp(op) => self.matcher.matches(&op.target),
                 Expression::BinaryOp(op) => {
                     self.matcher.matches(&op.left) || self.matcher.matches(&op.right)
@@ -432,10 +432,10 @@ struct CallbackExpressionMatcher<T: Fn(&Expression), F: Fn(&Expression)> {
 impl<T: Fn(&Expression), F: Fn(&Expression)> ExpressionMatcher for CallbackExpressionMatcher<T, F> {
     fn matches(&self, expression: &Expression) -> bool {
         if self.matcher.matches(expression) {
-            (self.on_true)(&expression);
+            (self.on_true)(expression);
             true
         } else {
-            (self.on_false)(&expression);
+            (self.on_false)(expression);
             false
         }
     }
@@ -544,8 +544,8 @@ mod tests {
     matcher_test_case! {
         name: function_body_matcher,
         input: r#"func(){
-            let x = 5; 
-            let y = 7; 
+            let x = 5;
+            let y = 7;
             return 0;
         };"#,
         matcher: match_descend!(match_full_function!(vec![
@@ -558,8 +558,8 @@ mod tests {
     matcher_test_case! {
         name: partial_function_body_matcher,
         input: r#"func(){
-            let x = 5; 
-            let y = 7; 
+            let x = 5;
+            let y = 7;
             return 0;
         };"#,
         matcher: match_descend!(match_function!(match_statement!())),
@@ -568,8 +568,8 @@ mod tests {
     matcher_test_case! {
         name: any_function_matcher,
         input: r#"func(){
-            let x = 5; 
-            let y = 7; 
+            let x = 5;
+            let y = 7;
             return 0;
         };"#,
         matcher: match_descend!(match_function!()),
