@@ -561,120 +561,107 @@ mod tests {
     parse_statement_matcher_test_case! {
         name: let_identifier,
         input: "let x = a;",
-        matcher: LetStatementMatcher{
-            identifier: "x".to_string(),
-            mutable: false,
-            matcher: Box::new(IdentifierMatcher{identifier:"a".to_string()})
-        },
+        matcher: match_let_stmt!(
+            "x".to_string(),
+            match_identifier!("a".to_string())
+        ),
     }
 
     parse_statement_matcher_test_case! {
         name: let_mutable_float,
         input: "let mut x = 8.24;",
-        matcher: LetStatementMatcher{
-            identifier: "x".to_string(),
-            mutable: true,
-            matcher: Box::new(FloatMatcher{value:8.24})
-        },
+        matcher: match_mutable_let_stmt!(
+            "x".to_string(),
+            match_float!(8.24)
+        ),
     }
 
     parse_statement_matcher_test_case! {
         name: let_string,
         input: r#"let x = "Hello";"#,
-        matcher: LetStatementMatcher{
-            identifier: "x".to_string(),
-            mutable: false,
-            matcher: Box::new(StringMatcher{value:"\"Hello\"".to_string()})
-        },
+        matcher: match_let_stmt!(
+            "x".to_string(),
+            match_string!("\"Hello\"".to_string())
+        ),
     }
 
     parse_statement_matcher_test_case! {
         name: let_true,
         input: r"let x = True;",
-        matcher: LetStatementMatcher{
-            identifier: "x".to_string(),
-            mutable: false,
-            matcher: Box::new(BooleanMatcher{value:true})
-        },
+        matcher: match_let_stmt!(
+            "x".to_string(),
+            match_boolean!(true)
+        ),
     }
 
     parse_statement_matcher_test_case! {
         name: let_false,
         input: r"let x = False;",
-        matcher: LetStatementMatcher{
-            identifier: "x".to_string(),
-            mutable: false,
-            matcher: Box::new(BooleanMatcher{value: false})
-        },
+        matcher: match_let_stmt!(
+            "x".to_string(),
+            match_boolean!( false)
+        ),
     }
 
     parse_statement_matcher_test_case! {
         name: let_function,
         input: "let first = func (a, b) { return a; };",
-        matcher: LetStatementMatcher{
-            identifier: "first".to_string(),
-            mutable: false,
-            // TODO: Match the function params and body.
-            matcher: Box::new(AnyFunctionMatcher{})
-        },
+        matcher: match_let_stmt!(
+            "first".to_string(),
+            match_function!(match_return_stmt!(match_identifier!("a".to_string())))
+        ),
     }
 
     parse_statement_matcher_test_case! {
         name: let_function_call,
         input: "let max = largest (a, b);",
-        matcher: LetStatementMatcher{
-            identifier: "max".to_string(),
-            mutable: false,
-            matcher: Box::new(CallMatcher{
-                name: "largest".to_string(),
-                matchers: vec![
-                    Box::new(IdentifierMatcher{identifier: "a".to_string()}),
-                    Box::new(IdentifierMatcher{identifier: "b".to_string()})
-                ]
-            })
-        },
+        matcher: match_let_stmt!(
+            "max".to_string(),
+            match_call!(
+                "largest".to_string(),
+                match_identifier!("a".to_string()),
+                match_identifier!("b".to_string())
+            )
+        ),
     }
 
     parse_statement_matcher_test_case! {
         name: let_binary_add,
         input: "let x = a + b;",
-        matcher: LetStatementMatcher{
-            identifier: "x".to_string(),
-            mutable: false,
-            matcher: Box::new(BinaryOperatorExpressionMatcher{
-                left: Box::new(IdentifierMatcher{identifier: "a".to_string()}),
-                right: Box::new(IdentifierMatcher{identifier: "b".to_string()}),
-                operator: OpName::Plus,
-            })
-        },
+        matcher: match_let_stmt!(
+            "x".to_string(),
+            match_binary_op!(
+                match_identifier!("a".to_string()),
+                match_identifier!("b".to_string()),
+                OpName::Plus
+            )
+        ),
     }
 
     parse_statement_matcher_test_case! {
         name: let_binary_subtract,
         input: "let x = a - b;",
-        matcher: LetStatementMatcher{
-            identifier: "x".to_string(),
-            mutable: false,
-            matcher: Box::new(BinaryOperatorExpressionMatcher{
-                left: Box::new(IdentifierMatcher{identifier: "a".to_string()}),
-                right: Box::new(IdentifierMatcher{identifier: "b".to_string()}),
-                operator: OpName::Minus,
-            })
-        },
+        matcher: match_let_stmt!(
+            "x".to_string(),
+            match_binary_op!(
+                match_identifier!("a".to_string()),
+                match_identifier!("b".to_string()),
+                OpName::Minus
+            )
+        ),
     }
 
     parse_statement_matcher_test_case! {
         name: let_binary_multiply,
         input: "let x = a * b;",
-        matcher: LetStatementMatcher{
-            identifier: "x".to_string(),
-            mutable: false,
-            matcher: Box::new(BinaryOperatorExpressionMatcher{
-                left: Box::new(IdentifierMatcher{identifier: "a".to_string()}),
-                right: Box::new(IdentifierMatcher{identifier: "b".to_string()}),
-                operator: OpName::Multiply,
-            })
-        },
+        matcher: match_let_stmt!(
+            "x".to_string(),
+            match_binary_op!(
+                match_identifier!("a".to_string()),
+                match_identifier!("b".to_string()),
+                OpName::Multiply
+            )
+        ),
     }
 
     parse_statement_matcher_test_case! {
@@ -682,7 +669,6 @@ mod tests {
         input: "let x = a / b;",
         matcher: match_let_stmt!(
             "x".to_string(),
-            false,
             match_binary_op!(
                 match_identifier!("a".to_string()),
                 match_identifier!("b".to_string()),

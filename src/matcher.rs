@@ -132,6 +132,7 @@ impl ExpressionMatcher for AnyStringMatcher {
         matches!(expression, Expression::StringLiteral(_))
     }
 }
+
 pub struct IdentifierMatcher {
     pub(crate) identifier: String,
 }
@@ -176,11 +177,12 @@ pub struct CallMatcher {
     pub(crate) name: String,
     pub(crate) matchers: Vec<Box<dyn ExpressionMatcher>>,
 }
+
 macro_rules! match_call {
-    ($name:expr, $matchers:expr) => {
+    ($name:expr, $($matcher:expr),+) => {
         Box::new(CallMatcher {
             name: $name,
-            matchers: $matchers,
+            matchers: vec![$($matcher),+],
         })
     };
 }
@@ -280,10 +282,23 @@ pub struct LetStatementMatcher {
 pub struct AnyLetStatementMatcher {}
 
 macro_rules! match_let_stmt {
-    ($identifier:expr, $mutable:expr, $matcher:expr) => {
+    ($identifier:expr, $matcher:expr) => {
         Box::new(LetStatementMatcher {
             identifier: $identifier,
-            mutable: $mutable,
+            mutable: false,
+            matcher: $matcher,
+        })
+    };
+    () => {
+        Box::new(AnyLetStatementMatcher {})
+    };
+}
+
+macro_rules! match_mutable_let_stmt {
+    ($identifier:expr, $matcher:expr) => {
+        Box::new(LetStatementMatcher {
+            identifier: $identifier,
+            mutable: true,
             matcher: $matcher,
         })
     };
@@ -567,7 +582,13 @@ mod tests {
     matcher_test_case! {
         name: let_statement_matcher,
         input: "let x = 5;",
-        matcher: match_let_stmt!("x".to_string(), false, match_integer!()),
+        matcher: match_let_stmt!("x".to_string(), match_integer!()),
+    }
+
+    matcher_test_case! {
+        name: mutable_let_statement_matcher,
+        input: "let mut x = 5;",
+        matcher: match_mutable_let_stmt!("x".to_string(), match_integer!()),
     }
 
     matcher_test_case! {
@@ -585,12 +606,12 @@ mod tests {
     matcher_test_case! {
         name: call_matcher,
         input: "f(x, y);",
-        matcher: match_descend!(match_call!(
-            "f".to_string(),
-            vec![
+        matcher: match_descend!(
+            match_call!(
+                "f".to_string(),
                 match_identifier!("x".to_string()),
                 match_identifier!("y".to_string())
-            ]
-        )),
+            )
+        ),
     }
 }
