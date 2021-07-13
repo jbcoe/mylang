@@ -2,6 +2,7 @@
 // this module is called matcher
 
 #![allow(clippy::module_name_repetitions)]
+#![macro_use]
 
 use crate::ast::{Expression, OpName, Statement};
 
@@ -33,14 +34,20 @@ pub struct FloatMatcher {
 
 pub struct AnyFloatMatcher {}
 
-macro_rules! match_float {
-    ($value:expr) => {
-        Box::new(FloatMatcher { value: $value })
-    };
-    () => {
-        Box::new(AnyFloatMatcher {})
+macro_rules! value_matcher {
+    ($name:ident, $any:ident, $matcher:ident) => {
+        macro_rules! $name {
+            () => {
+                Box::new($any {})
+            };
+            ($value:expr) => {
+                Box::new($matcher { value: $value })
+            };
+        }
     };
 }
+
+value_matcher!(match_float, AnyFloatMatcher, FloatMatcher);
 
 impl ExpressionMatcher for FloatMatcher {
     fn matches(&self, expression: &Expression) -> bool {
@@ -63,14 +70,7 @@ pub struct IntegerMatcher {
 
 pub struct AnyIntegerMatcher {}
 
-macro_rules! match_integer {
-    ($value:expr) => {
-        Box::new(IntegerMatcher { value: $value })
-    };
-    () => {
-        Box::new(AnyIntegerMatcher {})
-    };
-}
+value_matcher!(match_integer, AnyIntegerMatcher, IntegerMatcher);
 
 impl ExpressionMatcher for IntegerMatcher {
     fn matches(&self, expression: &Expression) -> bool {
@@ -92,14 +92,8 @@ pub struct BooleanMatcher {
 }
 
 pub struct AnyBooleanMatcher {}
-macro_rules! match_boolean {
-    ($value:expr) => {
-        Box::new(BooleanMatcher { value: $value })
-    };
-    () => {
-        Box::new(AnyBooleanMatcher {})
-    };
-}
+
+value_matcher!(match_boolean, AnyBooleanMatcher, BooleanMatcher);
 
 impl ExpressionMatcher for BooleanMatcher {
     fn matches(&self, expression: &Expression) -> bool {
@@ -122,14 +116,7 @@ pub struct StringMatcher {
 
 pub struct AnyStringMatcher {}
 
-macro_rules! match_string {
-    ($value:expr) => {
-        Box::new(StringMatcher { value: $value })
-    };
-    () => {
-        Box::new(AnyStringMatcher {})
-    };
-}
+value_matcher!(match_string, AnyStringMatcher, StringMatcher);
 
 impl ExpressionMatcher for StringMatcher {
     fn matches(&self, expression: &Expression) -> bool {
@@ -332,6 +319,9 @@ macro_rules! match_function {
     ($matcher:expr) => {
         Box::new(PartialFunctionBodyMatcher { matcher: $matcher })
     };
+    ($matcher:expr, $($extra:expr),+) => {
+        Box::new(FullFunctionBodyMatcher { matchers: vec![$matcher, $($extra),+] })
+    };
     () => {
         Box::new(AnyFunctionMatcher {})
     };
@@ -351,13 +341,6 @@ impl ExpressionMatcher for PartialFunctionBodyMatcher {
 
 pub struct FullFunctionBodyMatcher {
     pub(crate) matchers: Vec<Box<dyn StatementMatcher>>,
-}
-
-// TODO(jbcoe): Unify this with `match_function`
-macro_rules! match_full_function {
-    ($matcher:expr) => {
-        Box::new(FullFunctionBodyMatcher { matchers: $matcher })
-    };
 }
 
 impl ExpressionMatcher for FullFunctionBodyMatcher {
@@ -548,11 +531,11 @@ mod tests {
             let y = 7; 
             return 0;
         };"#,
-        matcher: match_descend!(match_full_function!(vec![
+        matcher: match_descend!(match_function!(
             match_statement!(),
             match_statement!(),
             match_statement!()
-        ])),
+        )),
     }
 
     matcher_test_case! {

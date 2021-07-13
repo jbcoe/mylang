@@ -475,14 +475,7 @@ mod tests {
     use std::cmp::Ordering;
 
     use super::*;
-    use crate::{
-        lexer::Lexer,
-        matcher::{
-            AnyFunctionMatcher, BinaryOperatorExpressionMatcher, BooleanMatcher, CallMatcher,
-            ExpressionMatcher, FloatMatcher, IdentifierMatcher, IntegerMatcher,
-            LetStatementMatcher, ReturnStatementMatcher, StatementMatcher, StringMatcher,
-        },
-    };
+    use crate::{lexer::Lexer, matcher::*};
 
     macro_rules! parser_error_test_case {
         (name: $test_name:ident, input: $input:expr, expected_errors: $expected_errors:expr,) => {
@@ -687,32 +680,28 @@ mod tests {
     parse_statement_matcher_test_case! {
         name: let_binary_divide,
         input: "let x = a / b;",
-        matcher: LetStatementMatcher{
-            identifier: "x".to_string(),
-            mutable: false,
-            matcher: Box::new(BinaryOperatorExpressionMatcher{
-                left: Box::new(IdentifierMatcher{identifier: "a".to_string()}),
-                right: Box::new(IdentifierMatcher{identifier: "b".to_string()}),
-                operator: OpName::Divide,
-            })
-        },
+        matcher: match_let_stmt!(
+            "x".to_string(),
+            false,
+            match_binary_op!(
+                match_identifier!("a".to_string()),
+                match_identifier!("b".to_string()),
+                OpName::Divide
+            )
+        ),
     }
 
     // RETURN
     parse_statement_matcher_test_case! {
         name: return_integer,
         input: "return 42;",
-        matcher: ReturnStatementMatcher{
-            matcher: Box::new(IntegerMatcher{value: 42})
-        },
+        matcher: match_return_stmt!(match_integer!(42)),
     }
 
     parse_statement_matcher_test_case! {
         name: return_string_literal,
         input: r#"return "the solution";"#,
-        matcher: ReturnStatementMatcher{
-            matcher: Box::new(StringMatcher{value: "\"the solution\"".to_string()})
-        },
+        matcher: match_return_stmt!(match_string!("\"the solution\"".to_string())),
     }
 
     macro_rules! parse_expression_matcher_test_case {
@@ -742,10 +731,10 @@ mod tests {
     parse_expression_matcher_test_case! {
         name: add_expression,
         input: "x + y;",
-        matcher: BinaryOperatorExpressionMatcher{
-            left: Box::new(IdentifierMatcher{identifier: "x".to_string()}),
-            right: Box::new(IdentifierMatcher{identifier: "y".to_string()}),
-            operator: OpName::Plus,
-        },
+        matcher: match_binary_op!(
+            match_identifier!("x".to_string()),
+            match_identifier!("y".to_string()),
+            OpName::Plus
+        ),
     }
 }
