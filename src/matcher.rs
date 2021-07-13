@@ -250,7 +250,7 @@ pub struct ReturnStatementMatcher {
 
 pub struct AnyReturnStatementMatcher {}
 
-macro_rules! match_return_stmt {
+macro_rules! match_return_statement {
     ($matcher:expr) => {
         Box::new(ReturnStatementMatcher { matcher: $matcher })
     };
@@ -281,7 +281,7 @@ pub struct LetStatementMatcher {
 
 pub struct AnyLetStatementMatcher {}
 
-macro_rules! match_let_stmt {
+macro_rules! match_let_statement {
     ($identifier:expr, $matcher:expr) => {
         Box::new(LetStatementMatcher {
             identifier: $identifier,
@@ -294,7 +294,7 @@ macro_rules! match_let_stmt {
     };
 }
 
-macro_rules! match_mutable_let_stmt {
+macro_rules! match_mutable_let_statement {
     ($identifier:expr, $matcher:expr) => {
         Box::new(LetStatementMatcher {
             identifier: $identifier,
@@ -576,31 +576,31 @@ mod tests {
     matcher_test_case! {
         name: any_let_statement_matcher,
         input: "let x = 5;",
-        matcher: match_let_stmt!(),
+        matcher: match_let_statement!(),
     }
 
     matcher_test_case! {
         name: let_statement_matcher,
         input: "let x = 5;",
-        matcher: match_let_stmt!("x".to_string(), match_integer!()),
+        matcher: match_let_statement!("x".to_string(), match_integer!()),
     }
 
     matcher_test_case! {
         name: mutable_let_statement_matcher,
         input: "let mut x = 5;",
-        matcher: match_mutable_let_stmt!("x".to_string(), match_integer!()),
+        matcher: match_mutable_let_statement!("x".to_string(), match_integer!()),
     }
 
     matcher_test_case! {
         name: any_return_statement_matcher,
         input: "return 5;",
-        matcher: match_return_stmt!(),
+        matcher: match_return_statement!(),
     }
 
     matcher_test_case! {
         name: return_statement_matcher,
         input: "return 5;",
-        matcher: match_return_stmt!(),
+        matcher: match_return_statement!(),
     }
 
     matcher_test_case! {
