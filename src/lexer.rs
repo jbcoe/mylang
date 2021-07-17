@@ -214,6 +214,7 @@ impl<'a> Lexer<'a> {
             Ok("let") => Some(self.text_token(start, Kind::Let)),
             Ok("mut") => Some(self.text_token(start, Kind::Mut)),
             Ok("return") => Some(self.text_token(start, Kind::Return)),
+            Ok("dyn") => Some(self.text_token(start, Kind::Dynamic)),
             Ok("True") => Some(self.text_token(start, Kind::True)),
             _ => {
                 self.reset(start);

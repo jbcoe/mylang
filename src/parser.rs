@@ -550,7 +550,7 @@ mod tests {
                 assert!(errors.is_empty(), "Expected no errors, got {:?}", errors);
                 assert_eq!(ast.statements().len(), 1);
                 assert!(
-                    $matcher.matches(&ast.statements()[0]),
+                    StatementMatcher::matches(&*$matcher, &ast.statements()[0]),
                     "Failed to match {}",
                     $input
                 );
@@ -675,6 +675,19 @@ mod tests {
                 OpName::Divide
             )
         ),
+    }
+
+    parse_statement_matcher_test_case! {
+        name: let_dynamic,
+        input: r#"let x = dyn {
+                    let mut a = 5; 
+                    let mut b = 3.6; 
+                    let name = "myType"; 
+                    let f = func(x) { 
+                        return x;
+                    }; 
+                };"#,
+        matcher: match_descend!(match_integer!(-1)),
     }
 
     // RETURN

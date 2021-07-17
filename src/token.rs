@@ -7,6 +7,7 @@ pub enum Kind {
     Comment,
     Divide,
     DoubleEquals,
+    Dynamic,
     EndOfFile,
     EqualSign,
     False,
