@@ -416,6 +416,7 @@ impl ExpressionMatcher for DescendingExpressionMatcher {
                 Expression::BinaryOp(op) => {
                     self.matcher.matches(&op.left) || self.matcher.matches(&op.right)
                 }
+                Expression::Dynamic(_) => todo!(),
             }
         }
     }
