@@ -27,9 +27,15 @@ impl fmt::Display for OpName {
 
 #[derive(Debug, PartialEq)]
 pub struct BinaryOp {
-    pub(crate) operation: OpName,
     pub(crate) left: Box<Expression>,
+    pub(crate) operation: OpName,
     pub(crate) right: Box<Expression>,
+}
+
+impl fmt::Display for BinaryOp {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "({} {} {})", self.left, self.operation, self.right)
+    }
 }
 
 #[derive(Debug, PartialEq)]
@@ -56,6 +62,23 @@ pub enum Expression {
     UnaryOp(UnaryOp),
     BinaryOp(BinaryOp),
 }
+
+impl fmt::Display for Expression {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Expression::Boolean(b) => write!(formatter, "{}", b),
+            Expression::Float(f) => write!(formatter, "{}", f),
+            Expression::Identifier(i) => write!(formatter, "{}", i),
+            Expression::Integer(i) => write!(formatter, "{}", i),
+            Expression::StringLiteral(s) => write!(formatter, "{}", s),
+            Expression::Call(_) => todo!(),
+            Expression::Function(_) => todo!(),
+            Expression::UnaryOp(_) => todo!(),
+            Expression::BinaryOp(op) => write!(formatter, "{}", op),
+        }
+    }
+}
+
 #[derive(Debug, PartialEq)]
 pub struct Let {
     pub(crate) mutable: bool,
