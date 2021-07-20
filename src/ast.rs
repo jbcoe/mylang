@@ -6,6 +6,21 @@ pub struct Call {
     pub(crate) arguments: Vec<Expression>,
 }
 
+impl fmt::Display for Call {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "{}({})",
+            self.name,
+            self.arguments
+                .iter()
+                .map(|x| format!("{}", x))
+                .collect::<Vec<String>>()
+                .join(", ")
+        )
+    }
+}
+
 #[derive(Debug, PartialEq)]
 pub enum OpName {
     Plus,
@@ -44,6 +59,12 @@ pub struct UnaryOp {
     pub(crate) target: Box<Expression>,
 }
 
+impl fmt::Display for UnaryOp {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}{}", self.operation, self.target)
+    }
+}
+
 #[derive(Debug, PartialEq)]
 pub struct Function {
     pub(crate) arguments: Vec<String>,
@@ -71,10 +92,10 @@ impl fmt::Display for Expression {
             Expression::Identifier(i) => write!(formatter, "{}", i),
             Expression::Integer(i) => write!(formatter, "{}", i),
             Expression::StringLiteral(s) => write!(formatter, "{}", s),
-            Expression::Call(_) => todo!(),
-            Expression::Function(_) => todo!(),
-            Expression::UnaryOp(_) => todo!(),
+            Expression::Call(c) => write!(formatter, "{}", c),
+            Expression::UnaryOp(op) => write!(formatter, "{}", op),
             Expression::BinaryOp(op) => write!(formatter, "{}", op),
+            Expression::Function(_) => todo!(),
         }
     }
 }
