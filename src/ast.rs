@@ -45,16 +45,20 @@ pub struct Function {
 }
 
 #[derive(Debug, PartialEq)]
+pub struct Dynamic {}
+
+#[derive(Debug, PartialEq)]
 pub enum Expression {
+    BinaryOp(BinaryOp),
     Boolean(bool),
+    Call(Call),
+    Dynamic(Dynamic),
     Float(f64),
     Function(Rc<Function>),
-    Call(Call),
     Identifier(String),
     Integer(i32),
     StringLiteral(Rc<String>),
     UnaryOp(UnaryOp),
-    BinaryOp(BinaryOp),
 }
 #[derive(Debug, PartialEq)]
 pub struct Let {

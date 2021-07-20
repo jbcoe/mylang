@@ -115,6 +115,7 @@ impl Frame {
             }
             Expression::UnaryOp(op) => self.evaluate_unary_op(op),
             Expression::BinaryOp(op) => todo!("Binary op is currently unsupported {:?}", op),
+            Expression::Dynamic(_) => todo!(),
         }
     }
 
