@@ -1,4 +1,7 @@
-use std::{fmt, rc::Rc};
+use std::{
+    fmt::{self},
+    rc::Rc,
+};
 
 #[derive(Debug, PartialEq)]
 pub struct Call {
@@ -71,6 +74,25 @@ pub struct Function {
     pub(crate) body: Vec<Statement>,
 }
 
+impl fmt::Display for Function {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(
+            f,
+            "func ({}) {{\n{}\n}}",
+            self.arguments
+                .iter()
+                .map(|argument| format!("{}", argument))
+                .collect::<Vec<String>>()
+                .join(", "),
+            self.body
+                .iter()
+                .map(|statement| format!("{}", statement))
+                .collect::<Vec<String>>()
+                .join("\n")
+        )
+    }
+}
+
 #[derive(Debug, PartialEq)]
 pub enum Expression {
     Boolean(bool),
@@ -95,7 +117,7 @@ impl fmt::Display for Expression {
             Expression::Call(c) => write!(formatter, "{}", c),
             Expression::UnaryOp(op) => write!(formatter, "{}", op),
             Expression::BinaryOp(op) => write!(formatter, "{}", op),
-            Expression::Function(_) => todo!(),
+            Expression::Function(f) => write!(formatter, "{}", f),
         }
     }
 }
@@ -106,6 +128,14 @@ pub struct Let {
     pub(crate) identifier: String,
     pub(crate) expression: Box<Expression>,
 }
+impl fmt::Display for Let {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self.mutable {
+            true => write!(f, "let mut {} = {}", self.identifier, self.expression),
+            false => write!(f, "let {} = {}", self.identifier, self.expression),
+        }
+    }
+}
 
 #[derive(Debug, PartialEq)]
 pub enum Statement {
@@ -114,10 +144,34 @@ pub enum Statement {
     Return(Box<Expression>),
 }
 
+impl fmt::Display for Statement {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Statement::Expression(expression) => write!(f, "{};", expression),
+            Statement::Let(let_statement) => write!(f, "{};", let_statement),
+            Statement::Return(expression) => write!(f, "return {};", expression),
+        }
+    }
+}
+
 #[derive(Debug)]
 pub struct AbstractSyntaxTree {
     statements: Vec<Statement>,
     errors: Vec<String>,
+}
+
+impl fmt::Display for AbstractSyntaxTree {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(
+            f,
+            "{}",
+            self.statements
+                .iter()
+                .map(|statement| format!("{}", statement))
+                .collect::<Vec<String>>()
+                .join("\n")
+        )
+    }
 }
 
 impl AbstractSyntaxTree {
@@ -129,5 +183,79 @@ impl AbstractSyntaxTree {
     }
     pub(crate) const fn statements(&self) -> &Vec<Statement> {
         &self.statements
+    }
+}
+
+#[cfg(test)]
+mod tests {
+
+    use super::*;
+    use crate::lexer::Lexer;
+    use crate::parser::Parser;
+
+    macro_rules! ast_display_test {
+        (name: $test_name:ident ,input: $input:expr, expected: $expected:expr) => {
+            #[test]
+            fn $test_name() {
+                let tokens = Lexer::new($input).tokens();
+                let parser = Parser::new(tokens);
+                let ast = parser.ast();
+                let errors = ast.errors();
+
+                assert!(errors.is_empty(), "Expected no errors, got {:?}", errors);
+
+                assert_eq!(format!("{}", ast), $expected)
+            }
+        };
+    }
+
+    ast_display_test! {
+        name: display_return_statement,
+        input: "return 7;",
+        expected: "return 7;"
+    }
+
+    ast_display_test! {
+        name: display_let_statement,
+        input: "let x = 7;",
+        expected: "let x = 7;"
+    }
+
+    ast_display_test! {
+        name: display_mutable_let_statement,
+        input: r#"let mut x = "hello";"#,
+        expected: r#"let mut x = "hello";"#
+    }
+
+    ast_display_test! {
+        name: display_unary_operator,
+        input: r#"let mut x = -2.3;"#,
+        expected: r#"let mut x = -2.3;"#
+    }
+
+    ast_display_test! {
+        name: display_binary_operator,
+        input: r#"let x = 2 + 3;"#,
+        expected: r#"let x = (2 + 3);"#
+    }
+
+    ast_display_test! {
+        name: display_function,
+        input: r#"let f = func (a, b) {
+            let z = 0;
+            let y = b;
+            return -42;
+        };"#,
+        expected: r#"let f = func (a, b) {
+let z = 0;
+let y = b;
+return -42;
+};"#
+    }
+
+    ast_display_test! {
+        name: display_function_call,
+        input: "let x = f(1, 2);",
+        expected: "let x = f(1, 2);"
     }
 }
