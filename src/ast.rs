@@ -81,7 +81,7 @@ impl fmt::Display for Function {
             "func ({}) {{\n{}\n}}",
             self.arguments
                 .iter()
-                .map(|argument| argument.to_string())
+                .map(ToString::to_string)
                 .collect::<Vec<String>>()
                 .join(", "),
             self.body
@@ -130,10 +130,12 @@ pub struct Let {
 }
 impl fmt::Display for Let {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self.mutable {
-            true => write!(f, "let mut {} = {}", self.identifier, self.expression),
-            false => write!(f, "let {} = {}", self.identifier, self.expression),
-        }
+        let mutable = if self.mutable { "mut " } else { "" };
+        write!(
+            f,
+            "let {}{} = {}",
+            mutable, self.identifier, self.expression
+        )
     }
 }
 
