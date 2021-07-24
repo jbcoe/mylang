@@ -65,7 +65,7 @@ impl<'a> Token<'a> {
                 ("True", Kind::True),
             ]
             .iter()
-            .cloned()
+            .copied()
             .collect();
         }
         KEYWORDS.get(text).copied()

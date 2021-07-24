@@ -475,7 +475,14 @@ mod tests {
     use std::cmp::Ordering;
 
     use super::*;
-    use crate::{lexer::Lexer, matcher::*};
+    use crate::{
+        lexer::Lexer,
+        matcher::{
+            BinaryOperatorExpressionMatcher, BooleanMatcher, CallMatcher, ExpressionMatcher,
+            FloatMatcher, IdentifierMatcher, IntegerMatcher, LetStatementMatcher,
+            PartialFunctionBodyMatcher, ReturnStatementMatcher, StatementMatcher, StringMatcher,
+        },
+    };
 
     macro_rules! parser_error_test_case {
         (name: $test_name:ident, input: $input:expr, expected_errors: $expected_errors:expr,) => {

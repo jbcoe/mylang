@@ -208,21 +208,18 @@ impl<'a> Lexer<'a> {
         }
 
         let token_text = str::from_utf8(self.text_range(start));
-        match token_text {
-            Ok(text) => match Token::keyword(text) {
-                Some(kind) => Some(self.text_token(start, kind)),
-                None => {
-                    self.reset(start);
-                    None
-                }
-            },
-            _ => {
+        if let Ok(text) = token_text {
+            if let Some(kind) = Token::keyword(text) {
+                Some(self.text_token(start, kind))
+            } else {
                 self.reset(start);
                 None
             }
+        } else {
+            self.reset(start);
+            None
         }
     }
-
     fn read_string(&mut self) -> Token<'a> {
         let start = self.position;
         self.read_char(); // Advance past '"'.
