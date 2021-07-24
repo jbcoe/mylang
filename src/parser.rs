@@ -742,4 +742,21 @@ mod tests {
             OpName::Plus
         ),
     }
+
+    parse_expression_matcher_test_case! {
+        // This test currently fails due to an imperfect implementation
+        // of subexpression parsing.
+        // Operator precedence and parentheses are not yet handled.
+        name: multiply_add_expression,
+        input: "x * y + z;",
+        matcher: match_binary_op!(
+            match_binary_op!(
+                match_identifier!("x".to_string()),
+                match_identifier!("y".to_string()),
+                OpName::Multiply
+            ),
+            match_identifier!("z".to_string()),
+            OpName::Plus
+        ),
+    }
 }
