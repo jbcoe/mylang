@@ -209,12 +209,13 @@ impl<'a> Lexer<'a> {
 
         let token_text = str::from_utf8(self.text_range(start));
         match token_text {
-            Ok("False") => Some(self.text_token(start, Kind::False)),
-            Ok("func") => Some(self.text_token(start, Kind::Function)),
-            Ok("let") => Some(self.text_token(start, Kind::Let)),
-            Ok("mut") => Some(self.text_token(start, Kind::Mut)),
-            Ok("return") => Some(self.text_token(start, Kind::Return)),
-            Ok("True") => Some(self.text_token(start, Kind::True)),
+            Ok(text) => match Token::keyword(text) {
+                Some(kind) => Some(self.text_token(start, kind)),
+                None => {
+                    self.reset(start);
+                    None
+                }
+            },
             _ => {
                 self.reset(start);
                 None

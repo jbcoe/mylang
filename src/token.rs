@@ -1,4 +1,6 @@
-use std::fmt;
+use std::{collections::HashMap, fmt};
+
+use structopt::lazy_static::lazy_static;
 
 #[derive(Debug, Eq, PartialEq, Copy, Clone)]
 pub enum Kind {
@@ -50,6 +52,23 @@ pub struct Token<'a> {
 impl<'a> Token<'a> {
     pub(crate) const fn new(text: &'a [u8], offset: usize, kind: Kind) -> Token<'a> {
         Token { text, offset, kind }
+    }
+
+    pub(crate) fn keyword(text: &str) -> Option<Kind> {
+        lazy_static! {
+            static ref KEYWORDS: HashMap<&'static str, Kind> = [
+                ("False", Kind::False),
+                ("func", Kind::Function),
+                ("let", Kind::Let),
+                ("mut", Kind::Mut),
+                ("return", Kind::Return),
+                ("True", Kind::True),
+            ]
+            .iter()
+            .cloned()
+            .collect();
+        }
+        KEYWORDS.get(text).copied()
     }
 
     pub(crate) const fn end_of_file(offset: usize) -> Token<'static> {
