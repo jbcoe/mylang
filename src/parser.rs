@@ -807,9 +807,6 @@ mod tests {
     }
 
     parse_expression_matcher_test_case! {
-        // This test currently passes by coincidence rather than
-        // due to a robust implementation of subexpression parsing.
-        // Operator precedence and parentheses are not yet handled.
         name: add_multiply_expression,
         input: "x + y * z;",
         matcher: match_binary_op!(
@@ -824,9 +821,6 @@ mod tests {
     }
 
     parse_expression_matcher_test_case! {
-        // This test currently fails due to an imperfect implementation
-        // of subexpression parsing.
-        // Operator precedence and parentheses are not yet handled.
         name: multiply_add_expression,
         input: "x * y + z;",
         matcher: match_binary_op!(
