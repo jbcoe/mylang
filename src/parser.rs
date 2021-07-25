@@ -1,11 +1,10 @@
-use std::rc::Rc;
-
 use crate::{
     ast::{
         AbstractSyntaxTree, BinaryOp, Call, Expression, Function, Let, OpName, Statement, UnaryOp,
     },
     token::{Kind, Token},
 };
+use std::{collections::VecDeque, rc::Rc};
 pub struct Parser<'a> {
     tokens: Vec<Token<'a>>,
     position: usize,
@@ -172,48 +171,115 @@ impl<'a> Parser<'a> {
         }
     }
 
+    fn build_nested_expressions(
+        &mut self,
+        mut expressions: VecDeque<Expression>,
+        mut operators: VecDeque<OpName>,
+    ) -> Option<Expression> {
+        if expressions.len() != operators.len() + 1 {
+            None
+        } else if operators.len() == 0 {
+            Some(expressions.pop_back()?)
+        } else {
+            let mixed_ops = operators
+                .iter()
+                .zip(operators.iter().skip(1))
+                .any(|(lhs, rhs)| lhs < rhs || rhs < lhs);
+            if mixed_ops {
+                // Split on the first low-precedence operator.
+                let (split_point, _) = operators
+                    .iter()
+                    .enumerate()
+                    .find(|(_, op)| **op < OpName::Multiply)
+                    .unwrap();
+
+                let mut left_expressions: VecDeque<Expression> = VecDeque::new();
+                let mut left_operators: VecDeque<OpName> = VecDeque::new();
+
+                left_expressions.push_back(expressions.pop_front()?);
+                for _ in 0..split_point {
+                    left_operators.push_back(operators.pop_front()?);
+                    left_expressions.push_back(expressions.pop_front()?);
+                }
+                let operation = operators.pop_front()?;
+
+                let right_expressions: VecDeque<Expression> = expressions;
+                let right_operators: VecDeque<OpName> = operators;
+
+                let left = self.build_nested_expressions(left_expressions, left_operators);
+                let right = self.build_nested_expressions(right_expressions, right_operators);
+                if left.is_some() && right.is_some() {
+                    return Some(Expression::BinaryOp(BinaryOp {
+                        left: Box::new(left?),
+                        right: Box::new(right?),
+                        operation,
+                    }));
+                } else {
+                    self.errors
+                        .push(format!("Failed to build nested expressions."));
+                    None
+                }
+            } else {
+                // Handle equal precedence operators grouping binary ops from the front.
+                // a + b + c => (a + b) + c
+                let right = expressions.pop_back()?;
+                let operation = operators.pop_back()?;
+                if let Some(left) = self.build_nested_expressions(expressions, operators) {
+                    return Some(Expression::BinaryOp(BinaryOp {
+                        left: Box::new(left),
+                        right: Box::new(right),
+                        operation,
+                    }));
+                } else {
+                    self.errors
+                        .push(format!("Failed to build nested expressions."));
+                    None
+                }
+            }
+        }
+    }
+
     /// Tries to parse an expression.
     fn parse_expression(&mut self) -> Option<Expression> {
         let start = self.position;
+        let mut subexpressions: VecDeque<Expression> = VecDeque::new();
+        let mut operators: VecDeque<OpName> = VecDeque::new();
 
-        let mut ungrouped_subexpressions: Vec<Expression> = vec![];
-        let mut ungrouped_operators: Vec<OpName> = vec![];
         loop {
             if let Some(subexpr) = self.parse_subexpression() {
-                ungrouped_subexpressions.push(subexpr);
+                subexpressions.push_back(subexpr);
                 match self.token.kind() {
                     Kind::Plus => {
                         self.read_token();
-                        ungrouped_operators.push(OpName::Plus);
+                        operators.push_back(OpName::Plus);
                     }
                     Kind::Minus => {
                         self.read_token();
-                        ungrouped_operators.push(OpName::Minus);
+                        operators.push_back(OpName::Minus);
                     }
                     Kind::Divide => {
                         self.read_token();
-                        ungrouped_operators.push(OpName::Divide);
+                        operators.push_back(OpName::Divide);
                     }
                     Kind::Star => {
                         self.read_token();
-                        ungrouped_operators.push(OpName::Multiply);
+                        operators.push_back(OpName::Multiply);
                     }
                     Kind::LeftParen => {
                         if let Some(paren_expression) = self.parse_expression() {
                             self.read_token();
-                            ungrouped_subexpressions.push(paren_expression);
+                            subexpressions.push_back(paren_expression);
                         } else {
-                            panic!("Parse nested subexpressions failed.",);
+                            self.reset(start);
+                            return None;
                         }
                     }
                     Kind::SemiColon | Kind::Comma | Kind::RightParen => {
                         break;
                     }
                     _ => {
-                        panic!(
-                            "Parse subexpressions failed, unexpected token {}, sub-expressions: {:?}, operators: {:?}",
-                            self.token, ungrouped_subexpressions, ungrouped_operators
-                        );
+                        self.reset(start);
+                        return None;
                     }
                 }
             } else {
@@ -222,25 +288,13 @@ impl<'a> Parser<'a> {
             }
         }
 
-        if ungrouped_subexpressions.len() == 1 && ungrouped_operators.len() == 0 {
-            return Some(ungrouped_subexpressions.pop()?);
+        if let Some(expression) = self.build_nested_expressions(subexpressions, operators) {
+            Some(expression)
+        } else {
+            self.errors.push(format!("Parse subexpressions failed"));
+            self.reset(start);
+            None
         }
-
-        if ungrouped_subexpressions.len() == 2 && ungrouped_operators.len() == 1 {
-            let right = ungrouped_subexpressions.pop()?;
-            let left = ungrouped_subexpressions.pop()?;
-            let operation = ungrouped_operators.pop()?;
-            return Some(Expression::BinaryOp(BinaryOp {
-                left: Box::new(left),
-                right: Box::new(right),
-                operation,
-            }));
-        }
-
-        panic!(
-            "Parse subexpressions failed sub-expressions: {:?}, operators: {:?}",
-            ungrouped_subexpressions, ungrouped_operators
-        );
     }
 
     /// Tries to parse a subexpression.
@@ -830,6 +884,40 @@ mod tests {
                 OpName::Multiply
             ),
             match_identifier!("z".to_string()),
+            OpName::Plus
+        ),
+    }
+
+    parse_expression_matcher_test_case! {
+        name: chained_add_expression,
+        input: "a + b + c + d;",
+        matcher: match_binary_op!(
+                    match_binary_op!(
+                        match_binary_op!(
+                            match_identifier!("a".to_string()),
+                            match_identifier!("b".to_string()),
+                            OpName::Plus
+                        ),
+                        match_identifier!("c".to_string()),
+                    OpName::Plus),
+                    match_identifier!("d".to_string()),
+                OpName::Plus),
+    }
+
+    parse_expression_matcher_test_case! {
+        name: chained_mixed_binary_operator_expression,
+        input: "a * b + c / d;",
+        matcher: match_binary_op!(
+            match_binary_op!(
+                match_identifier!("a".to_string()),
+                match_identifier!("b".to_string()),
+                OpName::Multiply
+            ),
+            match_binary_op!(
+                match_identifier!("c".to_string()),
+                match_identifier!("d".to_string()),
+                OpName::Divide
+            ),
             OpName::Plus
         ),
     }
