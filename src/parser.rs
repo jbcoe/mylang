@@ -154,8 +154,30 @@ impl<'a> Parser<'a> {
         }
     }
 
+    fn parse_parenthesised_expression(&mut self) -> Option<Expression> {
+        assert_eq!(self.token.kind(), Kind::LeftParen);
+        let start = self.position;
+        self.read_token(); // consume '('
+        if let Some(expression) = self.parse_expression() {
+            if self.token.kind() == Kind::RightParen {
+                self.read_token(); // consume ')'
+                Some(expression)
+            } else {
+                self.reset(start);
+                None
+            }
+        } else {
+            self.reset(start);
+            None
+        }
+    }
+
     /// Tries to parse an expression.
     fn parse_expression(&mut self) -> Option<Expression> {
+        if self.token.kind() == Kind::LeftParen {
+            return self.parse_parenthesised_expression();
+        }
+
         let start = self.position;
 
         let mut ungrouped_subexpressions: Vec<Expression> = vec![];
@@ -740,6 +762,28 @@ mod tests {
     parse_expression_matcher_test_case! {
         name: add_expression,
         input: "x + y;",
+        matcher: match_binary_op!(
+            match_identifier!("x".to_string()),
+            match_identifier!("y".to_string()),
+            OpName::Plus
+        ),
+    }
+
+    parse_expression_matcher_test_case! {
+        name: parenthesised_identifier,
+        input: "(x);",
+        matcher: match_identifier!("x".to_string()),
+    }
+
+    parse_expression_matcher_test_case! {
+        name: nested_parenthesised_identifier,
+        input: "(((x)));",
+        matcher: match_identifier!("x".to_string()),
+    }
+
+    parse_expression_matcher_test_case! {
+        name: parenthesised_chained_binary_operators_2,
+        input: "x + (y + z);",
         matcher: match_binary_op!(
             match_identifier!("x".to_string()),
             match_identifier!("y".to_string()),
