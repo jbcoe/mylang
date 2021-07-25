@@ -158,50 +158,71 @@ impl<'a> Parser<'a> {
     fn parse_expression(&mut self) -> Option<Expression> {
         let start = self.position;
 
-        if let Some(subexpr) = self.parse_subexpression() {
-            match self.token.kind() {
-                Kind::Plus => self.parse_binary_expression(start, subexpr, OpName::Plus),
-                Kind::Minus => self.parse_binary_expression(start, subexpr, OpName::Minus),
-                Kind::Divide => self.parse_binary_expression(start, subexpr, OpName::Divide),
-                Kind::Star => self.parse_binary_expression(start, subexpr, OpName::Multiply),
-                Kind::SemiColon
-                | Kind::Comma
-                | Kind::LeftParen
-                | Kind::RightParen
-                | Kind::LeftBrace
-                | Kind::RightBrace => Some(subexpr),
-                _ => {
-                    self.reset(start);
-                    None
+        let mut ungrouped_subexpressions: Vec<Expression> = vec![];
+        let mut ungrouped_operators: Vec<OpName> = vec![];
+        loop {
+            if let Some(subexpr) = self.parse_subexpression() {
+                ungrouped_subexpressions.push(subexpr);
+                match self.token.kind() {
+                    Kind::Plus => {
+                        self.read_token();
+                        ungrouped_operators.push(OpName::Plus);
+                    }
+                    Kind::Minus => {
+                        self.read_token();
+                        ungrouped_operators.push(OpName::Minus);
+                    }
+                    Kind::Divide => {
+                        self.read_token();
+                        ungrouped_operators.push(OpName::Divide);
+                    }
+                    Kind::Star => {
+                        self.read_token();
+                        ungrouped_operators.push(OpName::Multiply);
+                    }
+                    Kind::LeftParen => {
+                        if let Some(paren_expression) = self.parse_expression() {
+                            self.read_token();
+                            ungrouped_subexpressions.push(paren_expression);
+                        } else {
+                            panic!("Parse nested subexpressions failed.",);
+                        }
+                    }
+                    Kind::SemiColon | Kind::Comma | Kind::RightParen => {
+                        break;
+                    }
+                    _ => {
+                        panic!(
+                            "Parse subexpressions failed, unexpected token {}, sub-expressions: {:?}, operators: {:?}",
+                            self.token, ungrouped_subexpressions, ungrouped_operators
+                        );
+                    }
                 }
-            }
-        } else {
-            self.reset(start);
-            None
-        }
-    }
-
-    /// Tries to parse a binary subexrpression.
-    fn parse_binary_expression(
-        &mut self,
-        start: usize,
-        left: Expression,
-        operation: OpName,
-    ) -> Option<Expression> {
-        self.read_token();
-        self.parse_expression().map_or_else(
-            || {
+            } else {
                 self.reset(start);
-                None
-            },
-            |right| {
-                Some(Expression::BinaryOp(BinaryOp {
-                    left: Box::new(left),
-                    right: Box::new(right),
-                    operation,
-                }))
-            },
-        )
+                return None;
+            }
+        }
+
+        if ungrouped_subexpressions.len() == 1 && ungrouped_operators.len() == 0 {
+            return Some(ungrouped_subexpressions.pop()?);
+        }
+
+        if ungrouped_subexpressions.len() == 2 && ungrouped_operators.len() == 1 {
+            let right = ungrouped_subexpressions.pop()?;
+            let left = ungrouped_subexpressions.pop()?;
+            let operation = ungrouped_operators.pop()?;
+            return Some(Expression::BinaryOp(BinaryOp {
+                left: Box::new(left),
+                right: Box::new(right),
+                operation,
+            }));
+        }
+
+        panic!(
+            "Parse subexpressions failed sub-expressions: {:?}, operators: {:?}",
+            ungrouped_subexpressions, ungrouped_operators
+        );
     }
 
     /// Tries to parse a subexpression.
