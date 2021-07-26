@@ -181,7 +181,7 @@ impl<'a> Parser<'a> {
                 "Expected one more expression than operators, got {:?} {:?}",
                 expressions, operators
             );
-        } else if operators.len() == 0 {
+        } else if operators.is_empty() {
             Some(expressions.pop_back()?)
         } else {
             let mixed_ops = operators
@@ -213,14 +213,14 @@ impl<'a> Parser<'a> {
                 let left = self.build_nested_expressions(left_expressions, left_operators);
                 let right = self.build_nested_expressions(right_expressions, right_operators);
                 if left.is_some() && right.is_some() {
-                    return Some(Expression::BinaryOp(BinaryOp {
+                    Some(Expression::BinaryOp(BinaryOp {
                         left: Box::new(left?),
                         right: Box::new(right?),
                         operation,
-                    }));
+                    }))
                 } else {
                     self.errors
-                        .push(format!("Failed to build nested expressions."));
+                        .push("Failed to build nested expressions.".to_string());
                     None
                 }
             } else {
@@ -229,14 +229,14 @@ impl<'a> Parser<'a> {
                 let right = expressions.pop_back()?;
                 let operation = operators.pop_back()?;
                 if let Some(left) = self.build_nested_expressions(expressions, operators) {
-                    return Some(Expression::BinaryOp(BinaryOp {
+                    Some(Expression::BinaryOp(BinaryOp {
                         left: Box::new(left),
                         right: Box::new(right),
                         operation,
-                    }));
+                    }))
                 } else {
                     self.errors
-                        .push(format!("Failed to build nested expressions."));
+                        .push("Failed to build nested expressions.".to_string());
                     None
                 }
             }
@@ -295,7 +295,7 @@ impl<'a> Parser<'a> {
         if let Some(expression) = self.build_nested_expressions(subexpressions, operators) {
             Some(expression)
         } else {
-            self.errors.push(format!("Parse subexpressions failed"));
+            self.errors.push("Parse subexpressions failed".to_string());
             self.reset(start);
             None
         }
