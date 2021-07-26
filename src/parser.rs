@@ -177,7 +177,10 @@ impl<'a> Parser<'a> {
         mut operators: VecDeque<OpName>,
     ) -> Option<Expression> {
         if expressions.len() != operators.len() + 1 {
-            None
+            panic!(
+                "Expected one more expression than operators, got {:?} {:?}",
+                expressions, operators
+            );
         } else if operators.len() == 0 {
             Some(expressions.pop_back()?)
         } else {
@@ -203,6 +206,7 @@ impl<'a> Parser<'a> {
                 }
                 let operation = operators.pop_front()?;
 
+                // Pure rename just for symmetry of code below.
                 let right_expressions: VecDeque<Expression> = expressions;
                 let right_operators: VecDeque<OpName> = operators;
 
