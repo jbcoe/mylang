@@ -1,4 +1,5 @@
 use std::{
+    cmp::Ordering,
     fmt::{self},
     rc::Rc,
 };
@@ -30,6 +31,21 @@ pub enum OpName {
     Minus,
     Multiply,
     Divide,
+}
+
+impl PartialOrd for OpName {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        match self {
+            OpName::Plus | OpName::Minus => match other {
+                OpName::Plus | OpName::Minus => Some(Ordering::Equal),
+                OpName::Multiply | OpName::Divide => Some(Ordering::Less),
+            },
+            OpName::Multiply | OpName::Divide => match other {
+                OpName::Plus | OpName::Minus => Some(Ordering::Greater),
+                OpName::Multiply | OpName::Divide => Some(Ordering::Equal),
+            },
+        }
+    }
 }
 
 impl fmt::Display for OpName {
