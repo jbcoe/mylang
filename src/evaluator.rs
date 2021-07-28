@@ -181,6 +181,30 @@ mod tests {
         return_value: 42,
     }
 
+    evaluator_test_case! {
+        name: return_binary_op_plus_integers,
+        input: "return 2 + 2;",
+        return_value: 4,
+    }
+
+    evaluator_test_case! {
+        name: return_binary_op_minus_integers,
+        input: "return 2 - 2;",
+        return_value: 0,
+    }
+
+    evaluator_test_case! {
+        name: return_binary_op_multiply_integers,
+        input: "return 2 * 2;",
+        return_value: 4,
+    }
+
+    evaluator_test_case! {
+        name: return_binary_op_divide_integers,
+        input: "return 2 / 2;",
+        return_value: 1,
+    }
+
     macro_rules! evaluator_error_test_case {
         (name: $test_name:ident, input: $input:expr, err_value: $err_value:expr,) => {
             #[test]
@@ -275,6 +299,18 @@ mod tests {
         input: r#"let x = True; return x();"#,
         err_value: Error::Evaluation{
             source: EvaluationError::NonCallableType("Boolean(true)".to_string())
+        },
+    }
+
+    evaluator_error_test_case! {
+        name: return_binary_op_plus_mixed_inputs,
+        input: "return 2 + 2.0;",
+        err_value: Error::Evaluation{
+            source: EvaluationError::IllegalBinaryOperation {
+                opname: "+".to_string(),
+                left: "Integer(2)".to_string(),
+                right: "Float(2)".to_string()
+            }
         },
     }
 }
