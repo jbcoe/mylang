@@ -1,4 +1,4 @@
-use crate::ast::{Expression, Function, OpName, Statement, UnaryOp};
+use crate::ast::{BinaryOp, Expression, Function, OpName, Statement, UnaryOp};
 use std::{collections::HashMap, fmt, rc::Rc};
 use thiserror::Error;
 
@@ -39,6 +39,12 @@ pub enum EvaluationError {
     NoReturnValue(String),
     #[error("Can't apply a unary operation {opname:?} to {value:?}")]
     IllegalUnaryOperation { opname: String, value: String },
+    #[error("Can't apply binary operation {opname:?} to {left:?} {right:?}")]
+    IllegalBinaryOperation {
+        opname: String,
+        left: String,
+        right: String,
+    },
 }
 
 pub struct Frame {
@@ -114,7 +120,7 @@ impl Frame {
                 }
             }
             Expression::UnaryOp(op) => self.evaluate_unary_op(op),
-            Expression::BinaryOp(op) => todo!("Binary op is currently unsupported {:?}", op),
+            Expression::BinaryOp(op) => self.evaluate_binary_op(op),
         }
     }
 
@@ -155,6 +161,42 @@ impl Frame {
             ) => Err(EvaluationError::IllegalUnaryOperation {
                 opname: op.operation.to_string(),
                 value: (*target).to_string(),
+            }),
+        }
+    }
+
+    fn evaluate_binary_op(&self, op: &BinaryOp) -> Result<Rc<Value>, EvaluationError> {
+        let left = self.evaluate_expression(&op.left)?;
+        let right = self.evaluate_expression(&op.right)?;
+        match (&op.operation, &*left, &*right) {
+            (OpName::Plus, &Value::Integer(lhs), &Value::Integer(rhs)) => {
+                Ok(Rc::new(Value::Integer(lhs + rhs)))
+            }
+            (OpName::Minus, &Value::Integer(lhs), &Value::Integer(rhs)) => {
+                Ok(Rc::new(Value::Integer(lhs - rhs)))
+            }
+            (OpName::Divide, &Value::Integer(lhs), &Value::Integer(rhs)) => {
+                Ok(Rc::new(Value::Integer(lhs / rhs)))
+            }
+            (OpName::Multiply, &Value::Integer(lhs), &Value::Integer(rhs)) => {
+                Ok(Rc::new(Value::Integer(lhs * rhs)))
+            }
+            (OpName::Plus, &Value::Float(lhs), &Value::Float(rhs)) => {
+                Ok(Rc::new(Value::Float(lhs + rhs)))
+            }
+            (OpName::Minus, &Value::Float(lhs), &Value::Float(rhs)) => {
+                Ok(Rc::new(Value::Float(lhs - rhs)))
+            }
+            (OpName::Divide, &Value::Float(lhs), &Value::Float(rhs)) => {
+                Ok(Rc::new(Value::Float(lhs / rhs)))
+            }
+            (OpName::Multiply, &Value::Float(lhs), &Value::Float(rhs)) => {
+                Ok(Rc::new(Value::Float(lhs * rhs)))
+            }
+            _ => Err(EvaluationError::IllegalBinaryOperation {
+                opname: op.operation.to_string(),
+                left: left.to_string(),
+                right: right.to_string(),
             }),
         }
     }
