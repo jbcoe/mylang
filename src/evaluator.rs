@@ -1,8 +1,8 @@
 use crate::ast::AbstractSyntaxTree;
-use crate::frame::{EvaluationError, Frame, Value};
+use crate::environment::{Environment, EvaluationError, Value};
 use thiserror::Error;
 pub struct Evaluator {
-    global: Frame,
+    global: Environment,
 }
 
 #[derive(Error, Debug, PartialEq)]
@@ -19,7 +19,7 @@ pub enum Error {
 impl<'a> Evaluator {
     pub(crate) fn new() -> Self {
         Self {
-            global: Frame::new(),
+            global: Environment::new(),
         }
     }
 
@@ -37,8 +37,8 @@ impl<'a> Evaluator {
 #[cfg(test)]
 mod tests {
     use crate::{
+        environment::EvaluationError,
         evaluator::{Error, Evaluator},
-        frame::EvaluationError,
         lexer::Lexer,
         parser::Parser,
     };
