@@ -47,11 +47,11 @@ pub enum EvaluationError {
     },
 }
 
-pub struct Frame {
+pub struct Environment {
     values: HashMap<String, Rc<Value>>,
 }
 
-impl Frame {
+impl Environment {
     pub(crate) fn new() -> Self {
         Self {
             values: HashMap::new(),

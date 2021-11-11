@@ -338,13 +338,6 @@ impl<'a> Lexer<'a> {
 mod tests {
     use super::*;
 
-    #[derive(Debug)]
-    struct TestCase {
-        input: &'static str,
-        skip_whitespace: bool,
-        expected_tokens: Vec<(&'static str, Kind)>,
-    }
-
     macro_rules! lexer_test_case {
         ( name: $test_name:ident, input: $input:expr, expected_tokens:$expected_tokens:expr,) => {
             #[test]
