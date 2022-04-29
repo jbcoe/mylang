@@ -10,6 +10,19 @@ pub trait ExpressionMatcher {
     fn matches(&self, expression: &Expression) -> bool;
 }
 
+pub struct AnyExpressionMatcher {}
+macro_rules! match_expression {
+    () => {
+        Box::new(AnyExpressionMatcher {})
+    };
+}
+
+impl ExpressionMatcher for AnyExpressionMatcher {
+    fn matches(&self, _: &Expression) -> bool {
+        true
+    }
+}
+
 pub trait StatementMatcher {
     fn matches(&self, statement: &Statement) -> bool;
 }
@@ -371,6 +384,46 @@ impl ExpressionMatcher for FullFunctionBodyMatcher {
     }
 }
 
+pub struct AnyIfExpressionMatcher {}
+
+impl ExpressionMatcher for AnyIfExpressionMatcher {
+    fn matches(&self, expression: &Expression) -> bool {
+        matches!(expression, Expression::If(_))
+    }
+}
+pub struct IfExpressionMatcher {
+    pub(crate) condition: Box<dyn ExpressionMatcher>,
+    pub(crate) body: Vec<Box<dyn StatementMatcher>>,
+}
+
+impl ExpressionMatcher for IfExpressionMatcher {
+    fn matches(&self, expression: &Expression) -> bool {
+        match expression {
+            Expression::If(if_expression) => {
+                self.condition.matches(&if_expression.condition)
+                    && self
+                        .body
+                        .iter()
+                        .zip(&if_expression.body)
+                        .all(|(matcher, statement)| matcher.matches(statement))
+            }
+            _ => false,
+        }
+    }
+}
+
+macro_rules! match_if_expression {
+    ($matcher:expr) => {
+        Box::new(IfExpressionMatcher { condition:$matcher , body: vec![] })
+    };
+    ($matcher:expr, $($extra:expr),+) => {
+        Box::new(IfExpressionMatcher { condition:$matcher , body: vec![$($extra),+] })
+    };
+    () => {
+        Box::new(AnyIfExpressionMatcher {})
+    };
+}
+
 pub struct DescendingExpressionMatcher {
     pub(crate) matcher: Box<dyn ExpressionMatcher>,
 }
@@ -416,6 +469,7 @@ impl ExpressionMatcher for DescendingExpressionMatcher {
                 Expression::BinaryOp(op) => {
                     self.matcher.matches(&op.left) || self.matcher.matches(&op.right)
                 }
+                Expression::If(_) => false, // TODO(jbcoe) Don't descend into control flow (for now).
             }
         }
     }
@@ -613,5 +667,17 @@ mod tests {
                 match_identifier!("y".to_string())
             )
         ),
+    }
+
+    matcher_test_case! {
+        name: any_statement_matcher,
+        input: r#"return "Hello";"#,
+        matcher: match_statement!(),
+    }
+
+    matcher_test_case! {
+        name: any_expression_matcher,
+        input: r#"x + y;"#,
+        matcher: match_descend!(match_expression!()),
     }
 }

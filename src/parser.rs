@@ -1,6 +1,7 @@
 use crate::{
     ast::{
-        AbstractSyntaxTree, BinaryOp, Call, Expression, Function, Let, OpName, Statement, UnaryOp,
+        AbstractSyntaxTree, BinaryOp, Call, Expression, Function, IfExpression, Let, OpName,
+        Statement, UnaryOp,
     },
     token::{Kind, Token},
 };
@@ -243,6 +244,41 @@ impl<'a> Parser<'a> {
         }
     }
 
+    /// Tries to parse an if expression
+    // Matches:
+    // "if condition {
+    //   statement*
+    // }"
+    fn parse_if_expression(&mut self) -> Option<IfExpression> {
+        assert_eq!(self.token.kind(), Kind::If);
+        let start = self.position;
+        self.read_token(); // Consume `if`.
+
+        if let Some(condition) = self.parse_expression() {
+            if self.token.kind() != Kind::LeftBrace {
+                self.errors
+                    .push(format!("Expected '{{' got {}", self.token));
+                self.reset(start);
+                return None;
+            }
+
+            if let Some(body) = self.parse_block(start) {
+                Some(IfExpression {
+                    condition: Box::new(condition),
+                    body,
+                })
+            } else {
+                self.reset(start);
+                None
+            }
+        } else {
+            self.errors
+                .push(format!("Expected expression got {}", self.token));
+            self.reset(start);
+            None
+        }
+    }
+
     /// Tries to parse an expression.
     fn parse_expression(&mut self) -> Option<Expression> {
         let start = self.position;
@@ -278,7 +314,7 @@ impl<'a> Parser<'a> {
                             return None;
                         }
                     }
-                    Kind::SemiColon | Kind::Comma | Kind::RightParen => {
+                    Kind::SemiColon | Kind::Comma | Kind::RightParen | Kind::LeftBrace => {
                         break;
                     }
                     _ => {
@@ -316,6 +352,7 @@ impl<'a> Parser<'a> {
             Kind::Plus => self.parse_unary_op(OpName::Plus).map(Expression::UnaryOp),
             Kind::Minus => self.parse_unary_op(OpName::Minus).map(Expression::UnaryOp),
             Kind::True | Kind::False => Some(Expression::Boolean(self.parse_bool())),
+            Kind::If => self.parse_if_expression().map(Expression::If),
             _ => {
                 self.errors.push(format!(
                     "Parse error when parsing expression {:?}",
@@ -435,6 +472,41 @@ impl<'a> Parser<'a> {
         name
     }
 
+    /// Tries to parse a brace-enclosed statement block (Function body or control flow branch).
+    // Matches:
+    // "{
+    //   statement*
+    // }"
+    fn parse_block(&mut self, start: usize) -> Option<Vec<Statement>> {
+        assert_eq!(self.token.kind(), Kind::LeftBrace);
+        self.read_token(); // consume "{"
+
+        let mut body = vec![];
+        loop {
+            match self.token.kind() {
+                Kind::RightBrace => break,
+                _ => {
+                    if let Some(s) = self.parse_statement() {
+                        body.push(s);
+                    } else {
+                        self.errors.push(format!(
+                            "expected block-body statement, got {:?}",
+                            self.token
+                        ));
+                        self.reset(start);
+                        return None;
+                    }
+                }
+            }
+        }
+        if self.token.kind() != Kind::RightBrace {
+            self.reset(start);
+            return None;
+        }
+        self.read_token(); // consume "}"
+        Some(body)
+    }
+
     /// Tries to parse a function expression.
     // Matches:
     //   "func ( identifier* ) {
@@ -483,30 +555,12 @@ impl<'a> Parser<'a> {
             self.reset(start);
             return None;
         }
-        self.read_token(); // consume "{"
-
-        let mut body = vec![];
-        loop {
-            match self.token.kind() {
-                Kind::RightBrace => break,
-                _ => {
-                    if let Some(s) = self.parse_statement() {
-                        body.push(s);
-                    } else {
-                        self.errors.push(format!(
-                            "expected function-body statement, got {:?}",
-                            self.token
-                        ));
-                        self.reset(start);
-                        return None;
-                    }
-                }
-            }
+        if let Some(body) = self.parse_block(start) {
+            Some(Rc::new(Function { arguments, body }))
+        } else {
+            self.reset(start);
+            None
         }
-        assert_eq!(self.token.kind(), Kind::RightBrace);
-        self.read_token(); // consume "}"
-
-        Some(Rc::new(Function { arguments, body }))
     }
 
     /// Tries to parse an expression statement.
@@ -577,8 +631,9 @@ mod tests {
         lexer::Lexer,
         matcher::{
             BinaryOperatorExpressionMatcher, BooleanMatcher, CallMatcher, ExpressionMatcher,
-            FloatMatcher, IdentifierMatcher, IntegerMatcher, LetStatementMatcher,
-            PartialFunctionBodyMatcher, ReturnStatementMatcher, StatementMatcher, StringMatcher,
+            FloatMatcher, IdentifierMatcher, IfExpressionMatcher, IntegerMatcher,
+            LetStatementMatcher, PartialFunctionBodyMatcher, ReturnStatementMatcher,
+            StatementMatcher, StringMatcher,
         },
     };
 
@@ -931,5 +986,13 @@ mod tests {
             ),
             OpName::Plus
         ),
+    }
+
+    parse_expression_matcher_test_case! {
+        name: if_expression,
+        input: "if x { return 5; };",
+        matcher: match_if_expression!(
+            match_identifier!("x".to_string()),
+            match_return_statement!(match_integer!(5))),
     }
 }

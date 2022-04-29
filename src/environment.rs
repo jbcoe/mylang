@@ -121,6 +121,7 @@ impl Environment {
             }
             Expression::UnaryOp(op) => self.evaluate_unary_op(op),
             Expression::BinaryOp(op) => self.evaluate_binary_op(op),
+            Expression::If(_) => todo!(),
         }
     }
 

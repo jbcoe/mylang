@@ -110,6 +110,27 @@ impl fmt::Display for Function {
 }
 
 #[derive(Debug, PartialEq)]
+pub struct IfExpression {
+    pub(crate) condition: Box<Expression>,
+    pub(crate) body: Vec<Statement>,
+}
+
+impl fmt::Display for IfExpression {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(
+            f,
+            "if {} {{\n{}\n}}",
+            self.condition,
+            self.body
+                .iter()
+                .map(|statement| format!("{}", statement))
+                .collect::<Vec<String>>()
+                .join("\n")
+        )
+    }
+}
+
+#[derive(Debug, PartialEq)]
 pub enum Expression {
     Boolean(bool),
     Float(f64),
@@ -120,6 +141,7 @@ pub enum Expression {
     StringLiteral(Rc<String>),
     UnaryOp(UnaryOp),
     BinaryOp(BinaryOp),
+    If(IfExpression),
 }
 
 impl fmt::Display for Expression {
@@ -134,6 +156,7 @@ impl fmt::Display for Expression {
             Expression::UnaryOp(op) => write!(formatter, "{}", op),
             Expression::BinaryOp(op) => write!(formatter, "{}", op),
             Expression::Function(f) => write!(formatter, "{}", f),
+            Expression::If(f) => write!(formatter, "{}", f),
         }
     }
 }
