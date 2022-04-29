@@ -1,7 +1,7 @@
 mod ast;
 pub mod driver;
+mod environment;
 mod evaluator;
-mod frame;
 mod lexer;
 #[cfg(test)]
 mod matcher;
