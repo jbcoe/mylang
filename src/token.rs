@@ -17,6 +17,7 @@ pub enum Kind {
     Greater,
     GreaterOrEqual,
     Identifier,
+    If,
     Integer,
     LeftBrace,
     LeftParen,
@@ -63,6 +64,7 @@ impl<'a> Token<'a> {
                 ("mut", Kind::Mut),
                 ("return", Kind::Return),
                 ("True", Kind::True),
+                ("if", Kind::If),
             ]
             .iter()
             .copied()
