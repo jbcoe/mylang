@@ -7,6 +7,7 @@ pub enum Kind {
     Colon,
     Comma,
     Comment,
+    DebugPrint,
     Divide,
     DoubleEquals,
     EndOfFile,
@@ -60,6 +61,7 @@ impl<'a> Token<'a> {
             static ref KEYWORDS: HashMap<&'static str, Kind> = [
                 ("False", Kind::False),
                 ("func", Kind::Function),
+                ("DEBUG", Kind::DebugPrint),
                 ("let", Kind::Let),
                 ("mut", Kind::Mut),
                 ("return", Kind::Return),

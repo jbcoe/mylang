@@ -339,6 +339,31 @@ impl StatementMatcher for AnyLetStatementMatcher {
     }
 }
 
+pub struct DebugStatementMatcher {
+    pub(crate) arguments: Vec<Box<dyn ExpressionMatcher>>,
+}
+
+macro_rules! match_debug_statement {
+    ($($matcher:expr),+) => {
+        Box::new(DebugStatementMatcher {
+            arguments: vec![$($matcher),+],
+        })
+    };
+}
+
+impl StatementMatcher for DebugStatementMatcher {
+    fn matches(&self, statement: &Statement) -> bool {
+        match &statement {
+            Statement::DebugPrint(debug_print) => self
+                .arguments
+                .iter()
+                .zip(&debug_print.arguments)
+                .all(|(matcher, argument)| matcher.matches(argument)),
+            _ => false,
+        }
+    }
+}
+
 pub struct PartialFunctionBodyMatcher {
     pub(crate) matcher: Box<dyn StatementMatcher>,
 }
@@ -442,6 +467,10 @@ impl StatementMatcher for DescendingExpressionMatcher {
                 ExpressionMatcher::matches(self, &let_expression.expression)
             }
             Statement::Return(expression) => ExpressionMatcher::matches(self, expression),
+            Statement::DebugPrint(debug_print) => debug_print
+                .arguments
+                .iter()
+                .any(|arg| ExpressionMatcher::matches(self, arg)),
         }
     }
 }

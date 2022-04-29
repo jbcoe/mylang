@@ -179,10 +179,29 @@ impl fmt::Display for Let {
 }
 
 #[derive(Debug, PartialEq)]
+pub struct DebugPrint {
+    pub(crate) arguments: Vec<Expression>,
+}
+impl fmt::Display for DebugPrint {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "DEBUG({})",
+            self.arguments
+                .iter()
+                .map(|x| format!("{}", x))
+                .collect::<Vec<String>>()
+                .join(", ")
+        )
+    }
+}
+
+#[derive(Debug, PartialEq)]
 pub enum Statement {
     Expression(Expression),
     Let(Let),
     Return(Box<Expression>),
+    DebugPrint(DebugPrint),
 }
 
 impl fmt::Display for Statement {
@@ -191,6 +210,7 @@ impl fmt::Display for Statement {
             Statement::Expression(expression) => write!(f, "{};", expression),
             Statement::Let(let_statement) => write!(f, "{};", let_statement),
             Statement::Return(expression) => write!(f, "return {};", expression),
+            Statement::DebugPrint(debug_print_statement) => write!(f, "{};", debug_print_statement),
         }
     }
 }

@@ -1,4 +1,5 @@
 let x = "Hello";
 let y = -72;
 let z = +3.14159;
+DEBUG(x, y*2, z);
 return y;

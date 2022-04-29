@@ -1,7 +1,7 @@
 use crate::{
     ast::{
-        AbstractSyntaxTree, BinaryOp, Call, Expression, Function, IfExpression, Let, OpName,
-        Statement, UnaryOp,
+        AbstractSyntaxTree, BinaryOp, Call, DebugPrint, Expression, Function, IfExpression, Let,
+        OpName, Statement, UnaryOp,
     },
     token::{Kind, Token},
 };
@@ -94,6 +94,45 @@ impl<'a> Parser<'a> {
                 }
             }
         }
+    }
+
+    /// Tries to parse a DEBUG statement
+    // Matches:
+    // DEBUG(expression,(expression,)+)
+    fn parse_debug_print(&mut self) -> Option<Statement> {
+        assert_eq!(self.token.kind(), Kind::DebugPrint);
+        let start = self.position;
+        self.read_token(); // consume "DEBUG"
+        if self.token.kind() != Kind::LeftParen {
+            self.errors
+                .push(format!("expected equal sign, got {:?}", self.token));
+            self.reset(start);
+            return None;
+        }
+
+        self.read_token(); // consume "("
+
+        let mut arguments = vec![];
+        loop {
+            match self.token.kind() {
+                Kind::Comma => self.read_token(),
+                Kind::RightParen => {
+                    break;
+                }
+                _ => {
+                    if let Some(expression) = self.parse_expression() {
+                        arguments.push(expression);
+                    } else {
+                        self.errors
+                            .push(format!("expected ',' or identifier, got {:?}", self.token));
+                        self.reset(start);
+                        return None;
+                    }
+                }
+            }
+        }
+        self.read_token(); // consume ")"
+        Some(Statement::DebugPrint(DebugPrint { arguments }))
     }
 
     /// Tries to parse a 'let' statement.
@@ -597,6 +636,18 @@ impl<'a> Parser<'a> {
                     None
                 }
             }
+            Kind::DebugPrint => {
+                if let Some(statement) = self.parse_debug_print() {
+                    self.read_token(); // consume ';'
+                    Some(statement)
+                } else {
+                    self.errors.push(format!(
+                        "Parse error when parsing debug-print-statement {:?}",
+                        self.token
+                    ));
+                    None
+                }
+            }
             _ => {
                 if let Some(statement) = self.parse_expression_statement() {
                     self.read_token(); // consume ';'
@@ -627,15 +678,7 @@ mod tests {
     use std::cmp::Ordering;
 
     use super::*;
-    use crate::{
-        lexer::Lexer,
-        matcher::{
-            BinaryOperatorExpressionMatcher, BooleanMatcher, CallMatcher, ExpressionMatcher,
-            FloatMatcher, IdentifierMatcher, IfExpressionMatcher, IntegerMatcher,
-            LetStatementMatcher, PartialFunctionBodyMatcher, ReturnStatementMatcher,
-            StatementMatcher, StringMatcher,
-        },
-    };
+    use crate::{lexer::Lexer, matcher::*};
 
     macro_rules! parser_error_test_case {
         (name: $test_name:ident, input: $input:expr, expected_errors: $expected_errors:expr,) => {
@@ -850,6 +893,16 @@ mod tests {
         matcher: match_return_statement!(match_string!("\"the solution\"".to_string())),
     }
 
+    parse_statement_matcher_test_case! {
+        name: debug_print_statement,
+        input: r#"DEBUG("Hello", 4, 2.45);"#,
+        matcher: match_debug_statement!(
+            match_string!("\"Hello\"".to_string()),
+            match_integer!(4),
+            match_float!(2.45)
+        ),
+    }
+
     macro_rules! parse_expression_matcher_test_case {
         (name: $test_name:ident, input: $input:expr, matcher: $matcher:expr,) => {
             #[test]
@@ -868,7 +921,7 @@ mod tests {
                             panic!("Failed to match {}", expr)
                         }
                     }
-                    Statement::Let(_) | Statement::Return(_) => {
+                    Statement::Let(_) | Statement::Return(_) | Statement::DebugPrint(_) => {
                         panic!("Expected an expression statement")
                     }
                 }
