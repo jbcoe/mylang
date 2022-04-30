@@ -143,6 +143,30 @@ impl Environment {
                 // TODO: Print _value to the console if we're in a REPL.
                 Ok(None)
             }
+            Statement::DebugPrint(debug_print) => {
+                println!(
+                    "{}",
+                    debug_print
+                        .arguments
+                        .iter()
+                        .map(|arg| match self.evaluate_expression(arg) {
+                            // TODO: Allow IO to be redirected by the driver.
+                            Ok(value) => match &*value {
+                                Value::Boolean(b) => format!("{}", b),
+                                Value::Float(f) => format!("{}", f),
+                                Value::Function(_) => "<FUNCTION>".to_string(),
+                                Value::Integer(i) => format!("{}", i),
+                                Value::String(s) => format!("{}", *s),
+                            },
+                            // TODO: Handle evaluation errors.
+                            Err(_) => "<ERROR>".to_string(),
+                        })
+                        .collect::<Vec<_>>()
+                        .join(" ")
+                );
+
+                Ok(None)
+            }
         }
     }
 
