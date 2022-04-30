@@ -218,11 +218,156 @@ impl Environment {
             (OpName::Multiply, &Value::Float(lhs), &Value::Float(rhs)) => {
                 Ok(Rc::new(Value::Float(lhs * rhs)))
             }
+            // Integer comparators
+            (OpName::Less, &Value::Integer(lhs), &Value::Integer(rhs)) => {
+                Ok(Rc::new(Value::Boolean(lhs < rhs)))
+            }
+            (OpName::LessOrEqual, &Value::Integer(lhs), &Value::Integer(rhs)) => {
+                Ok(Rc::new(Value::Boolean(lhs <= rhs)))
+            }
+            (OpName::Greater, &Value::Integer(lhs), &Value::Integer(rhs)) => {
+                Ok(Rc::new(Value::Boolean(lhs > rhs)))
+            }
+            (OpName::GreaterOrEqual, &Value::Integer(lhs), &Value::Integer(rhs)) => {
+                Ok(Rc::new(Value::Boolean(lhs >= rhs)))
+            }
+            (OpName::Equal, &Value::Integer(lhs), &Value::Integer(rhs)) => {
+                Ok(Rc::new(Value::Boolean(lhs == rhs)))
+            }
+            (OpName::NotEqual, &Value::Integer(lhs), &Value::Integer(rhs)) => {
+                Ok(Rc::new(Value::Boolean(lhs != rhs)))
+            }
+            // Float comparators
+            (OpName::Less, &Value::Float(lhs), &Value::Float(rhs)) => {
+                Ok(Rc::new(Value::Boolean(lhs < rhs)))
+            }
+            (OpName::LessOrEqual, &Value::Float(lhs), &Value::Float(rhs)) => {
+                Ok(Rc::new(Value::Boolean(lhs <= rhs)))
+            }
+            (OpName::Greater, &Value::Float(lhs), &Value::Float(rhs)) => {
+                Ok(Rc::new(Value::Boolean(lhs > rhs)))
+            }
+            (OpName::GreaterOrEqual, &Value::Float(lhs), &Value::Float(rhs)) => {
+                Ok(Rc::new(Value::Boolean(lhs >= rhs)))
+            }
+            (OpName::Equal, &Value::Float(lhs), &Value::Float(rhs)) => {
+                Ok(Rc::new(Value::Boolean(lhs == rhs)))
+            }
+            (OpName::NotEqual, &Value::Float(lhs), &Value::Float(rhs)) => {
+                Ok(Rc::new(Value::Boolean(lhs != rhs)))
+            }
+            // Illegal op
             _ => Err(EvaluationError::IllegalBinaryOperation {
                 opname: op.operation.to_string(),
                 left: left.to_string(),
                 right: right.to_string(),
             }),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+
+    use crate::{ast::*, environment::*, lexer::Lexer, parser::Parser};
+
+    macro_rules! environment_evaluation_test_case {
+        (name: $test_name:ident, input: $input:expr, expected_value: $expected_value:expr,) => {
+            #[test]
+            fn $test_name() {
+                let tokens = Lexer::new($input).tokens();
+                let parser = Parser::new(tokens);
+                let ast = parser.ast();
+
+                let environment = Environment::new();
+                let statements = ast.statements();
+                if statements.len() != 1 {
+                    panic!("Expected a single expression");
+                }
+                if let Statement::Expression(e) = &statements[0] {
+                    if let Ok(result) = environment.evaluate_expression(&e) {
+                        assert_eq!(*result, $expected_value)
+                    } else {
+                        panic!("Failed to evaluate expression");
+                    }
+                } else {
+                    panic!("Expected an expression");
+                }
+            }
+        };
+    }
+
+    // Integer comparators.
+    environment_evaluation_test_case! {
+        name: evaluate_equal_integer,
+        input: "2 + 2 == 5;",
+        expected_value: Value::Boolean(false),
+    }
+
+    environment_evaluation_test_case! {
+        name: evaluate_not_equal_integer,
+        input: "2 + 2 != 5;",
+        expected_value: Value::Boolean(true),
+    }
+
+    environment_evaluation_test_case! {
+        name: evaluate_less_integer,
+        input: "2 + 2 < 5;",
+        expected_value: Value::Boolean(true),
+    }
+
+    environment_evaluation_test_case! {
+        name: evaluate_less_or_equal_integer,
+        input: "2 + 2 <= 5;",
+        expected_value: Value::Boolean(true),
+    }
+
+    environment_evaluation_test_case! {
+        name: evaluate_greater_integer,
+        input: "2 + 2 > 5;",
+        expected_value: Value::Boolean(false),
+    }
+
+    environment_evaluation_test_case! {
+        name: evaluate_greater_or_equal_integer,
+        input: "2 + 2 >= 5;",
+        expected_value: Value::Boolean(false),
+    }
+
+    // Float comparators.
+    environment_evaluation_test_case! {
+        name: evaluate_equal_float,
+        input: "2.0 + 2.0 == 5.0;",
+        expected_value: Value::Boolean(false),
+    }
+
+    environment_evaluation_test_case! {
+        name: evaluate_not_equal_float,
+        input: "2.0 + 2.0 != 5.0;",
+        expected_value: Value::Boolean(true),
+    }
+
+    environment_evaluation_test_case! {
+        name: evaluate_less_float,
+        input: "2.0 + 2.0 < 5.0;",
+        expected_value: Value::Boolean(true),
+    }
+
+    environment_evaluation_test_case! {
+        name: evaluate_less_or_equal_float,
+        input: "2.0 + 2.0 <= 5.0;",
+        expected_value: Value::Boolean(true),
+    }
+
+    environment_evaluation_test_case! {
+        name: evaluate_greater_float,
+        input: "2.0 + 2.0 > 5.0;",
+        expected_value: Value::Boolean(false),
+    }
+
+    environment_evaluation_test_case! {
+        name: evaluate_greater_or_equal_float,
+        input: "2.0 + 2.0 >= 5.0;",
+        expected_value: Value::Boolean(false),
     }
 }

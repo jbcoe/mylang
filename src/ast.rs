@@ -27,23 +27,40 @@ impl fmt::Display for Call {
 
 #[derive(Debug, PartialEq)]
 pub enum OpName {
-    Plus,
-    Minus,
     Multiply,
     Divide,
+    Plus,
+    Minus,
+    Equal,
+    NotEqual,
+    Less,
+    LessOrEqual,
+    Greater,
+    GreaterOrEqual,
+}
+
+// Higher precedence operators are evaluated first.
+fn precedence(operator: &OpName) -> i8 {
+    match operator {
+        OpName::Multiply => 3,
+        OpName::Divide => 3,
+        OpName::Plus => 2,
+        OpName::Minus => 2,
+        OpName::Equal => 1,
+        OpName::NotEqual => 1,
+        OpName::Less => 1,
+        OpName::LessOrEqual => 1,
+        OpName::Greater => 1,
+        OpName::GreaterOrEqual => 1,
+    }
 }
 
 impl PartialOrd for OpName {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        match self {
-            OpName::Plus | OpName::Minus => match other {
-                OpName::Plus | OpName::Minus => Some(Ordering::Equal),
-                OpName::Multiply | OpName::Divide => Some(Ordering::Less),
-            },
-            OpName::Multiply | OpName::Divide => match other {
-                OpName::Plus | OpName::Minus => Some(Ordering::Greater),
-                OpName::Multiply | OpName::Divide => Some(Ordering::Equal),
-            },
+        match precedence(self) - precedence(other) {
+            p if p < 0 => Some(Ordering::Less),
+            p if p > 0 => Some(Ordering::Greater),
+            _ => Some(Ordering::Equal),
         }
     }
 }
@@ -55,6 +72,12 @@ impl fmt::Display for OpName {
             OpName::Minus => write!(f, "-"),
             OpName::Multiply => write!(f, "*"),
             OpName::Divide => write!(f, "/"),
+            OpName::Equal => write!(f, "=="),
+            OpName::NotEqual => write!(f, "!="),
+            OpName::Less => write!(f, "<"),
+            OpName::LessOrEqual => write!(f, "<="),
+            OpName::Greater => write!(f, ">"),
+            OpName::GreaterOrEqual => write!(f, ">="),
         }
     }
 }
@@ -317,5 +340,42 @@ return -42;
         name: display_function_call,
         input: "let x = f(1, 2);",
         expected: "let x = f(1, 2);"
+    }
+
+    // boolean ops
+    ast_display_test! {
+        name: display_equal,
+        input: "2 == 5;",
+        expected: "(2 == 5);"
+    }
+
+    ast_display_test! {
+        name: display_not_equal,
+        input: "2 != 5;",
+        expected: "(2 != 5);"
+    }
+
+    ast_display_test! {
+        name: display_less,
+        input: "2 < 5;",
+        expected: "(2 < 5);"
+    }
+
+    ast_display_test! {
+        name: display_less_or_equal,
+        input: "2 <= 5;",
+        expected: "(2 <= 5);"
+    }
+
+    ast_display_test! {
+        name: display_greater,
+        input: "2 > 5;",
+        expected: "(2 > 5);"
+    }
+
+    ast_display_test! {
+        name: display_greater_or_equal,
+        input: "2 >= 5;",
+        expected: "(2 >= 5);"
     }
 }

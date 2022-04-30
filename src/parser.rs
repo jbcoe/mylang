@@ -229,13 +229,13 @@ impl<'a> Parser<'a> {
                 .zip(operators.iter().skip(1))
                 .any(|(lhs, rhs)| lhs < rhs || rhs < lhs);
             if mixed_ops {
-                // Split on the first low-precedence operator.
+                // Split on the last lowest-precedence operator.
                 let (split_point, _) = operators
                     .iter()
                     .enumerate()
-                    .find(|(_, op)| **op < OpName::Multiply)
+                    .rev()
+                    .min_by(|(_, lhs), (_, rhs)| lhs.partial_cmp(rhs).unwrap())
                     .unwrap();
-
                 let mut left_expressions: VecDeque<Expression> = VecDeque::new();
                 let mut left_operators: VecDeque<OpName> = VecDeque::new();
 
@@ -264,11 +264,11 @@ impl<'a> Parser<'a> {
                     None
                 }
             } else {
-                // Handle equal precedence operators grouping binary ops from the front.
-                // a + b + c => (a + b) + c
-                let right = expressions.pop_back()?;
-                let operation = operators.pop_back()?;
-                if let Some(left) = self.build_nested_expressions(expressions, operators) {
+                // Handle equal precedence operators grouping binary ops from the back.
+                // a + b + c => a + (b + c)
+                let left = expressions.pop_front()?;
+                let operation = operators.pop_front()?;
+                if let Some(right) = self.build_nested_expressions(expressions, operators) {
                     Some(Expression::BinaryOp(BinaryOp {
                         left: Box::new(left),
                         right: Box::new(right),
@@ -343,6 +343,30 @@ impl<'a> Parser<'a> {
                     Kind::Star => {
                         self.read_token();
                         operators.push_back(OpName::Multiply);
+                    }
+                    Kind::DoubleEquals => {
+                        self.read_token();
+                        operators.push_back(OpName::Equal);
+                    }
+                    Kind::NotEquals => {
+                        self.read_token();
+                        operators.push_back(OpName::NotEqual);
+                    }
+                    Kind::Less => {
+                        self.read_token();
+                        operators.push_back(OpName::Less);
+                    }
+                    Kind::LessOrEqual => {
+                        self.read_token();
+                        operators.push_back(OpName::LessOrEqual);
+                    }
+                    Kind::Greater => {
+                        self.read_token();
+                        operators.push_back(OpName::Greater);
+                    }
+                    Kind::GreaterOrEqual => {
+                        self.read_token();
+                        operators.push_back(OpName::GreaterOrEqual);
                     }
                     Kind::LeftParen => {
                         if let Some(paren_expression) = self.parse_expression() {
@@ -835,8 +859,8 @@ mod tests {
             "x".to_string(),
             match_binary_op!(
                 match_identifier!("a".to_string()),
-                match_identifier!("b".to_string()),
-                OpName::Plus
+                OpName::Plus,
+                match_identifier!("b".to_string())
             )
         ),
     }
@@ -848,8 +872,8 @@ mod tests {
             "x".to_string(),
             match_binary_op!(
                 match_identifier!("a".to_string()),
-                match_identifier!("b".to_string()),
-                OpName::Minus
+                OpName::Minus,
+                match_identifier!("b".to_string())
             )
         ),
     }
@@ -861,8 +885,8 @@ mod tests {
             "x".to_string(),
             match_binary_op!(
                 match_identifier!("a".to_string()),
-                match_identifier!("b".to_string()),
-                OpName::Multiply
+                OpName::Multiply,
+                match_identifier!("b".to_string())
             )
         ),
     }
@@ -874,8 +898,8 @@ mod tests {
             "x".to_string(),
             match_binary_op!(
                 match_identifier!("a".to_string()),
-                match_identifier!("b".to_string()),
-                OpName::Divide
+                OpName::Divide,
+                match_identifier!("b".to_string())
             )
         ),
     }
@@ -934,8 +958,8 @@ mod tests {
         input: "x + y;",
         matcher: match_binary_op!(
             match_identifier!("x".to_string()),
-            match_identifier!("y".to_string()),
-            OpName::Plus
+            OpName::Plus,
+            match_identifier!("y".to_string())
         ),
     }
 
@@ -957,11 +981,11 @@ mod tests {
         matcher: match_binary_op!(
             match_binary_op!(
                 match_identifier!("x".to_string()),
-                match_identifier!("y".to_string()),
-                OpName::Plus
+                OpName::Plus,
+                match_identifier!("y".to_string())
             ),
-            match_identifier!("z".to_string()),
-            OpName::Plus
+            OpName::Plus,
+            match_identifier!("z".to_string())
         ),
     }
 
@@ -970,12 +994,12 @@ mod tests {
         input: "x + (y + z);",
         matcher: match_binary_op!(
             match_identifier!("x".to_string()),
+            OpName::Plus,
             match_binary_op!(
                 match_identifier!("y".to_string()),
-                match_identifier!("z".to_string()),
-                OpName::Plus
-            ),
-            OpName::Plus
+                OpName::Plus,
+                match_identifier!("z".to_string())
+            )
         ),
     }
 
@@ -984,12 +1008,12 @@ mod tests {
         input: "x + y * z;",
         matcher: match_binary_op!(
             match_identifier!("x".to_string()),
+            OpName::Plus,
             match_binary_op!(
                 match_identifier!("y".to_string()),
-                match_identifier!("z".to_string()),
-                OpName::Multiply
-            ),
-            OpName::Plus
+                OpName::Multiply,
+                match_identifier!("z".to_string())
+            )
         ),
     }
 
@@ -999,11 +1023,11 @@ mod tests {
         matcher: match_binary_op!(
             match_binary_op!(
                 match_identifier!("x".to_string()),
-                match_identifier!("y".to_string()),
-                OpName::Multiply
+                OpName::Multiply,
+                match_identifier!("y".to_string())
             ),
-            match_identifier!("z".to_string()),
-            OpName::Plus
+            OpName::Plus,
+            match_identifier!("z".to_string())
         ),
     }
 
@@ -1011,16 +1035,17 @@ mod tests {
         name: chained_add_expression,
         input: "a + b + c + d;",
         matcher: match_binary_op!(
+                    match_identifier!("a".to_string()),
+                    OpName::Plus,
                     match_binary_op!(
+                        match_identifier!("b".to_string()),
+                        OpName::Plus,
                         match_binary_op!(
-                            match_identifier!("a".to_string()),
-                            match_identifier!("b".to_string()),
-                            OpName::Plus
-                        ),
-                        match_identifier!("c".to_string()),
-                    OpName::Plus),
-                    match_identifier!("d".to_string()),
-                OpName::Plus),
+                            match_identifier!("c".to_string()),
+                            OpName::Plus,
+                            match_identifier!("d".to_string())
+                        )
+                    )),
     }
 
     parse_expression_matcher_test_case! {
@@ -1029,15 +1054,15 @@ mod tests {
         matcher: match_binary_op!(
             match_binary_op!(
                 match_identifier!("a".to_string()),
-                match_identifier!("b".to_string()),
-                OpName::Multiply
+                OpName::Multiply,
+                match_identifier!("b".to_string())
             ),
+            OpName::Plus,
             match_binary_op!(
                 match_identifier!("c".to_string()),
-                match_identifier!("d".to_string()),
-                OpName::Divide
-            ),
-            OpName::Plus
+                OpName::Divide,
+                match_identifier!("d".to_string())
+            )
         ),
     }
 
@@ -1047,5 +1072,88 @@ mod tests {
         matcher: match_if_expression!(
             match_identifier!("x".to_string()),
             match_return_statement!(match_integer!(5))),
+    }
+
+    parse_expression_matcher_test_case! {
+        name: chained_mixed_binary_operator_expression_with_comparators,
+        input: " 2 + 3 * 4 < 12 / 4;",
+        matcher: match_binary_op!(
+            match_binary_op!(
+                match_integer!(2),
+                OpName::Plus,
+                match_binary_op!(
+                    match_integer!(3),
+                    OpName::Multiply,
+                    match_integer!(4)
+                )
+            ),
+            OpName::Less,
+            match_binary_op!(
+                match_integer!(12),
+                OpName::Divide,
+                match_integer!(4)
+            )
+        ),
+    }
+
+    // Comparators
+    parse_expression_matcher_test_case! {
+        name: parse_equal,
+        input: "x == y;",
+        matcher: match_binary_op!(
+            match_identifier!("x".to_string()),
+            OpName::Equal,
+            match_identifier!("y".to_string())
+        ),
+    }
+
+    parse_expression_matcher_test_case! {
+        name: parse_not_equal,
+        input: "x != y;",
+        matcher: match_binary_op!(
+            match_identifier!("x".to_string()),
+            OpName::NotEqual,
+            match_identifier!("y".to_string())
+        ),
+    }
+
+    parse_expression_matcher_test_case! {
+        name: parse_greater,
+        input: "x > y;",
+        matcher: match_binary_op!(
+            match_identifier!("x".to_string()),
+            OpName::Greater,
+            match_identifier!("y".to_string())
+        ),
+    }
+
+    parse_expression_matcher_test_case! {
+        name: parse_greater_or_equal,
+        input: "x >= y;",
+        matcher: match_binary_op!(
+            match_identifier!("x".to_string()),
+            OpName::GreaterOrEqual,
+            match_identifier!("y".to_string())
+        ),
+    }
+
+    parse_expression_matcher_test_case! {
+        name: parse_less,
+        input: "x < y;",
+        matcher: match_binary_op!(
+            match_identifier!("x".to_string()),
+            OpName::Less,
+            match_identifier!("y".to_string())
+        ),
+    }
+
+    parse_expression_matcher_test_case! {
+        name: parse_less_or_equal,
+        input: "x <= y;",
+        matcher: match_binary_op!(
+            match_identifier!("x".to_string()),
+            OpName::LessOrEqual,
+            match_identifier!("y".to_string())
+        ),
     }
 }

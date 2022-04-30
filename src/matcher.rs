@@ -226,11 +226,11 @@ pub struct BinaryOperatorExpressionMatcher {
 }
 
 macro_rules! match_binary_op {
-    ($left:expr, $right:expr, $operator:expr) => {
+    ($left:expr, $operator:expr, $right:expr) => {
         Box::new(BinaryOperatorExpressionMatcher {
             left: $left,
-            right: $right,
             operator: $operator,
+            right: $right,
         })
     };
     () => {
