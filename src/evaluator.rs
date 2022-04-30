@@ -245,7 +245,7 @@ mod tests {
     evaluator_error_test_case! {
         name: return_string_err,
         input: r#"return "meow";"#,
-        err_value: Error::NonPermitted(r#"String("meow")"#.to_string()),
+        err_value: Error::NonPermitted("String(meow)".to_string()),
     }
 
     evaluator_error_test_case! {
@@ -254,7 +254,7 @@ mod tests {
         err_value: Error::Evaluation{
             source: EvaluationError::IllegalUnaryOperation{
                 opname: "-".to_string(),
-                value:"String(\"Hello\")".to_string()
+                value:"String(Hello)".to_string()
             }
         },
     }
@@ -290,7 +290,7 @@ mod tests {
         name: call_string_err,
         input: r#"let x = "hello"; return x();"#,
         err_value: Error::Evaluation{
-            source: EvaluationError::NonCallableType("String(\"hello\")".to_string())
+            source: EvaluationError::NonCallableType("String(hello)".to_string())
         },
     }
 

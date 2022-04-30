@@ -382,7 +382,7 @@ impl<'a> Parser<'a> {
             Kind::LeftParen => self.parse_parenthesised_expression(),
             Kind::Identifier => match self.parse_call() {
                 Some(function_call) => Some(Expression::Call(function_call)),
-                None => Some(Expression::Identifier(self.parse_string())),
+                None => Some(Expression::Identifier(self.parse_identifier())),
             },
             Kind::Integer => self.parse_integer().map(Expression::Integer),
             Kind::Float => self.parse_float().map(Expression::Float),
@@ -502,10 +502,19 @@ impl<'a> Parser<'a> {
     }
 
     /// Tries to parse a string-literal expression.
-    // Matches: "name;"
-    // Can be used on Strings or Identifiers
+    // Matches: "name"
     fn parse_string(&mut self) -> String {
-        assert!(self.token.kind() == Kind::String || self.token.kind() == Kind::Identifier);
+        assert!(self.token.kind() == Kind::String);
+        let name = self.token.text();
+        // TODO(jbcoe): Cleanup leading and trailing quotes.
+        self.read_token(); // consume `name`
+        name[1..name.len() - 1].to_string()
+    }
+
+    /// Tries to parse an identifier expression.
+    // Matches: name
+    fn parse_identifier(&mut self) -> String {
+        assert!(self.token.kind() == Kind::Identifier);
         let name = self.token.text();
         self.read_token(); // consume `name`
         name
@@ -784,7 +793,7 @@ mod tests {
         input: r#"let x = "Hello";"#,
         matcher: match_let_statement!(
             "x".to_string(),
-            match_string!("\"Hello\"".to_string())
+            match_string!("Hello".to_string())
         ),
     }
 
@@ -890,14 +899,14 @@ mod tests {
     parse_statement_matcher_test_case! {
         name: return_string_literal,
         input: r#"return "the solution";"#,
-        matcher: match_return_statement!(match_string!("\"the solution\"".to_string())),
+        matcher: match_return_statement!(match_string!("the solution".to_string())),
     }
 
     parse_statement_matcher_test_case! {
         name: debug_print_statement,
         input: r#"DEBUG("Hello", 4, 2.45);"#,
         matcher: match_debug_statement!(
-            match_string!("\"Hello\"".to_string()),
+            match_string!("Hello".to_string()),
             match_integer!(4),
             match_float!(2.45)
         ),
