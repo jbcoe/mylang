@@ -162,9 +162,9 @@ pub struct IdentifierMatcher {
 pub struct AnyIdentifierMatcher {}
 
 macro_rules! match_identifier {
-    ($identifier:expr) => {
+    ($identifier:literal) => {
         Box::new(IdentifierMatcher {
-            identifier: $identifier,
+            identifier: $identifier.to_string(),
         })
     };
     () => {
@@ -701,8 +701,8 @@ mod tests {
         matcher: match_descend!(
             match_call!(
                 "f".to_string(),
-                match_identifier!("x".to_string()),
-                match_identifier!("y".to_string())
+                match_identifier!("x"),
+                match_identifier!("y")
             )
         ),
     }
