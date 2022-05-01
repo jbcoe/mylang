@@ -1,5 +1,5 @@
 let x = "Hello";
 let y = -72;
 let z = +3.14159;
-DEBUG(x, y*2, z);
+DEBUG(x, y*2, z, z * 2.0 > 0.0, 2 == 3);
 return y;
