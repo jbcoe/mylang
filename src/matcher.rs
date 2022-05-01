@@ -129,7 +129,16 @@ pub struct StringMatcher {
 
 pub struct AnyStringMatcher {}
 
-value_matcher!(match_string, AnyStringMatcher, StringMatcher);
+macro_rules! match_string {
+    ($text:literal) => {
+        Box::new(StringMatcher {
+            value: $text.to_string(),
+        })
+    };
+    () => {
+        Box::new(AnyStringMatcher {})
+    };
+}
 
 impl ExpressionMatcher for StringMatcher {
     fn matches(&self, expression: &Expression) -> bool {
@@ -571,7 +580,7 @@ mod tests {
     matcher_test_case! {
         name: string_matcher,
         input: r#"return "Hello";"#,
-        matcher: match_descend!(match_string!("Hello".to_string())),
+        matcher: match_descend!(match_string!("Hello")),
     }
 
     matcher_test_case! {
