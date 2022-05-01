@@ -571,7 +571,7 @@ mod tests {
     matcher_test_case! {
         name: string_matcher,
         input: r#"return "Hello";"#,
-        matcher: match_descend!(match_string!(r#""Hello""#.to_string())),
+        matcher: match_descend!(match_string!("Hello".to_string())),
     }
 
     matcher_test_case! {

@@ -151,7 +151,7 @@ impl fmt::Display for Expression {
             Expression::Float(f) => write!(formatter, "{}", f),
             Expression::Identifier(i) => write!(formatter, "{}", i),
             Expression::Integer(i) => write!(formatter, "{}", i),
-            Expression::StringLiteral(s) => write!(formatter, "{}", s),
+            Expression::StringLiteral(s) => write!(formatter, r#""{}""#, s),
             Expression::Call(c) => write!(formatter, "{}", c),
             Expression::UnaryOp(op) => write!(formatter, "{}", op),
             Expression::BinaryOp(op) => write!(formatter, "{}", op),
