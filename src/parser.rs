@@ -793,7 +793,7 @@ mod tests {
         input: r#"let x = "Hello";"#,
         matcher: match_let_statement!(
             "x".to_string(),
-            match_string!("Hello".to_string())
+            match_string!("Hello")
         ),
     }
 
@@ -899,14 +899,14 @@ mod tests {
     parse_statement_matcher_test_case! {
         name: return_string_literal,
         input: r#"return "the solution";"#,
-        matcher: match_return_statement!(match_string!("the solution".to_string())),
+        matcher: match_return_statement!(match_string!("the solution")),
     }
 
     parse_statement_matcher_test_case! {
         name: debug_print_statement,
         input: r#"DEBUG("Hello", 4, 2.45);"#,
         matcher: match_debug_statement!(
-            match_string!("Hello".to_string()),
+            match_string!("Hello"),
             match_integer!(4),
             match_float!(2.45)
         ),
