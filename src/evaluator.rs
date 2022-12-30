@@ -16,7 +16,7 @@ pub enum Error {
     },
 }
 
-impl<'a> Evaluator {
+impl Evaluator {
     pub(crate) fn new() -> Self {
         Self {
             global: Environment::new(),
