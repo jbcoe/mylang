@@ -65,7 +65,7 @@ impl<'a> Driver<'a> {
 
         match &self.opt.file {
             Some(filepath) => {
-                let file = File::open(&filepath)
+                let file = File::open(filepath)
                     .with_context(|| format!("Failed to open file at {}", filepath.display()))?;
                 self.process_stream(file, &mut outio)
                     .with_context(|| format!("while reading {}", filepath.display()))

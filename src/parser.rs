@@ -265,10 +265,10 @@ impl<'a> Parser<'a> {
                 }
             } else {
                 // Handle equal precedence operators grouping binary ops from the back.
-                // a + b + c => a + (b + c)
-                let left = expressions.pop_front()?;
-                let operation = operators.pop_front()?;
-                if let Some(right) = self.build_nested_expressions(expressions, operators) {
+                // a + b + c => (a + b) + c
+                let right = expressions.pop_back()?;
+                let operation = operators.pop_back()?;
+                if let Some(left) = self.build_nested_expressions(expressions, operators) {
                     Some(Expression::BinaryOp(BinaryOp {
                         left: Box::new(left),
                         right: Box::new(right),
@@ -1044,17 +1044,17 @@ mod tests {
         name: chained_add_expression,
         input: "a + b + c + d;",
         matcher: match_binary_op!(
-                    match_identifier!("a"),
-                    OpName::Plus,
                     match_binary_op!(
-                        match_identifier!("b"),
-                        OpName::Plus,
                         match_binary_op!(
-                            match_identifier!("c"),
+                            match_identifier!("a"),
                             OpName::Plus,
-                            match_identifier!("d")
-                        )
-                    )),
+                            match_identifier!("b")
+                        ),
+                        OpName::Plus,
+                        match_identifier!("c")
+                    ),
+                    OpName::Plus,
+                    match_identifier!("d")),
     }
 
     parse_expression_matcher_test_case! {
